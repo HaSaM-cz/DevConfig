@@ -6,13 +6,16 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data.Common;
 using System.Diagnostics;
 using System.DirectoryServices;
 using System.Net;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.Loader;
 using System.Security.Cryptography;
 using System.Windows.Forms;
@@ -26,9 +29,14 @@ namespace DevConfig
 {
     public partial class MainForm : Form
     {
-        enum SubItem { Address, DevID, Name, Version, CpuID };
+        const byte SrcAddress = 0x08;
+
+        enum DeviceSubItem { Address, DevID, Name, Version, CpuID };
+        enum ParmaterSubItem { ParamID, Type, RO, Min, Max, Index, Name, Value };
 
         bool btn_update_active = false;
+        ManualResetEvent MessageReceived = new(false);
+        byte MessageFlag = 0xFF;
 
         List<DeviceType>? DevicesTypeList;
 
@@ -50,11 +58,11 @@ namespace DevConfig
         {
             DevicesTypeList = JsonConvert.DeserializeObject<List<DeviceType>>(File.ReadAllText(@"Resources\Devices.json"));
             string[] BLPaths = Settings.Default.BLPath.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            for(int i = 0; i < BLPaths.Length; i+=2)
+            for (int i = 0; i < BLPaths.Length; i += 2)
             {
                 uint devid = Convert.ToUInt32(BLPaths[i]);
                 DeviceType t = GetDeviceType(devid);
-                t.FirmwarePath = BLPaths[i+1];
+                t.FirmwarePath = BLPaths[i + 1];
             }
         }
 
@@ -62,7 +70,7 @@ namespace DevConfig
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             string BLPath = string.Empty;
-            DevicesTypeList?.ForEach(devType => 
+            DevicesTypeList?.ForEach(devType =>
             {
                 if (!string.IsNullOrWhiteSpace(devType.FirmwarePath))
                     BLPath += $"{devType.DevId}|{devType.FirmwarePath}|";
@@ -118,7 +126,7 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void InputPeriph_MessageReceived(Message message)
         {
-            if (message.CMD == 0x02 && message.Data.Count >= 14) // TODO && msg.RF)
+            if (message.CMD == Command.Ident && message.Data.Count >= 14) // TODO && msg.RF)
             {
                 Debug.WriteLine(message);
 
@@ -130,10 +138,106 @@ namespace DevConfig
 
                 NewIdent(deviceID, address, fwVer, cpuId, state);
             }
-            else if ((message.CMD == 0x50 || message.CMD == 0x51) && message.Data.Count == 1)
+            else if ((message.CMD == Command.StartUpdate || message.CMD == Command.UpdateMsg) && message.Data.Count == 1)
             {
-                UpdateMessageFlag = message.Data[0];
+                MessageFlag = message.Data[0];
             }
+            else if (message.CMD == Command.ParamRead)
+            {
+                if (message.Data[0] == 0)
+                    NewParamData(MessageFlag, message.Data.ToArray());
+                MessageReceived.Set();
+            }
+            else if (message.CMD == Command.GetListParam)
+            {
+                MessageFlag = message.Data[0];
+                if (MessageFlag == 0)
+                    NewParamItem(message.Data.ToArray());
+                MessageReceived.Set();
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void NewParamData(byte ParamID, byte[] bytes)
+        {
+            try
+            {
+                Parameter parameter = (from xxx in parameters where xxx.ParameterID == ParamID select xxx).First();
+                switch (parameter.ParType)
+                {
+                    case type.UInt8:
+                        parameter.Value = bytes[1];
+                        break;
+                    case type.UInt16:
+                        parameter.Value = BitConverter.ToUInt16(bytes, 1);
+                        break;
+                    case type.UInt32:
+                        parameter.Value = BitConverter.ToUInt32(bytes, 1);
+                        break;
+                    case type.String:
+                        parameter.Value = System.Text.Encoding.ASCII.GetString(bytes, 1, bytes.Length - 1);
+                        break;
+                    case type.IpAddr:
+                        break;
+                }
+
+                listViewParameters.Invoke(delegate { parameter.listViewItem!.SubItems[listViewParameters.Columns.Count - 1].Text = $"{parameter.Value}"; });
+
+                //Debug.WriteLine($"{parameter.ParName} - {parameter.ParType} - {parameter.Value:X} - {bytes.Length - 1}");
+            }
+            catch
+            {
+
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        enum type { UInt8, UInt16, UInt32, String, IpAddr };
+
+        class Parameter
+        {
+            //internal byte Status;
+            internal byte ParameterID;
+            internal type ParType;
+            internal bool ReadOnly;
+            internal uint ParValMin;
+            internal uint ParValMax;
+            internal byte ParIndex;
+            internal string? ParName;
+            internal object? Value;
+            internal ListViewItem? listViewItem = null;
+        }
+
+        List<Parameter> parameters = new List<Parameter>();
+
+        private void NewParamItem(byte[] data)
+        {
+            Parameter parameter = new Parameter();
+
+            //parameter.Status = data[0];
+            parameter.ParameterID = data[1];
+            parameter.ParType = (type)(data[2] & 0x7F);
+            parameter.ReadOnly = (data[2] & 0x80) == 0x80;
+            parameter.ParValMin = BitConverter.ToUInt32(data, 3);
+            parameter.ParValMax = BitConverter.ToUInt32(data, 7);
+            parameter.ParIndex = data[11];
+            parameter.ParName = System.Text.Encoding.ASCII.GetString(data, 12, data.Length - 12);
+
+            parameter.listViewItem = new ListViewItem($"{parameter.ParameterID}");
+            parameter.listViewItem.SubItems.Add($"{parameter.ParType}");
+            parameter.listViewItem.SubItems.Add($"{parameter.ReadOnly}");
+            parameter.listViewItem.SubItems.Add($"{parameter.ParValMin}");
+            parameter.listViewItem.SubItems.Add($"{parameter.ParValMax}");
+            parameter.listViewItem.SubItems.Add($"{parameter.ParIndex}");
+            parameter.listViewItem.SubItems.Add($"{parameter.ParName}");
+            parameter.listViewItem.SubItems.Add($"");
+
+            parameters.Add(parameter);
+            listViewParameters.Invoke(delegate 
+            { 
+                var item = listViewParameters.Items.Add(parameter.listViewItem); 
+                item.Tag = parameter;
+            });
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -149,15 +253,15 @@ namespace DevConfig
                 device.Name = GetDeviceName(address, deviceID);
 
                 // update list
-                if(device.listViewItem != null)
+                if (device.listViewItem != null)
                 {
-                    listViewDevices.Invoke(delegate 
+                    listViewDevices.Invoke(delegate
                     {
                         //device.listViewItem.SubItems[(int)(SubItem.CpuID)].Text = device.CpuId;
-                        device.listViewItem.SubItems[(int)(SubItem.Address)].Text = device.AddressStr;
-                        device.listViewItem.SubItems[(int)(SubItem.DevID)].Text = device.DevIdStr;
-                        device.listViewItem.SubItems[(int)(SubItem.Name)].Text = device.Name;
-                        device.listViewItem.SubItems[(int)(SubItem.Version)].Text = device.FwVer;
+                        device.listViewItem.SubItems[(int)(DeviceSubItem.Address)].Text = device.AddressStr;
+                        device.listViewItem.SubItems[(int)(DeviceSubItem.DevID)].Text = device.DevIdStr;
+                        device.listViewItem.SubItems[(int)(DeviceSubItem.Name)].Text = device.Name;
+                        device.listViewItem.SubItems[(int)(DeviceSubItem.Version)].Text = device.FwVer;
                     });
                 }
 
@@ -277,8 +381,8 @@ namespace DevConfig
                     Invoke(delegate { Cursor = Cursors.WaitCursor; });
 
                     Message message = new Message();
-                    message.CMD = 0x02;
-                    message.SRC = 0x08;
+                    message.CMD = Command.Ident;
+                    message.SRC = SrcAddress;
 
                     // pošleme ident do všech zažízení
                     for (byte dest = 0x0; dest < 0xFE; dest++)
@@ -313,7 +417,7 @@ namespace DevConfig
                 tb_address.Font = tb_dev_id.Font = tb_version.Font = tb_cpu_id.Font = new Font(tb_address.Font, FontStyle.Regular);
                 Task.Delay(1000).ContinueWith(task =>
                 {
-                    Message message = new() { CMD = 0x02, DEST = selectedDevice.Address };
+                    Message message = new() { CMD = Command.Ident, DEST = selectedDevice.Address };
                     InputPeriph?.SendMsg(message);
                 });
             }
@@ -333,8 +437,6 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        byte UpdateMessageFlag = 0xFF;
-
         private void btnUpdate_Click(object sender, EventArgs e)
         {
             if (File.Exists(tbFwFileName.Text) && selectedDevice != null)
@@ -346,9 +448,9 @@ namespace DevConfig
                 const int UpdateTmeout = 3000;
                 byte[] sendbuf = new byte[260];
 
-                UpdateMessageFlag = 0xFF;
-                Message message = new Message() { CMD = 0x50, DEST = selectedDevice.Address };
-                InputPeriph?.SendMsg(message); // Send_command(cmds.teCmd_StartUpdate, 0x00, sendbuf);
+                MessageFlag = 0xFF;
+                Message message = new Message() { CMD = Command.StartUpdate, DEST = selectedDevice.Address };
+                InputPeriph?.SendMsg(message);
 
                 int time = 10;
                 while (time-- > 0)
@@ -378,18 +480,18 @@ namespace DevConfig
                 time = UpdateTmeout;
                 while (offset < buf.Length)
                 {
-                    if (UpdateMessageFlag != 0xFF)
+                    if (MessageFlag != 0xFF)
                     {
-                        if (UpdateMessageFlag != 0x00)
+                        if (MessageFlag != 0x00)
                         {
-                            MessageBox.Show((/*(UpdateEnum)*/UpdateMessageFlag).ToString());
+                            MessageBox.Show((/*(UpdateEnum)*/MessageFlag).ToString());
                             //pgbUpdate.Visible = false;
                             //Disable_DEBUG_msg = 0;
                             return;
                         }
 
                         time = UpdateTmeout;
-                        UpdateMessageFlag = 0xFF;
+                        MessageFlag = 0xFF;
                         ptr = 0;
                         for (int i = 0; i < 240; i++)
                         {
@@ -400,10 +502,10 @@ namespace DevConfig
                                 break;
                         }
 
-                        message.CMD = 0x51;
+                        message.CMD = Command.UpdateMsg;
                         message.Data = sendbuf.Take(ptr).ToList();
 
-                        InputPeriph?.SendMsg(message); // Send_command(cmds.teCmd_UpdateMsg, ptr, sendbuf);
+                        InputPeriph?.SendMsg(message);
 
                         byte px = (byte)(((float)offset / buf.Length) * 100);
                         if (perc != px)
@@ -468,6 +570,84 @@ namespace DevConfig
                 }
             }
         }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void button1_Click(object sender, EventArgs e)
+        {
+            if (InputPeriph != null && selectedDevice != null)
+            {
+                Task.Run(() =>
+                {
+                    Invoke(delegate { Cursor = Cursors.WaitCursor; });
+
+                    Message message = new Message();
+                    message.CMD = Command.GetListParam;
+                    message.SRC = SrcAddress;
+                    message.DEST = selectedDevice.Address;
+                    message.Data.Add(0);
+                    MessageReceived.Reset();
+                    InputPeriph.SendMsg(message);
+
+                    message.Data[0] = 1;
+
+                    while (true)
+                    {
+                        if (!MessageReceived.WaitOne(1000))
+                            break;
+
+                        if (MessageFlag != 0)
+                            break;
+
+                        MessageReceived.Reset();
+                        InputPeriph.SendMsg(message);
+                    }
+
+                    message.CMD = Command.ParamRead;
+                    foreach (var p in parameters)
+                    {
+                        MessageFlag = message.Data[0] = p.ParameterID;
+                        MessageReceived.Reset();
+                        InputPeriph.SendMsg(message);
+                        if (!MessageReceived.WaitOne(1000))
+                            continue;
+                    }
+
+                    progressBar.Invoke(delegate
+                    {
+                        progressBar.Value = 0;
+                        Cursor = Cursors.Default;
+                        listViewParameters.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+                    });
+                });
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void listViewParameters_Resize(object sender, EventArgs e)
+        {
+            /*int width = 0;
+            for (int i = 0; i < listViewParameters.Columns.Count; i++)
+                width += listViewParameters.Columns[i].Width;
+            width -= listViewParameters.Columns[listViewParameters.Columns.Count - 2].Width;
+            listViewParameters.Columns[listViewParameters.Columns.Count - 2].Width = listViewParameters.Width - width;*/
+            //listViewParameters.AutoResizeColumn(listViewParameters.Columns.Count - 2, ColumnHeaderAutoResizeStyle.ColumnContent);
+        }
+
+        private void listViewParameters_SubItemClicked(object sender, SubItemEventArgs e)
+        {
+            if (e.SubItem == (int)ParmaterSubItem.Value && !((Parameter)e.Item.Tag).ReadOnly)
+                listViewParameters.StartEditing(textBox1, e.Item, e.SubItem);
+        }
+
+        private void listViewParameters_SubItemEndEditing(object sender, SubItemEndEditingEventArgs e)
+        {
+            if($"{((Parameter)e.Item.Tag).Value}" != e.DisplayText)
+                e.Item.ForeColor = Color.Red;
+            else
+                e.Item.ForeColor = SystemColors.WindowText;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
     }
 
     public class Device

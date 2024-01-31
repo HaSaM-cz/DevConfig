@@ -54,6 +54,18 @@ namespace DevConfig
             tbFwFileName = new TextBox();
             btnIdent = new Button();
             tabRegisters = new TabPage();
+            tableLayoutPanel1 = new TableLayoutPanel();
+            button1 = new Button();
+            listViewParameters = new ListViewEx();
+            columnHeader6 = new ColumnHeader();
+            columnHeader7 = new ColumnHeader();
+            columnHeader8 = new ColumnHeader();
+            columnHeader9 = new ColumnHeader();
+            columnHeader10 = new ColumnHeader();
+            columnHeader11 = new ColumnHeader();
+            columnHeader12 = new ColumnHeader();
+            columnHeader13 = new ColumnHeader();
+            textBox1 = new TextBox();
             menuStrip1 = new MenuStrip();
             connectionToolStripMenuItem = new ToolStripMenuItem();
             openToolStripMenuItem = new ToolStripMenuItem();
@@ -67,6 +79,8 @@ namespace DevConfig
             splitContainer1.SuspendLayout();
             tabControl.SuspendLayout();
             tabSwUpdate.SuspendLayout();
+            tabRegisters.SuspendLayout();
+            tableLayoutPanel1.SuspendLayout();
             menuStrip1.SuspendLayout();
             SuspendLayout();
             // 
@@ -292,13 +306,104 @@ namespace DevConfig
             // 
             // tabRegisters
             // 
+            tabRegisters.Controls.Add(tableLayoutPanel1);
+            tabRegisters.Controls.Add(textBox1);
             tabRegisters.Location = new Point(4, 29);
             tabRegisters.Name = "tabRegisters";
             tabRegisters.Padding = new Padding(3);
-            tabRegisters.Size = new Size(615, 581);
+            tabRegisters.Size = new Size(642, 581);
             tabRegisters.TabIndex = 1;
             tabRegisters.Text = "Registers";
             tabRegisters.UseVisualStyleBackColor = true;
+            // 
+            // tableLayoutPanel1
+            // 
+            tableLayoutPanel1.ColumnCount = 1;
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tableLayoutPanel1.Controls.Add(button1, 0, 0);
+            tableLayoutPanel1.Controls.Add(listViewParameters, 0, 1);
+            tableLayoutPanel1.Dock = DockStyle.Fill;
+            tableLayoutPanel1.Location = new Point(3, 3);
+            tableLayoutPanel1.Name = "tableLayoutPanel1";
+            tableLayoutPanel1.RowCount = 2;
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 35F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle());
+            tableLayoutPanel1.Size = new Size(636, 575);
+            tableLayoutPanel1.TabIndex = 3;
+            // 
+            // button1
+            // 
+            button1.Location = new Point(3, 3);
+            button1.Name = "button1";
+            button1.Size = new Size(94, 29);
+            button1.TabIndex = 0;
+            button1.Text = "button1";
+            button1.UseVisualStyleBackColor = true;
+            button1.Click += button1_Click;
+            // 
+            // listViewParameters
+            // 
+            listViewParameters.AllowColumnReorder = true;
+            listViewParameters.Columns.AddRange(new ColumnHeader[] { columnHeader6, columnHeader7, columnHeader8, columnHeader9, columnHeader10, columnHeader11, columnHeader12, columnHeader13 });
+            listViewParameters.Dock = DockStyle.Fill;
+            listViewParameters.DoubleClickActivation = false;
+            listViewParameters.FullRowSelect = true;
+            listViewParameters.GridLines = true;
+            listViewParameters.Location = new Point(3, 38);
+            listViewParameters.MultiSelect = false;
+            listViewParameters.Name = "listViewParameters";
+            listViewParameters.Size = new Size(630, 534);
+            listViewParameters.TabIndex = 1;
+            listViewParameters.UseCompatibleStateImageBehavior = false;
+            listViewParameters.View = View.Details;
+            listViewParameters.SubItemClicked += listViewParameters_SubItemClicked;
+            listViewParameters.SubItemEndEditing += listViewParameters_SubItemEndEditing;
+            listViewParameters.Resize += listViewParameters_Resize;
+            // 
+            // columnHeader6
+            // 
+            columnHeader6.Text = "ID";
+            columnHeader6.Width = 40;
+            // 
+            // columnHeader7
+            // 
+            columnHeader7.Text = "Type";
+            // 
+            // columnHeader8
+            // 
+            columnHeader8.Text = "RO";
+            columnHeader8.Width = 50;
+            // 
+            // columnHeader9
+            // 
+            columnHeader9.Text = "Min";
+            // 
+            // columnHeader10
+            // 
+            columnHeader10.Text = "Max";
+            // 
+            // columnHeader11
+            // 
+            columnHeader11.Text = "Index";
+            columnHeader11.Width = 50;
+            // 
+            // columnHeader12
+            // 
+            columnHeader12.Text = "Name";
+            columnHeader12.Width = 150;
+            // 
+            // columnHeader13
+            // 
+            columnHeader13.Text = "Value";
+            columnHeader13.Width = 100;
+            // 
+            // textBox1
+            // 
+            textBox1.Location = new Point(301, 6);
+            textBox1.Name = "textBox1";
+            textBox1.Size = new Size(125, 27);
+            textBox1.TabIndex = 2;
+            textBox1.Visible = false;
             // 
             // menuStrip1
             // 
@@ -362,6 +467,7 @@ namespace DevConfig
             Controls.Add(splitContainer1);
             Controls.Add(menuStrip1);
             Controls.Add(progressBar);
+            DoubleBuffered = true;
             Name = "MainForm";
             Text = "Device Config";
             FormClosing += MainForm_FormClosing;
@@ -373,6 +479,9 @@ namespace DevConfig
             tabControl.ResumeLayout(false);
             tabSwUpdate.ResumeLayout(false);
             tabSwUpdate.PerformLayout();
+            tabRegisters.ResumeLayout(false);
+            tabRegisters.PerformLayout();
+            tableLayoutPanel1.ResumeLayout(false);
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
             ResumeLayout(false);
@@ -414,5 +523,17 @@ namespace DevConfig
         private TextBox tb_version;
         private TextBox tb_dev_id;
         private TextBox tb_address;
+        private Button button1;
+        private ListViewEx listViewParameters;
+        private ColumnHeader columnHeader6;
+        private ColumnHeader columnHeader7;
+        private ColumnHeader columnHeader8;
+        private ColumnHeader columnHeader9;
+        private ColumnHeader columnHeader10;
+        private ColumnHeader columnHeader11;
+        private ColumnHeader columnHeader12;
+        private ColumnHeader columnHeader13;
+        private TextBox textBox1;
+        private TableLayoutPanel tableLayoutPanel1;
     }
 }
