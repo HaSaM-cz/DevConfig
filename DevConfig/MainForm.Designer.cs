@@ -311,10 +311,10 @@ namespace DevConfig
             tabRegisters.Location = new Point(4, 29);
             tabRegisters.Name = "tabRegisters";
             tabRegisters.Padding = new Padding(3);
+            tabRegisters.RightToLeft = RightToLeft.No;
             tabRegisters.Size = new Size(642, 581);
             tabRegisters.TabIndex = 1;
             tabRegisters.Text = "Registers";
-            tabRegisters.UseVisualStyleBackColor = true;
             // 
             // tableLayoutPanel1
             // 
@@ -508,7 +508,7 @@ namespace DevConfig
         private ColumnHeader colAddress;
         private ToolStrip toolStrip1;
         private ToolStrip toolStrip2;
-        private ProgressBar progressBar;
+        public ProgressBar progressBar;
         private TextBox tbFwFileName;
         private Button btnIdent;
         private Label label1;

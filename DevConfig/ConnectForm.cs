@@ -3,6 +3,7 @@ using DevConfig.Properties;
 using SshCANns;
 using System.IO.Ports;
 using TcpTunelNs;
+using UsbSerialNs;
 
 namespace DevConfig
 {
@@ -24,7 +25,9 @@ namespace DevConfig
                 Cursor = Cursors.WaitCursor;
                 if (rbUsbCom.Checked)
                 {
-                    throw new NotImplementedException();
+                    InputPeriph = new UsbSerial();
+                    InputPeriph.Open(new { PortName = cbbPortName.Text, BaudRate = cbbPortSpeed.Text });
+                    InputPeriph.Run();
                 }
                 else if (rbToolstick.Checked)
                 {

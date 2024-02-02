@@ -19,6 +19,7 @@ using System.Reflection.Metadata;
 using System.Runtime.Loader;
 using System.Security.Cryptography;
 using System.Windows.Forms;
+using UsbSerialNs;
 using static CanDiag.TraceExtension;
 using static System.Windows.Forms.AxHost;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
@@ -41,13 +42,15 @@ namespace DevConfig
         List<DeviceType>? DevicesTypeList;
 
         List<Device> DevicesList = new();
-        IInputPeriph? InputPeriph = null;
+        public IInputPeriph? InputPeriph = null;
+        IMainApp MainApp;
 
         public BindingList<Device>? DeviceList = new();
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         public MainForm()
         {
+            MainApp = new MainAppClass(this);
             InitializeComponent();
             listViewDevices.AutoResizeColumn(listViewDevices.Columns.Count - 1, ColumnHeaderAutoResizeStyle.HeaderSize);
             tb_address.BackColor = tb_dev_id.BackColor = tb_version.BackColor = tb_cpu_id.BackColor = tb_address.BackColor;
@@ -109,6 +112,8 @@ namespace DevConfig
                 InputPeriph = connectForm.InputPeriph;
                 InputPeriph!.MessageReceived += InputPeriph_MessageReceived;
                 RefreshDeviceList();
+
+                // TODO pripadne nastaveni noveho InputPeriph pro zarizeni
             }
 
         }
@@ -116,6 +121,29 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void Close_Click(object sender, EventArgs e)
         {
+            // TODO pripadne zavreni karet zarizeni
+            foreach(var x in tabControl.TabPages)
+            {
+                if (((TabPage)x).Controls[0].GetType().BaseType == typeof(UserControl))
+                {
+                    Debug.WriteLine($"{((TabPage)x).Controls[0].GetType().BaseType}");
+                    Debug.WriteLine($"{((TabPage)x).Controls[0]}");
+                }
+            }
+
+            
+
+            /*var ucs = from x in DevicesTypeList where x.UserControls.Count > 0 select x;
+            foreach (var item in ucs)
+            {
+                foreach (var u in item.UserControls)
+                {
+                    
+                }
+
+                //item.UserControls.ForEach(x => { x.Enabled = false; });
+            }*/
+
             if (InputPeriph != null)
             {
                 InputPeriph.Close();
@@ -132,7 +160,7 @@ namespace DevConfig
 
                 byte state = message.Data[0];
                 uint deviceID = (uint)(message.Data[1] << 24 | message.Data[2] << 16 | message.Data[3] << 8 | message.Data[4]);
-                byte address = message.SRC;// message.Data[5];
+                byte address = InputPeriph!.GetType() == typeof(UsbSerialNs.UsbSerial) ? message.Data[5] : address = message.SRC;
                 string fwVer = $"{message.Data[6]}.{message.Data[7]}";
                 string cpuId = $"{BitConverter.ToString(message.Data.Skip(8).Take(12).ToArray()).Replace("-", " ")}";
 
@@ -372,34 +400,43 @@ namespace DevConfig
                 DevicesList.Clear();
                 listViewDevices.Items.Clear();
 
-                progressBar.Minimum = 0;
-                progressBar.Maximum = 0xFD;
-                progressBar.Value = 0;
-
                 Task.Run(() =>
                 {
-                    Invoke(delegate { Cursor = Cursors.WaitCursor; });
-
                     Message message = new Message();
                     message.CMD = Command.Ident;
                     message.SRC = SrcAddress;
 
+                    byte SearchFrom = 0x00;
+                    byte SearchTo = 0xFE - 1;
+
+                    if (InputPeriph!.GetType() == typeof(UsbSerialNs.UsbSerial))
+                        SearchFrom = SearchTo = 0xFE;
+
+                    Invoke(delegate { 
+                        Cursor = Cursors.WaitCursor;
+                        progressBar.Minimum = SearchFrom;
+                        progressBar.Maximum = SearchTo;
+                        if (progressBar.Minimum == progressBar.Maximum)
+                            progressBar.Minimum--;
+                        progressBar.Value = progressBar.Minimum;
+                    });
+
                     // pošleme ident do všech zažízení
-                    for (byte dest = 0x0; dest < 0xFE; dest++)
+                    for (byte dest = SearchFrom; dest <= SearchTo; dest++)
                     {
+                        progressBar.Invoke(delegate { progressBar.Value = dest; });
                         message.DEST = dest;
                         InputPeriph.SendMsg(message);
                         Task.Delay(3).Wait();
-                        progressBar.Invoke(delegate { progressBar.Value = dest; });
                     }
 
                     // Pockame na dobehnuti
-                    Task.Delay(500).ContinueWith(t =>
+                    Task.Delay(1500).ContinueWith(t =>
                     {
                         progressBar.Invoke(delegate
                         {
-                            progressBar.Value = 0;
                             Cursor = Cursors.Default;
+                            progressBar.Value = progressBar.Minimum;
                         });
                     });
                 });
@@ -544,8 +581,8 @@ namespace DevConfig
             }
         }
 
-        Device? selectedDevice = null;
-        DeviceType? selectedDeviceType = null;
+        public Device? selectedDevice = null;
+        public DeviceType? selectedDeviceType = null;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void listViewDevices_SelectedIndexChanged(object sender, EventArgs e)
@@ -567,6 +604,46 @@ namespace DevConfig
                     label_name.Text = selectedDevice.Name;
                     tbFwFileName.ForeColor = tb_address.ForeColor = tb_dev_id.ForeColor = tb_version.ForeColor = tb_cpu_id.ForeColor = SystemColors.WindowText;
                     tb_address.Font = tb_dev_id.Font = tb_version.Font = tb_cpu_id.Font = new Font(tb_address.Font, FontStyle.Regular);
+
+                    SetTabPage();
+                }
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void SetTabPage()
+        {
+            Debug.Assert(InputPeriph != null);
+
+            var ucs = from x in DevicesTypeList where x.UserControls.Count > 0 select x;
+            foreach (var item in ucs)
+                item.UserControls.ForEach(x => { x.Enabled = false; });
+
+            if (selectedDeviceType != null && File.Exists(selectedDeviceType.UserControl))
+            {
+                if (selectedDeviceType.UserControls.Count != 0)
+                {
+                    selectedDeviceType.UserControls.ForEach(x => { x.Enabled = true; });
+                }
+                else
+                {
+                    string assembly_name = Path.GetFullPath(selectedDeviceType.UserControl);
+                    Assembly assembly = Assembly.LoadFile(Path.Combine("", assembly_name));
+                    var types = assembly.GetTypes();
+                    foreach (Type type in types)
+                    {
+                        if (type.IsVisible && type.IsAssignableTo(typeof(UserControl)))
+                        {
+                            UserControl? control = (UserControl?)Activator.CreateInstance(type, new object[] { MainApp });
+                            if (control != null)
+                            {
+                                TabPage tp = new TabPage(control.Text) { Text = control.Text, Name = control.Name };
+                                tp.Controls.Add(control);
+                                tabControl.TabPages.Add(tp);
+                                selectedDeviceType.UserControls.Add(control);
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -10,5 +10,8 @@ namespace DevConfig
 
         public string? FirmwarePath; 
         public string Name = string.Empty;
+        public string? UserControl;
+        //public bool UserControlLoaded = false;
+        public List<UserControl> UserControls = new();
     }
 }
