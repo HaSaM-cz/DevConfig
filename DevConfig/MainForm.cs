@@ -18,8 +18,10 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.Loader;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Xml;
 using System.Windows.Forms;
 using UsbSerialNs;
+using WeifenLuo.WinFormsUI.Docking;
 using static CanDiag.TraceExtension;
 using static System.Windows.Forms.AxHost;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
@@ -31,6 +33,12 @@ namespace DevConfig
     public partial class MainForm : Form
     {
         const byte SrcAddress = 0x08;
+
+        TreeForm? TreeWnd = null;
+        DebugForm? DebugWnd = null;
+
+        public Device? selectedDevice = null;
+        public DeviceType? selectedDeviceType = null;
 
         enum DeviceSubItem { Address, DevID, Name, Version, CpuID };
         enum ParmaterSubItem { ParamID, Type, RO, Min, Max, Index, Name, Value };
@@ -52,8 +60,8 @@ namespace DevConfig
         {
             MainApp = new MainAppClass(this);
             InitializeComponent();
-            listViewDevices.AutoResizeColumn(listViewDevices.Columns.Count - 1, ColumnHeaderAutoResizeStyle.HeaderSize);
-            tb_address.BackColor = tb_dev_id.BackColor = tb_version.BackColor = tb_cpu_id.BackColor = tb_address.BackColor;
+            //listViewDevices.AutoResizeColumn(listViewDevices.Columns.Count - 1, ColumnHeaderAutoResizeStyle.HeaderSize);
+            //tb_address.BackColor = tb_dev_id.BackColor = tb_version.BackColor = tb_cpu_id.BackColor = tb_address.BackColor;
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -67,7 +75,45 @@ namespace DevConfig
                 DeviceType t = GetDeviceType(devid);
                 t.FirmwarePath = BLPaths[i + 1];
             }
+            TreeWnd = CreateChild<TreeForm>("Device");
+            DebugWnd = CreateChild<DebugForm>("Debug");
         }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void DeviceTreeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            /*if (TreeWnd == null)
+            {
+                CreateTreeWnd();
+            }
+            else
+            {
+                if (TreeWnd.WindowState != FormWindowState.Maximized)
+                    TreeWnd.WindowState = FormWindowState.Normal;
+                TreeWnd.BringToFront();
+            }*/
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        T? CreateChild<T>(string Text)
+        {
+            Type t = typeof(T);
+            var obj = Activator.CreateInstance(t, new object[] { this });
+            if (obj != null)
+            {
+                DockContent content = (DockContent)obj;
+                content.Text = Text;
+                content.Tag = Text;
+                content.MdiParent = this;
+                content.FormClosed += ((object? sender, FormClosedEventArgs e) => TreeWnd = null);
+                content.MdiParent = this;
+                content.Show(this.dockPanel, DockState.Document);
+            }
+            return (T?)obj;
+        }
+
+
+
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -88,15 +134,15 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void listViewDevices_Resize(object sender, EventArgs e)
         {
-            listViewDevices.AutoResizeColumn(listViewDevices.Columns.Count - 1, ColumnHeaderAutoResizeStyle.HeaderSize);
+            //listViewDevices.AutoResizeColumn(listViewDevices.Columns.Count - 1, ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void listViewDevices_ColumnWidthChanged(object sender, ColumnWidthChangedEventArgs e)
         {
-            int col = listViewDevices.Columns.Count - 1;
+            /*int col = listViewDevices.Columns.Count - 1;
             if (col != e.ColumnIndex)
-                listViewDevices.AutoResizeColumn(col, ColumnHeaderAutoResizeStyle.HeaderSize);
+                listViewDevices.AutoResizeColumn(col, ColumnHeaderAutoResizeStyle.HeaderSize);*/
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -122,7 +168,7 @@ namespace DevConfig
         private void Close_Click(object sender, EventArgs e)
         {
             // TODO pripadne zavreni karet zarizeni
-            foreach(var x in tabControl.TabPages)
+            foreach (var x in tabControl.TabPages)
             {
                 if (((TabPage)x).Controls[0].GetType().BaseType == typeof(UserControl))
                 {
@@ -131,7 +177,7 @@ namespace DevConfig
                 }
             }
 
-            
+
 
             /*var ucs = from x in DevicesTypeList where x.UserControls.Count > 0 select x;
             foreach (var item in ucs)
@@ -261,9 +307,9 @@ namespace DevConfig
             parameter.listViewItem.SubItems.Add($"");
 
             parameters.Add(parameter);
-            listViewParameters.Invoke(delegate 
-            { 
-                var item = listViewParameters.Items.Add(parameter.listViewItem); 
+            listViewParameters.Invoke(delegate
+            {
+                var item = listViewParameters.Items.Add(parameter.listViewItem);
                 item.Tag = parameter;
             });
         }
@@ -283,7 +329,7 @@ namespace DevConfig
                 // update list
                 if (device.listViewItem != null)
                 {
-                    listViewDevices.Invoke(delegate
+                    TreeWnd?.listViewDevices.Invoke(delegate
                     {
                         //device.listViewItem.SubItems[(int)(SubItem.CpuID)].Text = device.CpuId;
                         device.listViewItem.SubItems[(int)(DeviceSubItem.Address)].Text = device.AddressStr;
@@ -295,7 +341,7 @@ namespace DevConfig
 
                 if (device.Equals(selectedDevice))
                 {
-                    tabSwUpdate.Invoke(delegate
+                    this.Invoke(delegate
                     {
                         tb_address.Text = device.AddressStr;
                         tb_dev_id.Text = device.DevIdStr;
@@ -304,8 +350,8 @@ namespace DevConfig
                         if (btn_update_active)
                         {
                             btn_update_active = false;
-                            tb_address.ForeColor = tb_dev_id.ForeColor = tb_version.ForeColor = tb_cpu_id.ForeColor = Color.Green;
-                            tb_address.Font = tb_dev_id.Font = tb_version.Font = tb_cpu_id.Font = new Font(tb_address.Font, FontStyle.Bold);
+                            label_name.ForeColor = tb_address.ForeColor = tb_dev_id.ForeColor = tb_version.ForeColor = tb_cpu_id.ForeColor = Color.Green;
+                            //tb_address.Font = tb_dev_id.Font = tb_version.Font = tb_cpu_id.Font = new Font(tb_address.Font, FontStyle.Bold);
                         }
                     });
                 }
@@ -331,9 +377,9 @@ namespace DevConfig
                 device.listViewItem.SubItems.Add(device.FwVer);
                 device.listViewItem.SubItems.Add(device.CpuId);
 
-                listViewDevices.Invoke(delegate
+                TreeWnd?.listViewDevices.Invoke(delegate
                 {
-                    listViewDevices.Items.Add(device.listViewItem);
+                    TreeWnd.listViewDevices.Items.Add(device.listViewItem);
 
                     // zkontrolujeme jestli nemame dve zarizeni se stejnou adresou
                     var device_dup = from xxx in DevicesList where xxx.Address == address select xxx;
@@ -365,7 +411,7 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private DeviceType GetDeviceType(uint deviceID)
+        public DeviceType GetDeviceType(uint deviceID)
         {
             Debug.Assert(DevicesTypeList != null);
 
@@ -398,7 +444,7 @@ namespace DevConfig
             {
                 selectedDevice = null;
                 DevicesList.Clear();
-                listViewDevices.Items.Clear();
+                TreeWnd?.listViewDevices.Items.Clear();
 
                 Task.Run(() =>
                 {
@@ -412,7 +458,8 @@ namespace DevConfig
                     if (InputPeriph!.GetType() == typeof(UsbSerialNs.UsbSerial))
                         SearchFrom = SearchTo = 0xFE;
 
-                    Invoke(delegate { 
+                    Invoke(delegate
+                    {
                         Cursor = Cursors.WaitCursor;
                         progressBar.Minimum = SearchFrom;
                         progressBar.Maximum = SearchTo;
@@ -450,8 +497,8 @@ namespace DevConfig
             {
                 Debug.Assert(selectedDevice.listViewItem != null);
                 btn_update_active = true;
-                tb_address.ForeColor = tb_dev_id.ForeColor = tb_version.ForeColor = tb_cpu_id.ForeColor = Color.LightGray;
-                tb_address.Font = tb_dev_id.Font = tb_version.Font = tb_cpu_id.Font = new Font(tb_address.Font, FontStyle.Regular);
+                label_name.ForeColor = tb_address.ForeColor = tb_dev_id.ForeColor = tb_version.ForeColor = tb_cpu_id.ForeColor = Color.LightGray;
+                //tb_address.Font = tb_dev_id.Font = tb_version.Font = tb_cpu_id.Font = new Font(tb_address.Font, FontStyle.Regular);
                 Task.Delay(1000).ContinueWith(task =>
                 {
                     Message message = new() { CMD = Command.Ident, DEST = selectedDevice.Address };
@@ -461,23 +508,20 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void btnBrowse_Click(object sender, EventArgs e)
-        {
-            OpenFileDialog ofd = new OpenFileDialog();
-            ofd.Filter = "Encrypted binary files (*.bin)|*.bin|All files (*.*)|*.*";
-            if (ofd.ShowDialog() == DialogResult.OK)
-            {
-                tbFwFileName.Text = ofd.FileName;
-                if (selectedDeviceType != null)
-                    selectedDeviceType.FirmwarePath = ofd.FileName;
-            }
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
         private void btnUpdate_Click(object sender, EventArgs e)
         {
-            if (File.Exists(tbFwFileName.Text) && selectedDevice != null)
+            if (selectedDevice != null && selectedDeviceType != null)
             {
+                OpenFileDialog ofd = new OpenFileDialog();
+                ofd.Filter = "Encrypted binary files (*.bin)|*.bin|All files (*.*)|*.*";
+                ofd.FileName = selectedDeviceType.FirmwarePath;
+                if (ofd.ShowDialog() != DialogResult.OK)
+                    return;
+                    
+                selectedDeviceType.FirmwarePath = ofd.FileName;
+                Debug.Assert(selectedDeviceType.FirmwarePath != null);
+
+
                 progressBar.Minimum = 0;
                 progressBar.Maximum = 100;
                 progressBar.Value = 0;
@@ -496,7 +540,7 @@ namespace DevConfig
                     Application.DoEvents();
                 }
 
-                System.IO.Stream fBin = System.IO.File.OpenRead(tbFwFileName.Text);
+                System.IO.Stream fBin = System.IO.File.OpenRead(selectedDeviceType.FirmwarePath);
 
                 byte[] buf = new byte[fBin.Length];
 
@@ -581,37 +625,8 @@ namespace DevConfig
             }
         }
 
-        public Device? selectedDevice = null;
-        public DeviceType? selectedDeviceType = null;
-
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void listViewDevices_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            var items = listViewDevices.SelectedItems;
-            if (items != null && items.Count == 1)
-            {
-                var item = items[0];
-                if (item != null)
-                {
-                    selectedDevice = (Device)item.Tag;
-                    Debug.WriteLine($"Selected DevID = {selectedDevice.DevId:X}");
-                    selectedDeviceType = GetDeviceType(selectedDevice.DevId);
-                    tbFwFileName.Text = selectedDeviceType.FirmwarePath;
-                    tb_address.Text = selectedDevice.AddressStr;
-                    tb_dev_id.Text = selectedDevice.DevIdStr;
-                    tb_version.Text = selectedDevice.FwVer;
-                    tb_cpu_id.Text = selectedDevice.CpuId;
-                    label_name.Text = selectedDevice.Name;
-                    tbFwFileName.ForeColor = tb_address.ForeColor = tb_dev_id.ForeColor = tb_version.ForeColor = tb_cpu_id.ForeColor = SystemColors.WindowText;
-                    tb_address.Font = tb_dev_id.Font = tb_version.Font = tb_cpu_id.Font = new Font(tb_address.Font, FontStyle.Regular);
-
-                    SetTabPage();
-                }
-            }
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void SetTabPage()
+        public void SetTabPage()
         {
             Debug.Assert(InputPeriph != null);
 
@@ -718,10 +733,16 @@ namespace DevConfig
 
         private void listViewParameters_SubItemEndEditing(object sender, SubItemEndEditingEventArgs e)
         {
-            if($"{((Parameter)e.Item.Tag).Value}" != e.DisplayText)
+            if ($"{((Parameter)e.Item.Tag).Value}" != e.DisplayText)
                 e.Item.ForeColor = Color.Red;
             else
                 e.Item.ForeColor = SystemColors.WindowText;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        internal void AppendToDebug(string text, bool bNewLine = true, bool bBolt = false, Color? color = null)
+        {
+            DebugWnd?.AppendText(text, bNewLine, bBolt, color);
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////

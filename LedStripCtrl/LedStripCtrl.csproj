@@ -8,7 +8,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DockPanelSuite" Version="3.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\CanDiag\CanDiag\CanDiagSupport\CanDiagSupport.csproj" />
   </ItemGroup>
+
+	<!--ItemGroup>
+  	<Compile Include="LedStripCtrl.cs" />
+  	<Compile Include="LedStripCtrl.Enums.cs">
+		<DependentUpon>LedStripCtrl.cs</DependentUpon>
+  	</Compile>
+  </ItemGroup-->
 
 </Project>

@@ -1,6 +1,6 @@
 ﻿namespace LedStripCtrl
 {
-    public partial class LedStripCtrl
+    partial class LedStripCtrl
     {
         public enum cmds
         {

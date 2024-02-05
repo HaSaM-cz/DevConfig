@@ -30,29 +30,8 @@ namespace DevConfig
         /// </summary>
         private void InitializeComponent()
         {
-            splitContainer1 = new SplitContainer();
-            listViewDevices = new ListView();
-            colAddress = new ColumnHeader();
-            colDevId = new ColumnHeader();
-            colName = new ColumnHeader();
-            colFwVer = new ColumnHeader();
-            colCpuId = new ColumnHeader();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             tabControl = new TabControl();
-            tabSwUpdate = new TabPage();
-            tb_cpu_id = new TextBox();
-            tb_version = new TextBox();
-            tb_dev_id = new TextBox();
-            tb_address = new TextBox();
-            label_name = new Label();
-            label5 = new Label();
-            label4 = new Label();
-            label3 = new Label();
-            label2 = new Label();
-            label1 = new Label();
-            btnBrowse = new Button();
-            btnUpdate = new Button();
-            tbFwFileName = new TextBox();
-            btnIdent = new Button();
             tabRegisters = new TabPage();
             tableLayoutPanel1 = new TableLayoutPanel();
             button1 = new Button();
@@ -66,243 +45,45 @@ namespace DevConfig
             columnHeader12 = new ColumnHeader();
             columnHeader13 = new ColumnHeader();
             textBox1 = new TextBox();
+            dockPanel = new WeifenLuo.WinFormsUI.Docking.DockPanel();
+            vS2015LightTheme1 = new WeifenLuo.WinFormsUI.Docking.VS2015LightTheme();
             menuStrip1 = new MenuStrip();
             connectionToolStripMenuItem = new ToolStripMenuItem();
             openToolStripMenuItem = new ToolStripMenuItem();
             closeToolStripMenuItem = new ToolStripMenuItem();
+            viewToolStripMenuItem = new ToolStripMenuItem();
+            deviceTreeToolStripMenuItem = new ToolStripMenuItem();
             controlToolStripMenuItem = new ToolStripMenuItem();
             refreshListToolStripMenuItem = new ToolStripMenuItem();
             progressBar = new ProgressBar();
-            ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
-            splitContainer1.Panel1.SuspendLayout();
-            splitContainer1.Panel2.SuspendLayout();
-            splitContainer1.SuspendLayout();
+            toolStrip1 = new ToolStrip();
+            label_name = new ToolStripLabel();
+            toolStripStatusLabel9 = new ToolStripStatusLabel();
+            tb_address = new ToolStripStatusLabel();
+            toolStripStatusLabel11 = new ToolStripStatusLabel();
+            tb_dev_id = new ToolStripStatusLabel();
+            toolStripStatusLabel13 = new ToolStripStatusLabel();
+            tb_version = new ToolStripStatusLabel();
+            toolStripStatusLabel15 = new ToolStripStatusLabel();
+            tb_cpu_id = new ToolStripStatusLabel();
+            btnUpdate = new ToolStripButton();
+            btnIdent = new ToolStripButton();
+            debugToolStripMenuItem = new ToolStripMenuItem();
             tabControl.SuspendLayout();
-            tabSwUpdate.SuspendLayout();
             tabRegisters.SuspendLayout();
             tableLayoutPanel1.SuspendLayout();
             menuStrip1.SuspendLayout();
+            toolStrip1.SuspendLayout();
             SuspendLayout();
-            // 
-            // splitContainer1
-            // 
-            splitContainer1.Dock = DockStyle.Fill;
-            splitContainer1.Location = new Point(0, 28);
-            splitContainer1.Name = "splitContainer1";
-            // 
-            // splitContainer1.Panel1
-            // 
-            splitContainer1.Panel1.Controls.Add(listViewDevices);
-            // 
-            // splitContainer1.Panel2
-            // 
-            splitContainer1.Panel2.Controls.Add(tabControl);
-            splitContainer1.Size = new Size(1290, 614);
-            splitContainer1.SplitterDistance = 636;
-            splitContainer1.TabIndex = 0;
-            // 
-            // listViewDevices
-            // 
-            listViewDevices.Columns.AddRange(new ColumnHeader[] { colAddress, colDevId, colName, colFwVer, colCpuId });
-            listViewDevices.Dock = DockStyle.Fill;
-            listViewDevices.FullRowSelect = true;
-            listViewDevices.GridLines = true;
-            listViewDevices.Location = new Point(0, 0);
-            listViewDevices.MultiSelect = false;
-            listViewDevices.Name = "listViewDevices";
-            listViewDevices.Size = new Size(636, 614);
-            listViewDevices.TabIndex = 0;
-            listViewDevices.UseCompatibleStateImageBehavior = false;
-            listViewDevices.View = View.Details;
-            listViewDevices.ColumnWidthChanged += listViewDevices_ColumnWidthChanged;
-            listViewDevices.SelectedIndexChanged += listViewDevices_SelectedIndexChanged;
-            listViewDevices.Resize += listViewDevices_Resize;
-            // 
-            // colAddress
-            // 
-            colAddress.Tag = "";
-            colAddress.Text = "Addr.";
-            // 
-            // colDevId
-            // 
-            colDevId.Text = "Dev. ID";
-            // 
-            // colName
-            // 
-            colName.Text = "Name";
-            colName.Width = 150;
-            // 
-            // colFwVer
-            // 
-            colFwVer.Text = "Ver.";
-            // 
-            // colCpuId
-            // 
-            colCpuId.Text = "CPU ID";
-            colCpuId.Width = 100;
             // 
             // tabControl
             // 
-            tabControl.Controls.Add(tabSwUpdate);
             tabControl.Controls.Add(tabRegisters);
-            tabControl.Dock = DockStyle.Fill;
-            tabControl.Location = new Point(0, 0);
+            tabControl.Location = new Point(12, 535);
             tabControl.Name = "tabControl";
             tabControl.SelectedIndex = 0;
-            tabControl.Size = new Size(650, 614);
+            tabControl.Size = new Size(730, 301);
             tabControl.TabIndex = 0;
-            // 
-            // tabSwUpdate
-            // 
-            tabSwUpdate.Controls.Add(tb_cpu_id);
-            tabSwUpdate.Controls.Add(tb_version);
-            tabSwUpdate.Controls.Add(tb_dev_id);
-            tabSwUpdate.Controls.Add(tb_address);
-            tabSwUpdate.Controls.Add(label_name);
-            tabSwUpdate.Controls.Add(label5);
-            tabSwUpdate.Controls.Add(label4);
-            tabSwUpdate.Controls.Add(label3);
-            tabSwUpdate.Controls.Add(label2);
-            tabSwUpdate.Controls.Add(label1);
-            tabSwUpdate.Controls.Add(btnBrowse);
-            tabSwUpdate.Controls.Add(btnUpdate);
-            tabSwUpdate.Controls.Add(tbFwFileName);
-            tabSwUpdate.Controls.Add(btnIdent);
-            tabSwUpdate.Location = new Point(4, 29);
-            tabSwUpdate.Name = "tabSwUpdate";
-            tabSwUpdate.Padding = new Padding(3);
-            tabSwUpdate.Size = new Size(642, 581);
-            tabSwUpdate.TabIndex = 0;
-            tabSwUpdate.Text = "SW Update";
-            tabSwUpdate.UseVisualStyleBackColor = true;
-            // 
-            // tb_cpu_id
-            // 
-            tb_cpu_id.Location = new Point(254, 84);
-            tb_cpu_id.Name = "tb_cpu_id";
-            tb_cpu_id.ReadOnly = true;
-            tb_cpu_id.Size = new Size(268, 27);
-            tb_cpu_id.TabIndex = 13;
-            // 
-            // tb_version
-            // 
-            tb_version.Location = new Point(166, 84);
-            tb_version.Name = "tb_version";
-            tb_version.ReadOnly = true;
-            tb_version.Size = new Size(82, 27);
-            tb_version.TabIndex = 12;
-            // 
-            // tb_dev_id
-            // 
-            tb_dev_id.Location = new Point(87, 84);
-            tb_dev_id.Name = "tb_dev_id";
-            tb_dev_id.ReadOnly = true;
-            tb_dev_id.Size = new Size(73, 27);
-            tb_dev_id.TabIndex = 11;
-            // 
-            // tb_address
-            // 
-            tb_address.Location = new Point(19, 84);
-            tb_address.Name = "tb_address";
-            tb_address.ReadOnly = true;
-            tb_address.Size = new Size(62, 27);
-            tb_address.TabIndex = 10;
-            // 
-            // label_name
-            // 
-            label_name.AutoSize = true;
-            label_name.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point);
-            label_name.Location = new Point(19, 24);
-            label_name.Name = "label_name";
-            label_name.Size = new Size(66, 28);
-            label_name.TabIndex = 9;
-            label_name.Text = "Name";
-            // 
-            // label5
-            // 
-            label5.AutoSize = true;
-            label5.Location = new Point(254, 61);
-            label5.Name = "label5";
-            label5.Size = new Size(55, 20);
-            label5.TabIndex = 8;
-            label5.Text = "CPU ID";
-            // 
-            // label4
-            // 
-            label4.AutoSize = true;
-            label4.Location = new Point(87, 61);
-            label4.Name = "label4";
-            label4.Size = new Size(73, 20);
-            label4.TabIndex = 7;
-            label4.Text = "Device ID";
-            // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Location = new Point(166, 61);
-            label3.Name = "label3";
-            label3.Size = new Size(82, 20);
-            label3.TabIndex = 6;
-            label3.Text = "Fw. Version";
-            // 
-            // label2
-            // 
-            label2.AutoSize = true;
-            label2.Location = new Point(19, 61);
-            label2.Name = "label2";
-            label2.Size = new Size(62, 20);
-            label2.TabIndex = 5;
-            label2.Text = "Address";
-            // 
-            // label1
-            // 
-            label1.AutoSize = true;
-            label1.Location = new Point(19, 121);
-            label1.Name = "label1";
-            label1.Size = new Size(70, 20);
-            label1.TabIndex = 4;
-            label1.Text = "Firmware";
-            // 
-            // btnBrowse
-            // 
-            btnBrowse.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnBrowse.Location = new Point(494, 143);
-            btnBrowse.Name = "btnBrowse";
-            btnBrowse.Size = new Size(29, 29);
-            btnBrowse.TabIndex = 3;
-            btnBrowse.Text = "...";
-            btnBrowse.UseVisualStyleBackColor = true;
-            btnBrowse.Click += btnBrowse_Click;
-            // 
-            // btnUpdate
-            // 
-            btnUpdate.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnUpdate.Location = new Point(529, 143);
-            btnUpdate.Name = "btnUpdate";
-            btnUpdate.Size = new Size(94, 29);
-            btnUpdate.TabIndex = 2;
-            btnUpdate.Text = "Update";
-            btnUpdate.UseVisualStyleBackColor = true;
-            btnUpdate.Click += btnUpdate_Click;
-            // 
-            // tbFwFileName
-            // 
-            tbFwFileName.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            tbFwFileName.Location = new Point(19, 144);
-            tbFwFileName.Name = "tbFwFileName";
-            tbFwFileName.Size = new Size(469, 27);
-            tbFwFileName.TabIndex = 1;
-            // 
-            // btnIdent
-            // 
-            btnIdent.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnIdent.Location = new Point(529, 84);
-            btnIdent.Name = "btnIdent";
-            btnIdent.Size = new Size(94, 29);
-            btnIdent.TabIndex = 0;
-            btnIdent.Text = "Ident";
-            btnIdent.UseVisualStyleBackColor = true;
-            btnIdent.Click += btnIdent_Click;
             // 
             // tabRegisters
             // 
@@ -312,7 +93,7 @@ namespace DevConfig
             tabRegisters.Name = "tabRegisters";
             tabRegisters.Padding = new Padding(3);
             tabRegisters.RightToLeft = RightToLeft.No;
-            tabRegisters.Size = new Size(642, 581);
+            tabRegisters.Size = new Size(722, 268);
             tabRegisters.TabIndex = 1;
             tabRegisters.Text = "Registers";
             // 
@@ -328,7 +109,7 @@ namespace DevConfig
             tableLayoutPanel1.RowCount = 2;
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 35F));
             tableLayoutPanel1.RowStyles.Add(new RowStyle());
-            tableLayoutPanel1.Size = new Size(636, 575);
+            tableLayoutPanel1.Size = new Size(716, 262);
             tableLayoutPanel1.TabIndex = 3;
             // 
             // button1
@@ -352,7 +133,7 @@ namespace DevConfig
             listViewParameters.Location = new Point(3, 38);
             listViewParameters.MultiSelect = false;
             listViewParameters.Name = "listViewParameters";
-            listViewParameters.Size = new Size(630, 534);
+            listViewParameters.Size = new Size(710, 734);
             listViewParameters.TabIndex = 1;
             listViewParameters.UseCompatibleStateImageBehavior = false;
             listViewParameters.View = View.Details;
@@ -405,13 +186,26 @@ namespace DevConfig
             textBox1.TabIndex = 2;
             textBox1.Visible = false;
             // 
+            // dockPanel
+            // 
+            dockPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            dockPanel.DockBackColor = Color.FromArgb(238, 238, 242);
+            dockPanel.DocumentStyle = WeifenLuo.WinFormsUI.Docking.DocumentStyle.DockingMdi;
+            dockPanel.Location = new Point(0, 63);
+            dockPanel.Name = "dockPanel";
+            dockPanel.Padding = new Padding(6);
+            dockPanel.ShowAutoHideContentOnHover = false;
+            dockPanel.Size = new Size(1119, 466);
+            dockPanel.TabIndex = 2;
+            dockPanel.Theme = vS2015LightTheme1;
+            // 
             // menuStrip1
             // 
             menuStrip1.ImageScalingSize = new Size(20, 20);
-            menuStrip1.Items.AddRange(new ToolStripItem[] { connectionToolStripMenuItem, controlToolStripMenuItem });
+            menuStrip1.Items.AddRange(new ToolStripItem[] { connectionToolStripMenuItem, viewToolStripMenuItem, controlToolStripMenuItem });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
-            menuStrip1.Size = new Size(1290, 28);
+            menuStrip1.Size = new Size(1119, 28);
             menuStrip1.TabIndex = 1;
             menuStrip1.Text = "menuStrip1";
             // 
@@ -425,16 +219,30 @@ namespace DevConfig
             // openToolStripMenuItem
             // 
             openToolStripMenuItem.Name = "openToolStripMenuItem";
-            openToolStripMenuItem.Size = new Size(128, 26);
+            openToolStripMenuItem.Size = new Size(224, 26);
             openToolStripMenuItem.Text = "Open";
             openToolStripMenuItem.Click += Open_Click;
             // 
             // closeToolStripMenuItem
             // 
             closeToolStripMenuItem.Name = "closeToolStripMenuItem";
-            closeToolStripMenuItem.Size = new Size(128, 26);
+            closeToolStripMenuItem.Size = new Size(224, 26);
             closeToolStripMenuItem.Text = "Close";
             closeToolStripMenuItem.Click += Close_Click;
+            // 
+            // viewToolStripMenuItem
+            // 
+            viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { deviceTreeToolStripMenuItem, debugToolStripMenuItem });
+            viewToolStripMenuItem.Name = "viewToolStripMenuItem";
+            viewToolStripMenuItem.Size = new Size(55, 24);
+            viewToolStripMenuItem.Text = "View";
+            // 
+            // deviceTreeToolStripMenuItem
+            // 
+            deviceTreeToolStripMenuItem.Name = "deviceTreeToolStripMenuItem";
+            deviceTreeToolStripMenuItem.Size = new Size(224, 26);
+            deviceTreeToolStripMenuItem.Text = "Device Tree";
+            deviceTreeToolStripMenuItem.Click += DeviceTreeToolStripMenuItem_Click;
             // 
             // controlToolStripMenuItem
             // 
@@ -446,83 +254,166 @@ namespace DevConfig
             // refreshListToolStripMenuItem
             // 
             refreshListToolStripMenuItem.Name = "refreshListToolStripMenuItem";
-            refreshListToolStripMenuItem.Size = new Size(164, 26);
+            refreshListToolStripMenuItem.Size = new Size(224, 26);
             refreshListToolStripMenuItem.Text = "Refresh list";
             refreshListToolStripMenuItem.Click += RefreshList_Click;
             // 
             // progressBar
             // 
             progressBar.Dock = DockStyle.Bottom;
-            progressBar.Location = new Point(0, 642);
+            progressBar.Location = new Point(0, 842);
             progressBar.Name = "progressBar";
-            progressBar.Size = new Size(1290, 14);
+            progressBar.Size = new Size(1119, 14);
             progressBar.Step = 1;
             progressBar.TabIndex = 1;
+            // 
+            // toolStrip1
+            // 
+            toolStrip1.ImageScalingSize = new Size(20, 20);
+            toolStrip1.Items.AddRange(new ToolStripItem[] { label_name, toolStripStatusLabel9, tb_address, toolStripStatusLabel11, tb_dev_id, toolStripStatusLabel13, tb_version, toolStripStatusLabel15, tb_cpu_id, btnUpdate, btnIdent });
+            toolStrip1.Location = new Point(0, 28);
+            toolStrip1.Name = "toolStrip1";
+            toolStrip1.Size = new Size(1119, 32);
+            toolStrip1.TabIndex = 8;
+            toolStrip1.Text = "Name";
+            // 
+            // label_name
+            // 
+            label_name.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point);
+            label_name.Margin = new Padding(0, 2, 10, 2);
+            label_name.Name = "label_name";
+            label_name.Size = new Size(66, 28);
+            label_name.Text = "Name";
+            // 
+            // toolStripStatusLabel9
+            // 
+            toolStripStatusLabel9.Margin = new Padding(0, 4, 0, 0);
+            toolStripStatusLabel9.Name = "toolStripStatusLabel9";
+            toolStripStatusLabel9.Size = new Size(62, 28);
+            toolStripStatusLabel9.Text = "Address";
+            // 
+            // tb_address
+            // 
+            tb_address.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
+            tb_address.Margin = new Padding(0, 2, 10, 2);
+            tb_address.Name = "tb_address";
+            tb_address.Size = new Size(54, 28);
+            tb_address.Text = "0x00";
+            // 
+            // toolStripStatusLabel11
+            // 
+            toolStripStatusLabel11.Margin = new Padding(0, 4, 0, 0);
+            toolStripStatusLabel11.Name = "toolStripStatusLabel11";
+            toolStripStatusLabel11.Size = new Size(73, 28);
+            toolStripStatusLabel11.Text = "Device ID";
+            // 
+            // tb_dev_id
+            // 
+            tb_dev_id.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
+            tb_dev_id.Margin = new Padding(0, 2, 10, 2);
+            tb_dev_id.Name = "tb_dev_id";
+            tb_dev_id.Size = new Size(76, 28);
+            tb_dev_id.Text = "0x0000";
+            // 
+            // toolStripStatusLabel13
+            // 
+            toolStripStatusLabel13.Margin = new Padding(0, 4, 0, 0);
+            toolStripStatusLabel13.Name = "toolStripStatusLabel13";
+            toolStripStatusLabel13.Size = new Size(82, 28);
+            toolStripStatusLabel13.Text = "Fw. Version";
+            // 
+            // tb_version
+            // 
+            tb_version.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
+            tb_version.Margin = new Padding(0, 2, 10, 2);
+            tb_version.Name = "tb_version";
+            tb_version.Size = new Size(38, 28);
+            tb_version.Text = "0.0";
+            // 
+            // toolStripStatusLabel15
+            // 
+            toolStripStatusLabel15.Margin = new Padding(0, 4, 0, 0);
+            toolStripStatusLabel15.Name = "toolStripStatusLabel15";
+            toolStripStatusLabel15.Size = new Size(55, 28);
+            toolStripStatusLabel15.Text = "CPU ID";
+            // 
+            // tb_cpu_id
+            // 
+            tb_cpu_id.Margin = new Padding(0, 4, 10, 0);
+            tb_cpu_id.Name = "tb_cpu_id";
+            tb_cpu_id.Size = new Size(17, 28);
+            tb_cpu_id.Text = "0";
+            // 
+            // btnUpdate
+            // 
+            btnUpdate.Alignment = ToolStripItemAlignment.Right;
+            btnUpdate.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            btnUpdate.Image = (Image)resources.GetObject("btnUpdate.Image");
+            btnUpdate.ImageTransparentColor = Color.Magenta;
+            btnUpdate.Margin = new Padding(0, 2, 5, 2);
+            btnUpdate.Name = "btnUpdate";
+            btnUpdate.Size = new Size(62, 28);
+            btnUpdate.Text = "Update";
+            btnUpdate.Click += btnUpdate_Click;
+            // 
+            // btnIdent
+            // 
+            btnIdent.Alignment = ToolStripItemAlignment.Right;
+            btnIdent.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            btnIdent.Image = (Image)resources.GetObject("btnIdent.Image");
+            btnIdent.ImageTransparentColor = Color.Magenta;
+            btnIdent.Margin = new Padding(0, 2, 5, 2);
+            btnIdent.Name = "btnIdent";
+            btnIdent.Size = new Size(47, 28);
+            btnIdent.Text = "Ident";
+            btnIdent.Click += btnIdent_Click;
+            // 
+            // debugToolStripMenuItem
+            // 
+            debugToolStripMenuItem.Name = "debugToolStripMenuItem";
+            debugToolStripMenuItem.Size = new Size(224, 26);
+            debugToolStripMenuItem.Text = "Debug";
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1290, 656);
-            Controls.Add(splitContainer1);
+            ClientSize = new Size(1119, 856);
+            Controls.Add(toolStrip1);
+            Controls.Add(dockPanel);
+            Controls.Add(tabControl);
             Controls.Add(menuStrip1);
             Controls.Add(progressBar);
             DoubleBuffered = true;
+            IsMdiContainer = true;
             Name = "MainForm";
             Text = "Device Config";
             FormClosing += MainForm_FormClosing;
             Load += MainForm_Load;
-            splitContainer1.Panel1.ResumeLayout(false);
-            splitContainer1.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
-            splitContainer1.ResumeLayout(false);
             tabControl.ResumeLayout(false);
-            tabSwUpdate.ResumeLayout(false);
-            tabSwUpdate.PerformLayout();
             tabRegisters.ResumeLayout(false);
             tabRegisters.PerformLayout();
             tableLayoutPanel1.ResumeLayout(false);
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
+            toolStrip1.ResumeLayout(false);
+            toolStrip1.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
 
         #endregion
-
-        private SplitContainer splitContainer1;
         private TabControl tabControl;
-        private TabPage tabSwUpdate;
         private TabPage tabRegisters;
-        private ListView listViewDevices;
-        private ColumnHeader colName;
-        private ColumnHeader colDevId;
-        private ColumnHeader colFwVer;
         private MenuStrip menuStrip1;
         private ToolStripMenuItem connectionToolStripMenuItem;
         private ToolStripMenuItem openToolStripMenuItem;
         private ToolStripMenuItem closeToolStripMenuItem;
-        private ColumnHeader colCpuId;
         private ToolStripMenuItem controlToolStripMenuItem;
         private ToolStripMenuItem refreshListToolStripMenuItem;
-        private ColumnHeader colAddress;
         private ToolStrip toolStrip1;
         private ToolStrip toolStrip2;
         public ProgressBar progressBar;
-        private TextBox tbFwFileName;
-        private Button btnIdent;
-        private Label label1;
-        private Button btnBrowse;
-        private Button btnUpdate;
-        private Label label2;
-        private Label label_name;
-        private Label label5;
-        private Label label4;
-        private Label label3;
-        private TextBox tb_cpu_id;
-        private TextBox tb_version;
-        private TextBox tb_dev_id;
-        private TextBox tb_address;
         private Button button1;
         private ListViewEx listViewParameters;
         private ColumnHeader columnHeader6;
@@ -535,5 +426,26 @@ namespace DevConfig
         private ColumnHeader columnHeader13;
         private TextBox textBox1;
         private TableLayoutPanel tableLayoutPanel1;
+        private WeifenLuo.WinFormsUI.Docking.DockPanel dockPanel;
+        private WeifenLuo.WinFormsUI.Docking.VS2015LightTheme vS2015LightTheme1;
+        private ToolStripMenuItem viewToolStripMenuItem;
+        private ToolStripMenuItem deviceTreeToolStripMenuItem;
+        private ToolStripStatusLabel toolStripStatusLabel9;
+        private ToolStripStatusLabel toolStripStatusLabel10;
+        private ToolStripStatusLabel toolStripStatusLabel11;
+        private ToolStripStatusLabel toolStripStatusLabel12;
+        private ToolStripStatusLabel toolStripStatusLabel13;
+        private ToolStripStatusLabel toolStripStatusLabel14;
+        private ToolStripStatusLabel toolStripStatusLabel15;
+        private ToolStripButton btnIdent;
+        private ToolStripButton btnUpdate;
+        private ToolStripSplitButton toolStripSplitButton1;
+        private ToolStripDropDownButton toolStripDropDownButton1;
+        public ToolStripStatusLabel tb_version;
+        public ToolStripStatusLabel tb_dev_id;
+        public ToolStripStatusLabel tb_address;
+        public ToolStripStatusLabel tb_cpu_id;
+        public ToolStripLabel label_name;
+        private ToolStripMenuItem debugToolStripMenuItem;
     }
 }

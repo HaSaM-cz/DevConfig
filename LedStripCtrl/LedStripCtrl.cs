@@ -5,7 +5,7 @@ using Message = CanDiagSupport.Message;
 
 namespace LedStripCtrl
 {
-    public partial class LedStripCtrl : UserControl
+    public partial class LedStripCtrl : WeifenLuo.WinFormsUI.Docking.DockContent
     {
         IMainApp MainApp;
         IInputPeriph? InputPeriph;

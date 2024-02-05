@@ -21,6 +21,12 @@ namespace DevConfig
         public IInputPeriph? inputPeriph => MainForm.InputPeriph;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
+        public void AppendToDebug(string text, bool bNewLine = true, bool bBolt = false, Color? color = null)
+        {
+            MainForm.AppendToDebug(text, bNewLine, bBolt, color);
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
         public object? GetProperty(string PropName)
         {
             switch (PropName)
@@ -37,6 +43,7 @@ namespace DevConfig
             switch(PropName)
             {
                 case "AppendToDebug":
+                    MainForm.AppendToDebug((string)PropValue);
                     Debug.WriteLine($"{PropValue}");
                     break;
                 case "ProgressMin":
