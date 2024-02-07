@@ -30,7 +30,7 @@
     <ProjectReference Include="..\..\CanDiag\CanDiag\SshCan\SshCan.csproj" />
     <ProjectReference Include="..\..\CanDiag\CanDiag\TcpTunel\TcpTunel.csproj" />
     <ProjectReference Include="..\..\CanDiag\CanDiag\UsbSerial\UsbSerial.csproj" />
-    <ProjectReference Include="..\LedStripCtrl\LedStripCtrl.csproj" />
+    <ProjectReference Include="..\DevConfigSupp\DevConfigSupp.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,6 +39,7 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Update="SDCardCtrl.cs" />
   </ItemGroup>
 
   <ItemGroup>

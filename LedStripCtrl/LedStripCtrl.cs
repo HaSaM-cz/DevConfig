@@ -1,15 +1,13 @@
 ﻿using CanDiagSupport;
+using DevConfigSupp;
 using RGB_config;
 using System.Diagnostics;
 using Message = CanDiagSupport.Message;
 
 namespace LedStripCtrl
 {
-    public partial class LedStripCtrl : WeifenLuo.WinFormsUI.Docking.DockContent
+    public partial class LedStripCtrl : DockContentEx
     {
-        IMainApp MainApp;
-        IInputPeriph? InputPeriph;
-
         byte MsgFlag = 0;
         int progerss_val = 0;
 
@@ -17,38 +15,24 @@ namespace LedStripCtrl
         cGlobals globals = new cGlobals();
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        public LedStripCtrl(IMainApp main_app)
+        public LedStripCtrl()
         {
             Text = "RGB config";
-            MainApp = main_app;
             InitializeComponent();
-
             cGlobals.MainTreeView = this.treeView1;
             cGlobals.RefreshMainTreeView();
-
-            if (MainApp.inputPeriph != null)
-            {
-                InputPeriph = MainApp.inputPeriph;
-                InputPeriph.MessageReceived += InputPeriph_MessageReceived;
-            }
-
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void Send_command(cmds command, byte dlen, byte[] dta, int timeout = 0)
         {
-            MainApp.SetProperty("ProgressValue", ++progerss_val);
+            MainApp?.SetProperty("ProgressValue", ++progerss_val);
             Message message = new Message();
             message.DEST = (byte)(MainApp.GetProperty("SelectedDeviceCanID") ?? 0);
             message.CMD = (byte)command;
             message.Data = dta.Take(dlen).ToList();
+            SendMessage(message);
 
-            if (MainApp.inputPeriph != null && !MainApp.inputPeriph.Equals(InputPeriph))
-            {
-                InputPeriph = MainApp.inputPeriph;
-                InputPeriph.MessageReceived += InputPeriph_MessageReceived;
-            }
-            MainApp.inputPeriph?.SendMsg(message);
             if (timeout > 0)
             {
                 Task.Delay(timeout);
@@ -57,7 +41,7 @@ namespace LedStripCtrl
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void InputPeriph_MessageReceived(Message msg)
+        protected override void InputPeriph_MessageReceived(Message msg)
         {
             switch ((cmds)msg.CMD)
             {
@@ -108,7 +92,7 @@ namespace LedStripCtrl
             Send_command(cmds.teCmd_WritePar, dlen, dta);
             time = 20;
 
-            byte destination = (byte)MainApp.GetProperty("SelectedDeviceCanID");// cGlobals.StringToByte(txtAddress.Text);
+            byte destination = (byte)(MainApp.GetProperty("SelectedDeviceCanID") ?? (byte)255);
             if (destination == 255)
             {
                 time = 10;

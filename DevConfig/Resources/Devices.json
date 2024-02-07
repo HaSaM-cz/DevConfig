@@ -78,6 +78,8 @@
   { "DevId": "0x00001465", "Name": "VMSB32 – Fill Sensor"},
   { "DevId": "0x00001467", "Name": "VMRB – Reader"},
   { "DevId": "0x00004970", "Name": "GNRL IO Lite"},
-  { "DevId": "0x00003520", "Name": "GNRL IO HMI"},
+  { "DevId": "0x00003520", "Name": "GNRL IO HMI" },
+  { "DevId": "0x00002340", "Name": "INFO TERM SMPL"},
+  { "DevId": "0x0000117A", "Name": "Sens Integr I2C" },
   { "DevId": "0x4B41524F", "Name": "KARO - Bracelet app."}
 ]

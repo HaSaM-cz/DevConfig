@@ -1,6 +1,6 @@
 ﻿namespace DevConfig
 {
-    partial class TreeForm
+    partial class DeviceForm
     {
         /// <summary>
         /// Required designer variable.

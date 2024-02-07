@@ -13,6 +13,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LedStripCtrl", "LedStripCtr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UsbSerial", "..\CanDiag\CanDiag\UsbSerial\UsbSerial.csproj", "{C82641D8-9320-43B9-AB9D-D626C8D807DF}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DevConfigSupp", "DevConfigSupp\DevConfigSupp.csproj", "{6B2DCB8D-DF73-4DCB-99FD-1A48BEDEAB57}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TSControl", "TSControl\TSControl.csproj", "{9B5EA07E-ED01-4334-B17D-4BEE421FAE21}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +43,14 @@ Global
 		{C82641D8-9320-43B9-AB9D-D626C8D807DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C82641D8-9320-43B9-AB9D-D626C8D807DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C82641D8-9320-43B9-AB9D-D626C8D807DF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B2DCB8D-DF73-4DCB-99FD-1A48BEDEAB57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B2DCB8D-DF73-4DCB-99FD-1A48BEDEAB57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B2DCB8D-DF73-4DCB-99FD-1A48BEDEAB57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B2DCB8D-DF73-4DCB-99FD-1A48BEDEAB57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B5EA07E-ED01-4334-B17D-4BEE421FAE21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B5EA07E-ED01-4334-B17D-4BEE421FAE21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B5EA07E-ED01-4334-B17D-4BEE421FAE21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B5EA07E-ED01-4334-B17D-4BEE421FAE21}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

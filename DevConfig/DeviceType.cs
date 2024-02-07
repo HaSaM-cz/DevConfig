@@ -1,5 +1,6 @@
 ﻿using DevConfig.Utils;
 using Newtonsoft.Json;
+using WeifenLuo.WinFormsUI.Docking;
 
 namespace DevConfig
 {
@@ -11,7 +12,6 @@ namespace DevConfig
         public string? FirmwarePath; 
         public string Name = string.Empty;
         public string? UserControl;
-        //public bool UserControlLoaded = false;
-        public List<UserControl> UserControls = new();
+        public List<DockContent> UserControlsList = new();
     }
 }

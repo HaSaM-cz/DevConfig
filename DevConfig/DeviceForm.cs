@@ -11,10 +11,10 @@ using System.Windows.Forms;
 
 namespace DevConfig
 {
-    public partial class TreeForm : WeifenLuo.WinFormsUI.Docking.DockContent
+    public partial class DeviceForm : WeifenLuo.WinFormsUI.Docking.DockContent
     {
         MainForm MainForm;
-        public TreeForm(MainForm mainForm)
+        public DeviceForm(MainForm mainForm)
         {
             InitializeComponent();
             MainForm = mainForm;

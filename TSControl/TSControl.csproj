@@ -12,11 +12,4 @@
     <ProjectReference Include="..\DevConfigSupp\DevConfigSupp.csproj" />
   </ItemGroup>
 
-	<!--ItemGroup>
-  	<Compile Include="LedStripCtrl.cs" />
-  	<Compile Include="LedStripCtrl.Enums.cs">
-		<DependentUpon>LedStripCtrl.cs</DependentUpon>
-  	</Compile>
-  </ItemGroup-->
-
 </Project>

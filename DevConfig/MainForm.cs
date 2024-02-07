@@ -2,30 +2,14 @@ using CanDiag;
 using CanDiagSupport;
 using DevConfig.Properties;
 using DevConfig.Utils;
+using DevConfigSupp;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Text;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data.Common;
 using System.Diagnostics;
-using System.DirectoryServices;
-using System.Net;
 using System.Reflection;
-using System.Reflection.Metadata;
 using System.Runtime.Loader;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Xml;
-using System.Windows.Forms;
-using UsbSerialNs;
 using WeifenLuo.WinFormsUI.Docking;
-using static CanDiag.TraceExtension;
-using static System.Windows.Forms.AxHost;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 using Message = CanDiagSupport.Message;
 
 namespace DevConfig
@@ -34,7 +18,7 @@ namespace DevConfig
     {
         const byte SrcAddress = 0x08;
 
-        TreeForm? TreeWnd = null;
+        DeviceForm? TreeWnd = null;
         DebugForm? DebugWnd = null;
 
         public Device? selectedDevice = null;
@@ -75,8 +59,11 @@ namespace DevConfig
                 DeviceType t = GetDeviceType(devid);
                 t.FirmwarePath = BLPaths[i + 1];
             }
-            TreeWnd = CreateChild<TreeForm>("Device");
+            TreeWnd = CreateChild<DeviceForm>("Device");
+            TreeWnd!.DockState = DockState.DockLeft;
             DebugWnd = CreateChild<DebugForm>("Debug");
+            DebugWnd!.DockState = DockState.DockLeft;
+            //DebugWnd!.DockTo(this.dockPanel.Panes[1], DockStyle.Bottom, 0);
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -94,6 +81,19 @@ namespace DevConfig
             }*/
         }
 
+        private void sDCardForSelectedDeviceToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (selectedDevice != null)
+            {
+
+
+
+                SDCardCtrl? a = CreateChild<SDCardCtrl>($"SD Card ({selectedDevice.Address})");
+                //TreeWnd!.DockState = DockState.DockLeft;
+
+            }
+        }
+
         ///////////////////////////////////////////////////////////////////////////////////////////
         T? CreateChild<T>(string Text)
         {
@@ -105,15 +105,12 @@ namespace DevConfig
                 content.Text = Text;
                 content.Tag = Text;
                 content.MdiParent = this;
-                content.FormClosed += ((object? sender, FormClosedEventArgs e) => TreeWnd = null);
+                content.FormClosed += ((object? sender, FormClosedEventArgs e) => obj = null);
                 content.MdiParent = this;
                 content.Show(this.dockPanel, DockState.Document);
             }
             return (T?)obj;
         }
-
-
-
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -168,14 +165,14 @@ namespace DevConfig
         private void Close_Click(object sender, EventArgs e)
         {
             // TODO pripadne zavreni karet zarizeni
-            foreach (var x in tabControl.TabPages)
+            /*foreach (var x in tabControl.TabPages)
             {
                 if (((TabPage)x).Controls[0].GetType().BaseType == typeof(UserControl))
                 {
                     Debug.WriteLine($"{((TabPage)x).Controls[0].GetType().BaseType}");
                     Debug.WriteLine($"{((TabPage)x).Controls[0]}");
                 }
-            }
+            }*/
 
 
 
@@ -216,23 +213,23 @@ namespace DevConfig
             {
                 MessageFlag = message.Data[0];
             }
-            else if (message.CMD == Command.ParamRead)
+            /*else if (message.CMD == Command.ParamRead)
             {
                 if (message.Data[0] == 0)
                     NewParamData(MessageFlag, message.Data.ToArray());
                 MessageReceived.Set();
-            }
-            else if (message.CMD == Command.GetListParam)
+            }*/
+            /*else if (message.CMD == Command.GetListParam)
             {
                 MessageFlag = message.Data[0];
                 if (MessageFlag == 0)
                     NewParamItem(message.Data.ToArray());
                 MessageReceived.Set();
-            }
+            }*/
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void NewParamData(byte ParamID, byte[] bytes)
+        /*private void NewParamData(byte ParamID, byte[] bytes)
         {
             try
             {
@@ -263,10 +260,10 @@ namespace DevConfig
             {
 
             }
-        }
+        }*/
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        enum type { UInt8, UInt16, UInt32, String, IpAddr };
+        /*enum type { UInt8, UInt16, UInt32, String, IpAddr };
 
         class Parameter
         {
@@ -312,7 +309,7 @@ namespace DevConfig
                 var item = listViewParameters.Items.Add(parameter.listViewItem);
                 item.Tag = parameter;
             });
-        }
+        }*/
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void NewIdent(uint deviceID, byte address, string fwVer, string cpuId, byte state)
@@ -517,7 +514,7 @@ namespace DevConfig
                 ofd.FileName = selectedDeviceType.FirmwarePath;
                 if (ofd.ShowDialog() != DialogResult.OK)
                     return;
-                    
+
                 selectedDeviceType.FirmwarePath = ofd.FileName;
                 Debug.Assert(selectedDeviceType.FirmwarePath != null);
 
@@ -547,7 +544,7 @@ namespace DevConfig
                 fBin.Read(buf, 0, buf.Length);
                 fBin.Close();
 
-                //AppendToDebug("Uploading FW");
+                AppendToDebug("Uploading FW");
 
                 //Disable_DEBUG_msg = 1;
 
@@ -611,7 +608,7 @@ namespace DevConfig
 
                 //Disable_DEBUG_msg = 0;
 
-                //AppendToDebug("Uploading FW DONE");
+                AppendToDebug("Uploading FW DONE");
 
                 //Task.Delay(200).Wait(); //Thread.Sleep(200);
                 //Application.DoEvents();
@@ -630,15 +627,19 @@ namespace DevConfig
         {
             Debug.Assert(InputPeriph != null);
 
-            var ucs = from x in DevicesTypeList where x.UserControls.Count > 0 select x;
+            var ucs = from x in DevicesTypeList where x.UserControlsList.Count > 0 select x;
             foreach (var item in ucs)
-                item.UserControls.ForEach(x => { x.Enabled = false; });
+                item.UserControlsList.ForEach(x => { x.Enabled = false; });
 
             if (selectedDeviceType != null && File.Exists(selectedDeviceType.UserControl))
             {
-                if (selectedDeviceType.UserControls.Count != 0)
+                if (selectedDeviceType.UserControlsList.Count != 0)
                 {
-                    selectedDeviceType.UserControls.ForEach(x => { x.Enabled = true; });
+                    selectedDeviceType.UserControlsList.ForEach(x =>
+                    {
+                        x.Enabled = true;
+                        x.BringToFront();
+                    });
                 }
                 else
                 {
@@ -647,15 +648,24 @@ namespace DevConfig
                     var types = assembly.GetTypes();
                     foreach (Type type in types)
                     {
-                        if (type.IsVisible && type.IsAssignableTo(typeof(UserControl)))
+                        if (type.IsVisible && type.IsAssignableTo(typeof(DockContent)))
                         {
-                            UserControl? control = (UserControl?)Activator.CreateInstance(type, new object[] { MainApp });
+                            DockContentEx? control = (DockContentEx?)Activator.CreateInstance(type);
                             if (control != null)
                             {
-                                TabPage tp = new TabPage(control.Text) { Text = control.Text, Name = control.Name };
-                                tp.Controls.Add(control);
-                                tabControl.TabPages.Add(tp);
-                                selectedDeviceType.UserControls.Add(control);
+                                control.SetMainApp(MainApp);
+
+                                control.MdiParent = this;
+                                control.FormClosed += ((object? sender, FormClosedEventArgs e) =>
+                                {
+                                    var ucs = from x in DevicesTypeList where x.UserControlsList.Contains(control) select x;
+                                    foreach (var x in ucs)
+                                        x.UserControlsList.Remove(control);
+                                    control = null;
+                                });
+                                control.MdiParent = this;
+                                control.Show(this.dockPanel, DockState.Document);
+                                selectedDeviceType.UserControlsList.Add(control);
                             }
                         }
                     }
@@ -664,7 +674,7 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void button1_Click(object sender, EventArgs e)
+        /*private void button1_Click(object sender, EventArgs e)
         {
             if (InputPeriph != null && selectedDevice != null)
             {
@@ -712,7 +722,7 @@ namespace DevConfig
                     });
                 });
             }
-        }
+        }*/
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void listViewParameters_Resize(object sender, EventArgs e)
@@ -725,7 +735,7 @@ namespace DevConfig
             //listViewParameters.AutoResizeColumn(listViewParameters.Columns.Count - 2, ColumnHeaderAutoResizeStyle.ColumnContent);
         }
 
-        private void listViewParameters_SubItemClicked(object sender, SubItemEventArgs e)
+        /*private void listViewParameters_SubItemClicked(object sender, SubItemEventArgs e)
         {
             if (e.SubItem == (int)ParmaterSubItem.Value && !((Parameter)e.Item.Tag).ReadOnly)
                 listViewParameters.StartEditing(textBox1, e.Item, e.SubItem);
@@ -737,13 +747,14 @@ namespace DevConfig
                 e.Item.ForeColor = Color.Red;
             else
                 e.Item.ForeColor = SystemColors.WindowText;
-        }
+        }*/
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         internal void AppendToDebug(string text, bool bNewLine = true, bool bBolt = false, Color? color = null)
         {
             DebugWnd?.AppendText(text, bNewLine, bBolt, color);
         }
+
 
         ///////////////////////////////////////////////////////////////////////////////////////////
     }
