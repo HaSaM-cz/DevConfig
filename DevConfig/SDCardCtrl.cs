@@ -14,21 +14,22 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Linq;
+using System.Xml.XPath;
 using WeifenLuo.WinFormsUI.Docking;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 using Message = CanDiagSupport.Message;
 
 /*
-query ECmd_SD_GetList, subcmd = 1, directory, 0x00
-resp  ECmd_SD_GetList, subcmd = 1, error(1), filecount(2)
-resp  ECmd_SD_GetList, subcmd = 2, error(1), idx(2), attr(1), size(4), time(4), filename(zbytek)
+--- List File ---
+query ECmd_SD_Command, subcmd = 1, directory, 0x00
+resp  ECmd_SD_Command, subcmd = 1, error(1), filecount(2)
+resp  ECmd_SD_Command, subcmd = 2, error(1), idx(2), attr(1), size(4), time(4), filename(zbytek)
 ...
 
-
-
-query ECmd_SD_GetList, subcmd = 2, file_nr
-resp  ECmd_SD_GetList, subcmd = 2, error, time, filename
+--- Get File ---
+query ECmd_SD_Command, subcmd = 10, file_nr
+resp  ECmd_SD_Command, subcmd = 11, error(1), file_pos(4), data(zbytek)
 */
 
 namespace DevConfig
@@ -43,14 +44,12 @@ namespace DevConfig
         const byte FX_DIRECTORY = 0x10;
         const byte FX_ARCHIVE = 0x20;
 
-        const byte ECmd_SD_UploadFile = 0x60;
-        const byte ECmd_SD_UploadFileStart = 0x61;
-        const byte ECmd_SD_DownloadFile = 0x62;
-        const byte ECmd_SD_DownloadFileStart = 0x63;
-        const byte ECmd_SD_DownloadFileOtherData = 0x64;
-        const byte ECmd_SD_GetList = 0x65;
-        const byte ECmd_SD_DeleteFile = 0x66;
-        const byte ECmd_StringCommand = 0xA0;
+        const byte ECmd_SD_Command = 0x65;
+
+        const byte SD_SubCmd_ListFiles = 0x01;
+        const byte SD_SubCmd_FileItemName = 0x02;
+        const byte SD_SubCmd_GetFile = 0x10;
+        const byte SD_SubCmd_GetFilePart = 0x11;
 
         byte address;
         MainForm MainForm;
@@ -63,7 +62,7 @@ namespace DevConfig
             MainForm.InputPeriph.MessageReceived += InputPeriph_MessageReceived;
             InitializeComponent();
             lvwColumnSorter = new ListViewColumnSorter();
-            this.listView1.ListViewItemSorter = lvwColumnSorter;
+            listView1.ListViewItemSorter = lvwColumnSorter;
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -91,7 +90,19 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void btn_Get_Click(object sender, EventArgs e)
         {
+            if(listView1.SelectedItems.Count > 0)
+            {
+                List<string> file_paths = new();
 
+                foreach(ListViewItem item in listView1.SelectedItems)
+                {
+                    string path = MakePath((TreeNode)item.Tag);
+                    path = Path.Combine(path, item.Text).Replace('\\', '/');
+                    file_paths.Add(path);
+                }
+
+                CopyToLocal(file_paths);
+            }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -141,7 +152,8 @@ namespace DevConfig
                             new ListViewItem.ListViewSubItem(item, $"{f.Size}")
                         };
                         item.SubItems.AddRange(subItems);
-                        listView1.Items.Add(item);
+                        var new_item = listView1.Items.Add(item);
+                        new_item.Tag = e.Node;
                     }
                 }
                 listView1.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
@@ -174,10 +186,6 @@ namespace DevConfig
 
             // Perform the sort with these new sort options.
             this.listView1.Sort();
-        //}
-        //ListViewColumnSorter sorter = GetListViewSorter(e.Column);
-        //    listView1.ListViewItemSorter = sorter;
-        //    listView1.Sort();
         }
 
         
@@ -185,37 +193,66 @@ namespace DevConfig
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         ushort files_to_read = 0;
+        uint file_len_req = 0;
+        uint file_len_act = 0;
         List<Message> messages = new List<Message>();
         readonly ManualResetEvent sync_obj = new(false);
+        Dictionary<uint, List<byte>> file_bytes_map = new();
 
         private void InputPeriph_MessageReceived(Message msg)
         {
             if (msg.SRC == address)
             {
-                switch (msg.CMD)
+                if (msg.CMD == ECmd_SD_Command)
                 {
-                    case ECmd_SD_GetList:
-                        switch (msg.Data[0])
-                        {
-                            case 0x01: // FileInfo count
-                                byte error = msg.Data[1];
-                                if (error == 0)
-                                {
-                                    files_to_read = BitConverter.ToUInt16(msg.Data.Skip(2).Take(2).Reverse().ToArray());
-                                    Debug.WriteLine($"Get {files_to_read} files");
-                                }
-                                else
-                                {
-                                    Debug.WriteLine($"Error {error}");
-                                }
-                                break;
-                            case 0x02: // FileInfo file
-                                lock (messages)
-                                    messages.Add(msg);
-                                sync_obj.Set();
-                                break;
-                        }
-                        break;
+                    if (msg.Data.Count < 2)
+                    {
+                        Debug.WriteLine($"Bad msg length {msg.Data.Count} bytes");
+                        return;
+                    }
+                    switch (msg.Data[0])
+                    {
+                        case SD_SubCmd_ListFiles:
+                            byte error = msg.Data[1];
+                            if (error == 0)
+                            {
+                                files_to_read = BitConverter.ToUInt16(msg.Data.Skip(2).Take(2).Reverse().ToArray());
+                                Debug.WriteLine($"Get {files_to_read} files");
+                            }
+                            else
+                            {
+                                Debug.WriteLine($"Error {error}");
+                            }
+                            break;
+                        case SD_SubCmd_FileItemName: // FileInfo file
+                            lock (messages)
+                                messages.Add(msg);
+                            sync_obj.Set();
+                            break;
+                        case SD_SubCmd_GetFile:
+                            if(msg.Data[1] != 0)
+                            {
+                                Debug.WriteLine($"Error {msg.Data[1]}");
+                                return;
+                            }
+                            file_bytes_map.Clear();
+                            file_len_req = BitConverter.ToUInt32(msg.Data.Skip(2).Take(4).Reverse().ToArray());
+                            file_len_act = 0;
+                            Debug.WriteLine($"Get file with {file_len_req} bytes");
+                            sync_obj.Set();
+                            break;
+                        case SD_SubCmd_GetFilePart:
+                            if (msg.Data[1] != 0)
+                            {
+                                Debug.WriteLine($"Error {msg.Data[1]}");
+                                return;
+                            }
+                            uint file_pos = BitConverter.ToUInt32(msg.Data.Skip(2).Take(4).Reverse().ToArray());
+                            file_bytes_map[file_pos] = msg.Data.Skip(6).ToList();
+                            file_len_act += (uint)(msg.Data.Count - 6);
+                            sync_obj.Set();
+                            break;
+                    }
                 }
             }
         }
@@ -296,22 +333,23 @@ namespace DevConfig
 
             list.Reverse();
 
-            return Path.Combine(list.ToArray());
+            return Path.Combine(list.ToArray()).Replace('\\', '/');
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private List<FileInfo> GetFileList(string directory)
         {
+            Cursor = Cursors.WaitCursor;
             Debug.WriteLine($"GetFileList({directory})");
 
-            List<FileInfo> fileinfolist = new List<FileInfo>();
+            List<FileInfo> fileinfolist = new ();
 
             Message message = new Message();
             message.DEST = address;
-            message.CMD = ECmd_SD_GetList;
+            message.CMD = ECmd_SD_Command;
 
             message.Data = new List<byte>();
-            message.Data.Add(0x01);
+            message.Data.Add(SD_SubCmd_ListFiles);
             message.Data.AddRange(Encoding.ASCII.GetBytes(directory + "\0"));
 
             lock (messages)
@@ -372,6 +410,7 @@ namespace DevConfig
                 }
             }
 
+            Cursor = Cursors.Default;
             return fileinfolist;
 
         }
@@ -394,25 +433,129 @@ namespace DevConfig
         private void listView1_ItemDrag(object sender, ItemDragEventArgs e)
         {
             // TODO DRAG
-            //DoDragDrop(e.Item, DragDropEffects.Copy);
 
-            var files = new string[1];
-            files[0] = "full path to temporary file";
+            List<string> file_paths = new();
+
+            foreach (ListViewItem item in listView1.SelectedItems)
+            {
+                string path = MakePath((TreeNode)item.Tag);
+                path = Path.Combine(path, item.Text).Replace('\\', '/');
+                file_paths.Add(path);
+            }
+
             var dob = new DataObject();
-            dob.SetData(DataFormats.FileDrop, files);
+            dob.SetData(DataFormats.FileDrop, file_paths);
             DoDragDrop(dob, DragDropEffects.Copy);
-
+            
         }
 
         #endregion
 
         #region GET FILE
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void CopyToLocal(List<string> file_paths, string? dest_path = null)
+        {
+            // Dotaz na adresar.
+            if (dest_path == null)
+            {
+                FolderBrowserDialog dialog = new FolderBrowserDialog();
+                if (dialog.ShowDialog() != DialogResult.OK)
+                    return;
+                dest_path = dialog.SelectedPath;
+            }
+
+            // Kontrola jmen.
+            List<string> exist_files = new List<string>();
+            foreach (string file_path in file_paths)
+            {
+                string local_file_path = Path.Combine(dest_path, Path.GetFileName(file_path));
+                if (File.Exists(local_file_path))
+                    exist_files.Add(local_file_path);
+            }
+
+            if (exist_files.Count > 0)
+            {
+                if (MessageBox.Show("One or more files exist in the destination directory.\nDo you want to replace the files?", "DevConfig - File exists", 
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                    return;
+
+                exist_files.ForEach(file_path => { File.Delete(file_path); });
+            }
+
+            // Kopirujeme
+            Cursor = Cursors.WaitCursor;
+            foreach (string file_path in file_paths)
+            {
+                string local_file_path = Path.Combine(@"D:\Vymaz", Path.GetFileName(file_path));
+                File.Delete(local_file_path);
+                CopyToLocal(file_path, local_file_path);
+                Debug.WriteLine($"{file_path}");
+            }
+            MainForm.progressBar.Value = 0;
+            Cursor = Cursors.Default;
+        }
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void CopyToLocal(string file_path, string local_file_path)
+        {
+            Message message = new Message();
+            message.DEST = address;
+            message.CMD = ECmd_SD_Command;
+
+            message.Data = new List<byte>();
+            message.Data.Add(SD_SubCmd_GetFile);
+            message.Data.AddRange(Encoding.ASCII.GetBytes(file_path + "\0"));
+
+            sync_obj.Reset();
+            MainForm.InputPeriph?.SendMsg(message);
+
+            MainForm.progressBar.Minimum = 0;
+            MainForm.progressBar.Maximum = 1;
+            MainForm.progressBar.Value = MainForm.progressBar.Minimum;
+
+            while (true)
+            {
+                if(sync_obj.WaitOne(1000))
+                {
+                    sync_obj.Reset();
+                    if (file_len_req == file_len_act)
+                    {
+                        using FileStream file = File.OpenWrite(local_file_path);
+
+                        foreach (uint pos in file_bytes_map.Keys)
+                        {
+                            file.Position = pos;
+                            file.Write(file_bytes_map[pos].ToArray());
+                        }
+
+                        file.Close();
+                        file.Dispose();
+
+                        file_bytes_map.Clear();
+                        break; 
+                    }
+                    else
+                    {
+                        if(MainForm.progressBar.Maximum < file_len_req)
+                            MainForm.progressBar.Maximum = (int)file_len_req;
+                        if (file_len_act > MainForm.progressBar.Maximum)
+                            MainForm.progressBar.Value = MainForm.progressBar.Maximum;
+                        else
+                            MainForm.progressBar.Value = (int)file_len_act;
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine("Error Timeout");
+                    break; 
+                }
+            }
+        }
         #endregion
 
         ///////////////////////////////////////////////////////////////////////////////////////////
     }
 
-    class DirInfo
+        class DirInfo
     {
         public string Name;
         public List<FileInfo>? FileInfoList = null;

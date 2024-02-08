@@ -85,18 +85,18 @@ namespace DevConfig
         {
             if (selectedDevice != null)
             {
-
-
-
                 SDCardCtrl? a = CreateChild<SDCardCtrl>($"SD Card ({selectedDevice.Address})");
-                //TreeWnd!.DockState = DockState.DockLeft;
-
+            }
+            else
+            {
+                // TODO
             }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         T? CreateChild<T>(string Text)
         {
+            Cursor = Cursors.WaitCursor;
             Type t = typeof(T);
             var obj = Activator.CreateInstance(t, new object[] { this });
             if (obj != null)
@@ -109,6 +109,7 @@ namespace DevConfig
                 content.MdiParent = this;
                 content.Show(this.dockPanel, DockState.Document);
             }
+            Cursor = Cursors.Default;
             return (T?)obj;
         }
 

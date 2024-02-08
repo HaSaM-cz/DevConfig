@@ -40,6 +40,7 @@ namespace DevConfig
             viewToolStripMenuItem = new ToolStripMenuItem();
             deviceTreeToolStripMenuItem = new ToolStripMenuItem();
             debugToolStripMenuItem = new ToolStripMenuItem();
+            sDCardForSelectedDeviceToolStripMenuItem = new ToolStripMenuItem();
             controlToolStripMenuItem = new ToolStripMenuItem();
             refreshListToolStripMenuItem = new ToolStripMenuItem();
             progressBar = new ProgressBar();
@@ -55,7 +56,7 @@ namespace DevConfig
             tb_cpu_id = new ToolStripStatusLabel();
             btnUpdate = new ToolStripButton();
             btnIdent = new ToolStripButton();
-            sDCardForSelectedDeviceToolStripMenuItem = new ToolStripMenuItem();
+            deviceToolStripMenuItem = new ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             toolStrip1.SuspendLayout();
             SuspendLayout();
@@ -93,20 +94,20 @@ namespace DevConfig
             // openToolStripMenuItem
             // 
             openToolStripMenuItem.Name = "openToolStripMenuItem";
-            openToolStripMenuItem.Size = new Size(224, 26);
+            openToolStripMenuItem.Size = new Size(128, 26);
             openToolStripMenuItem.Text = "Open";
             openToolStripMenuItem.Click += Open_Click;
             // 
             // closeToolStripMenuItem
             // 
             closeToolStripMenuItem.Name = "closeToolStripMenuItem";
-            closeToolStripMenuItem.Size = new Size(224, 26);
+            closeToolStripMenuItem.Size = new Size(128, 26);
             closeToolStripMenuItem.Text = "Close";
             closeToolStripMenuItem.Click += Close_Click;
             // 
             // viewToolStripMenuItem
             // 
-            viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { deviceTreeToolStripMenuItem, debugToolStripMenuItem, sDCardForSelectedDeviceToolStripMenuItem });
+            viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { deviceTreeToolStripMenuItem, debugToolStripMenuItem, sDCardForSelectedDeviceToolStripMenuItem, deviceToolStripMenuItem });
             viewToolStripMenuItem.Name = "viewToolStripMenuItem";
             viewToolStripMenuItem.Size = new Size(55, 24);
             viewToolStripMenuItem.Text = "View";
@@ -124,6 +125,13 @@ namespace DevConfig
             debugToolStripMenuItem.Size = new Size(275, 26);
             debugToolStripMenuItem.Text = "Debug";
             // 
+            // sDCardForSelectedDeviceToolStripMenuItem
+            // 
+            sDCardForSelectedDeviceToolStripMenuItem.Name = "sDCardForSelectedDeviceToolStripMenuItem";
+            sDCardForSelectedDeviceToolStripMenuItem.Size = new Size(275, 26);
+            sDCardForSelectedDeviceToolStripMenuItem.Text = "SD Card for selected device";
+            sDCardForSelectedDeviceToolStripMenuItem.Click += sDCardForSelectedDeviceToolStripMenuItem_Click;
+            // 
             // controlToolStripMenuItem
             // 
             controlToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { refreshListToolStripMenuItem });
@@ -134,7 +142,7 @@ namespace DevConfig
             // refreshListToolStripMenuItem
             // 
             refreshListToolStripMenuItem.Name = "refreshListToolStripMenuItem";
-            refreshListToolStripMenuItem.Size = new Size(224, 26);
+            refreshListToolStripMenuItem.Size = new Size(164, 26);
             refreshListToolStripMenuItem.Text = "Refresh list";
             refreshListToolStripMenuItem.Click += RefreshList_Click;
             // 
@@ -248,12 +256,11 @@ namespace DevConfig
             btnIdent.Text = "Ident";
             btnIdent.Click += btnIdent_Click;
             // 
-            // sDCardForSelectedDeviceToolStripMenuItem
+            // deviceToolStripMenuItem
             // 
-            sDCardForSelectedDeviceToolStripMenuItem.Name = "sDCardForSelectedDeviceToolStripMenuItem";
-            sDCardForSelectedDeviceToolStripMenuItem.Size = new Size(275, 26);
-            sDCardForSelectedDeviceToolStripMenuItem.Text = "SD Card for selected device";
-            sDCardForSelectedDeviceToolStripMenuItem.Click += sDCardForSelectedDeviceToolStripMenuItem_Click;
+            deviceToolStripMenuItem.Name = "deviceToolStripMenuItem";
+            deviceToolStripMenuItem.Size = new Size(275, 26);
+            deviceToolStripMenuItem.Text = "Device";
             // 
             // MainForm
             // 
@@ -310,5 +317,6 @@ namespace DevConfig
         public ToolStripLabel label_name;
         private ToolStripMenuItem debugToolStripMenuItem;
         private ToolStripMenuItem sDCardForSelectedDeviceToolStripMenuItem;
+        private ToolStripMenuItem deviceToolStripMenuItem;
     }
 }
