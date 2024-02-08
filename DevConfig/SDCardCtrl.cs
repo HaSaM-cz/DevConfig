@@ -9,6 +9,8 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Security.Cryptography;
 using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,18 +21,6 @@ using WeifenLuo.WinFormsUI.Docking;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 using Message = CanDiagSupport.Message;
-
-/*
---- List File ---
-query ECmd_SD_Command, subcmd = 1, directory, 0x00
-resp  ECmd_SD_Command, subcmd = 1, error(1), filecount(2)
-resp  ECmd_SD_Command, subcmd = 2, error(1), idx(2), attr(1), size(4), time(4), filename(zbytek)
-...
-
---- Get File ---
-query ECmd_SD_Command, subcmd = 10, file_nr
-resp  ECmd_SD_Command, subcmd = 11, error(1), file_pos(4), data(zbytek)
-*/
 
 namespace DevConfig
 {
@@ -50,6 +40,10 @@ namespace DevConfig
         const byte SD_SubCmd_FileItemName = 0x02;
         const byte SD_SubCmd_GetFile = 0x10;
         const byte SD_SubCmd_GetFilePart = 0x11;
+        const byte SD_SubCmd_PutFile = 0x20;
+        const byte SD_SubCmd_PutFilePart = 0x21;
+        const byte SD_SubCmd_DelFile = 0x05;
+        const byte SD_SubCmd_RenFile = 0x06;
 
         byte address;
         MainForm MainForm;
@@ -84,7 +78,7 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void btn_Add_Click(object sender, EventArgs e)
         {
-
+            AddFiles();
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -106,9 +100,21 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void btn_Del_Click(object sender, EventArgs e)
+        private void btn_DelFile_Click(object sender, EventArgs e)
         {
+            if (listView1.SelectedItems.Count > 0)
+            {
+                List<string> file_paths = new();
 
+                foreach (ListViewItem item in listView1.SelectedItems)
+                {
+                    string path = MakePath((TreeNode)item.Tag);
+                    path = Path.Combine(path, item.Text).Replace('\\', '/');
+                    file_paths.Add(path);
+                }
+                
+                DeleteFiles(file_paths);
+            }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -229,6 +235,8 @@ namespace DevConfig
                                 messages.Add(msg);
                             sync_obj.Set();
                             break;
+
+                        // response zahájení čtení souboru
                         case SD_SubCmd_GetFile:
                             if(msg.Data[1] != 0)
                             {
@@ -241,6 +249,8 @@ namespace DevConfig
                             Debug.WriteLine($"Get file with {file_len_req} bytes");
                             sync_obj.Set();
                             break;
+
+                        // response čtení další čísti souboru
                         case SD_SubCmd_GetFilePart:
                             if (msg.Data[1] != 0)
                             {
@@ -250,6 +260,18 @@ namespace DevConfig
                             uint file_pos = BitConverter.ToUInt32(msg.Data.Skip(2).Take(4).Reverse().ToArray());
                             file_bytes_map[file_pos] = msg.Data.Skip(6).ToList();
                             file_len_act += (uint)(msg.Data.Count - 6);
+                            sync_obj.Set();
+                            break;
+
+                        // response zahájení odeslání souboru
+                        case SD_SubCmd_PutFile:
+                        // response odeslání další čísti souboru
+                        case SD_SubCmd_PutFilePart:
+                            if (msg.Data[1] != 0)
+                            {
+                                Debug.WriteLine($"Error {msg.Data[1]}");
+                                return;
+                            }
                             sync_obj.Set();
                             break;
                     }
@@ -486,10 +508,10 @@ namespace DevConfig
             Cursor = Cursors.WaitCursor;
             foreach (string file_path in file_paths)
             {
-                string local_file_path = Path.Combine(@"D:\Vymaz", Path.GetFileName(file_path));
+                string local_file_path = Path.Combine(dest_path, Path.GetFileName(file_path));
                 File.Delete(local_file_path);
                 CopyToLocal(file_path, local_file_path);
-                Debug.WriteLine($"{file_path}");
+                Debug.WriteLine($"{file_path}\n   {local_file_path}");
             }
             MainForm.progressBar.Value = 0;
             Cursor = Cursors.Default;
@@ -553,9 +575,116 @@ namespace DevConfig
         #endregion
 
         ///////////////////////////////////////////////////////////////////////////////////////////
+        #region ADD FILE
+        private void AddFiles()
+        {
+            OpenFileDialog fileDialog = new OpenFileDialog();
+            fileDialog.Filter = "All files (*.*)|*.*";
+            if (fileDialog.ShowDialog() == DialogResult.OK)
+            {
+                foreach(string file_name in fileDialog.FileNames)
+                {
+                    AddFile(file_name);
+                }
+            }
+        }
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void AddFile(string src_file_name)
+        {
+            string dest_file_name = Path.Combine(MakePath(treeView1.SelectedNode), Path.GetFileName(src_file_name)).Replace('\\', '/');
+
+            System.IO.FileInfo fileInfo = new System.IO.FileInfo(src_file_name);
+
+            Debug.WriteLine($"Copy from {src_file_name}, len = {fileInfo.Length:X}");
+            Debug.WriteLine($"     to   {dest_file_name}");
+
+            // fileInfo.LastWriteTime je localtime ale potrebujeme pro prevod utc time
+            var dt = DateTime.SpecifyKind(fileInfo.LastWriteTime, DateTimeKind.Utc); 
+            var dateTimeOffset = new DateTimeOffset(dt);
+            var timestamp = dateTimeOffset.ToUnixTimeSeconds();
+
+            Message message = new Message();
+            message.DEST = address;
+            message.CMD = ECmd_SD_Command;
+
+            message.Data = new List<byte>();
+            message.Data.Add(SD_SubCmd_PutFile);
+            message.Data.AddRange(((uint)fileInfo.Length).GetBytes().Reverse());    // size
+            message.Data.AddRange(((uint)timestamp).GetBytes().Reverse());          // timestamp
+            Debug.WriteLine($"timestamp = {timestamp}({timestamp:X8})");
+
+            message.Data.AddRange(Encoding.ASCII.GetBytes(dest_file_name + "\0"));  // file name
+
+            sync_obj.Reset();
+            MainForm.InputPeriph?.SendMsg(message);
+
+
+            using FileStream fs = File.OpenRead(src_file_name);
+
+            byte[] data = new byte[240];
+           
+
+            while (true)
+            {
+                if (sync_obj.WaitOne(2000))
+                {
+
+                    message.Data = new byte[] { SD_SubCmd_PutFilePart }.ToList();
+                    int readed = fs.Read(data, 0, 240);
+                    if (readed <= 0)
+                        break;
+                    message.Data.AddRange(data.Take(readed));
+
+                    sync_obj.Reset();
+                    MainForm.InputPeriph?.SendMsg(message);
+
+                }
+                else
+                {
+                    // timeout
+                    break;
+                }
+            }
+            
+
+
+        }
+
+        #endregion
+
+        #region DEL FILE
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void DeleteFiles(List<string> file_paths)
+        {
+            Cursor = Cursors.WaitCursor;
+            foreach (string file_path in file_paths)
+            {
+                Debug.WriteLine($"DleteFile {file_path}");
+                DeleteFile(file_path);
+            }
+            MainForm.progressBar.Value = 0;
+            Cursor = Cursors.Default;
+
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void DeleteFile(string file_path)
+        {
+            Message message = new Message();
+            message.DEST = address;
+            message.CMD = ECmd_SD_Command;
+
+            message.Data = new List<byte>();
+            message.Data.Add(SD_SubCmd_DelFile);
+            message.Data.AddRange(Encoding.ASCII.GetBytes(file_path + "\0"));
+
+            MainForm.InputPeriph?.SendMsg(message);
+
+        }
+        #endregion
     }
 
-        class DirInfo
+    class DirInfo
     {
         public string Name;
         public List<FileInfo>? FileInfoList = null;

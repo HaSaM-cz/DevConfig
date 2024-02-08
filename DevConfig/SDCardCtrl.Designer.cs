@@ -39,10 +39,11 @@
             columnHeader3 = new ColumnHeader();
             columnHeader2 = new ColumnHeader();
             splitContainer1 = new SplitContainer();
-            btn_Add = new Button();
-            btn_Get = new Button();
-            btn_Del = new Button();
-            button1 = new Button();
+            btn_AddFile = new Button();
+            btn_GetFile = new Button();
+            btn_DelFile = new Button();
+            btn_AddDir = new Button();
+            btn_DelDir = new Button();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -132,54 +133,67 @@
             splitContainer1.SplitterDistance = 242;
             splitContainer1.TabIndex = 3;
             // 
-            // btn_Add
+            // btn_AddFile
             // 
-            btn_Add.Location = new Point(212, 12);
-            btn_Add.Name = "btn_Add";
-            btn_Add.Size = new Size(94, 29);
-            btn_Add.TabIndex = 4;
-            btn_Add.Text = "Add File";
-            btn_Add.UseVisualStyleBackColor = true;
-            btn_Add.Click += btn_Add_Click;
+            btn_AddFile.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btn_AddFile.Location = new Point(494, 12);
+            btn_AddFile.Name = "btn_AddFile";
+            btn_AddFile.Size = new Size(94, 29);
+            btn_AddFile.TabIndex = 4;
+            btn_AddFile.Text = "Add File";
+            btn_AddFile.UseVisualStyleBackColor = true;
+            btn_AddFile.Click += btn_Add_Click;
             // 
-            // btn_Get
+            // btn_GetFile
             // 
-            btn_Get.Location = new Point(312, 12);
-            btn_Get.Name = "btn_Get";
-            btn_Get.Size = new Size(94, 29);
-            btn_Get.TabIndex = 5;
-            btn_Get.Text = "Get";
-            btn_Get.UseVisualStyleBackColor = true;
-            btn_Get.Click += btn_Get_Click;
+            btn_GetFile.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btn_GetFile.Location = new Point(594, 12);
+            btn_GetFile.Name = "btn_GetFile";
+            btn_GetFile.Size = new Size(94, 29);
+            btn_GetFile.TabIndex = 5;
+            btn_GetFile.Text = "Get File";
+            btn_GetFile.UseVisualStyleBackColor = true;
+            btn_GetFile.Click += btn_Get_Click;
             // 
-            // btn_Del
+            // btn_DelFile
             // 
-            btn_Del.Location = new Point(412, 12);
-            btn_Del.Name = "btn_Del";
-            btn_Del.Size = new Size(94, 29);
-            btn_Del.TabIndex = 6;
-            btn_Del.Text = "Del";
-            btn_Del.UseVisualStyleBackColor = true;
-            btn_Del.Click += btn_Del_Click;
+            btn_DelFile.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btn_DelFile.Location = new Point(694, 12);
+            btn_DelFile.Name = "btn_DelFile";
+            btn_DelFile.Size = new Size(94, 29);
+            btn_DelFile.TabIndex = 6;
+            btn_DelFile.Text = "Del File";
+            btn_DelFile.UseVisualStyleBackColor = true;
+            btn_DelFile.Click += btn_DelFile_Click;
             // 
-            // button1
+            // btn_AddDir
             // 
-            button1.Location = new Point(112, 12);
-            button1.Name = "button1";
-            button1.Size = new Size(94, 29);
-            button1.TabIndex = 7;
-            button1.Text = "Add Dir.";
-            button1.UseVisualStyleBackColor = true;
+            btn_AddDir.Location = new Point(112, 12);
+            btn_AddDir.Name = "btn_AddDir";
+            btn_AddDir.Size = new Size(94, 29);
+            btn_AddDir.TabIndex = 7;
+            btn_AddDir.Text = "Add Dir.";
+            btn_AddDir.UseVisualStyleBackColor = true;
+            // 
+            // btn_DelDir
+            // 
+            btn_DelDir.Location = new Point(212, 12);
+            btn_DelDir.Name = "btn_DelDir";
+            btn_DelDir.Size = new Size(94, 29);
+            btn_DelDir.TabIndex = 8;
+            btn_DelDir.Text = "Del Dir.";
+            btn_DelDir.UseVisualStyleBackColor = true;
             // 
             // SDCardCtrl
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
-            Controls.Add(button1);
-            Controls.Add(btn_Del);
-            Controls.Add(btn_Get);
-            Controls.Add(btn_Add);
+            Controls.Add(btn_DelDir);
+            Controls.Add(btn_AddDir);
+            Controls.Add(btn_DelFile);
+            Controls.Add(btn_GetFile);
+            Controls.Add(btn_AddFile);
             Controls.Add(splitContainer1);
             Controls.Add(btn_List);
             Name = "SDCardCtrl";
@@ -200,11 +214,12 @@
         private SplitContainer splitContainer1;
         private ColumnHeader columnHeader1;
         private ColumnHeader columnHeader3;
-        private Button btn_Add;
-        private Button btn_Get;
-        private Button btn_Del;
+        private Button btn_AddFile;
+        private Button btn_GetFile;
+        private Button btn_DelFile;
         private ImageList imageList;
-        private Button button1;
+        private Button btn_AddDir;
         private ColumnHeader columnHeader2;
+        private Button btn_DelDir;
     }
 }
