@@ -30,7 +30,6 @@ namespace DevConfig
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             dockPanel = new WeifenLuo.WinFormsUI.Docking.DockPanel();
             vS2015LightTheme1 = new WeifenLuo.WinFormsUI.Docking.VS2015LightTheme();
             menuStrip1 = new MenuStrip();
@@ -41,6 +40,7 @@ namespace DevConfig
             deviceTreeToolStripMenuItem = new ToolStripMenuItem();
             debugToolStripMenuItem = new ToolStripMenuItem();
             sDCardForSelectedDeviceToolStripMenuItem = new ToolStripMenuItem();
+            deviceToolStripMenuItem = new ToolStripMenuItem();
             controlToolStripMenuItem = new ToolStripMenuItem();
             refreshListToolStripMenuItem = new ToolStripMenuItem();
             progressBar = new ProgressBar();
@@ -52,11 +52,6 @@ namespace DevConfig
             tb_dev_id = new ToolStripStatusLabel();
             toolStripStatusLabel13 = new ToolStripStatusLabel();
             tb_version = new ToolStripStatusLabel();
-            toolStripStatusLabel15 = new ToolStripStatusLabel();
-            tb_cpu_id = new ToolStripStatusLabel();
-            btnUpdate = new ToolStripButton();
-            btnIdent = new ToolStripButton();
-            deviceToolStripMenuItem = new ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             toolStrip1.SuspendLayout();
             SuspendLayout();
@@ -132,6 +127,12 @@ namespace DevConfig
             sDCardForSelectedDeviceToolStripMenuItem.Text = "SD Card for selected device";
             sDCardForSelectedDeviceToolStripMenuItem.Click += sDCardForSelectedDeviceToolStripMenuItem_Click;
             // 
+            // deviceToolStripMenuItem
+            // 
+            deviceToolStripMenuItem.Name = "deviceToolStripMenuItem";
+            deviceToolStripMenuItem.Size = new Size(275, 26);
+            deviceToolStripMenuItem.Text = "Device";
+            // 
             // controlToolStripMenuItem
             // 
             controlToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { refreshListToolStripMenuItem });
@@ -158,7 +159,7 @@ namespace DevConfig
             // toolStrip1
             // 
             toolStrip1.ImageScalingSize = new Size(20, 20);
-            toolStrip1.Items.AddRange(new ToolStripItem[] { label_name, toolStripStatusLabel9, tb_address, toolStripStatusLabel11, tb_dev_id, toolStripStatusLabel13, tb_version, toolStripStatusLabel15, tb_cpu_id, btnUpdate, btnIdent });
+            toolStrip1.Items.AddRange(new ToolStripItem[] { label_name, toolStripStatusLabel9, tb_address, toolStripStatusLabel11, tb_dev_id, toolStripStatusLabel13, tb_version });
             toolStrip1.Location = new Point(0, 28);
             toolStrip1.Name = "toolStrip1";
             toolStrip1.Size = new Size(1119, 32);
@@ -218,50 +219,6 @@ namespace DevConfig
             tb_version.Size = new Size(38, 28);
             tb_version.Text = "0.0";
             // 
-            // toolStripStatusLabel15
-            // 
-            toolStripStatusLabel15.Margin = new Padding(0, 4, 0, 0);
-            toolStripStatusLabel15.Name = "toolStripStatusLabel15";
-            toolStripStatusLabel15.Size = new Size(55, 28);
-            toolStripStatusLabel15.Text = "CPU ID";
-            // 
-            // tb_cpu_id
-            // 
-            tb_cpu_id.Margin = new Padding(0, 4, 10, 0);
-            tb_cpu_id.Name = "tb_cpu_id";
-            tb_cpu_id.Size = new Size(17, 28);
-            tb_cpu_id.Text = "0";
-            // 
-            // btnUpdate
-            // 
-            btnUpdate.Alignment = ToolStripItemAlignment.Right;
-            btnUpdate.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            btnUpdate.Image = (Image)resources.GetObject("btnUpdate.Image");
-            btnUpdate.ImageTransparentColor = Color.Magenta;
-            btnUpdate.Margin = new Padding(0, 2, 5, 2);
-            btnUpdate.Name = "btnUpdate";
-            btnUpdate.Size = new Size(62, 28);
-            btnUpdate.Text = "Update";
-            btnUpdate.Click += btnUpdate_Click;
-            // 
-            // btnIdent
-            // 
-            btnIdent.Alignment = ToolStripItemAlignment.Right;
-            btnIdent.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            btnIdent.Image = (Image)resources.GetObject("btnIdent.Image");
-            btnIdent.ImageTransparentColor = Color.Magenta;
-            btnIdent.Margin = new Padding(0, 2, 5, 2);
-            btnIdent.Name = "btnIdent";
-            btnIdent.Size = new Size(47, 28);
-            btnIdent.Text = "Ident";
-            btnIdent.Click += btnIdent_Click;
-            // 
-            // deviceToolStripMenuItem
-            // 
-            deviceToolStripMenuItem.Name = "deviceToolStripMenuItem";
-            deviceToolStripMenuItem.Size = new Size(275, 26);
-            deviceToolStripMenuItem.Text = "Device";
-            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -305,15 +262,11 @@ namespace DevConfig
         private ToolStripStatusLabel toolStripStatusLabel12;
         private ToolStripStatusLabel toolStripStatusLabel13;
         private ToolStripStatusLabel toolStripStatusLabel14;
-        private ToolStripStatusLabel toolStripStatusLabel15;
-        private ToolStripButton btnIdent;
-        private ToolStripButton btnUpdate;
         private ToolStripSplitButton toolStripSplitButton1;
         private ToolStripDropDownButton toolStripDropDownButton1;
         public ToolStripStatusLabel tb_version;
         public ToolStripStatusLabel tb_dev_id;
         public ToolStripStatusLabel tb_address;
-        public ToolStripStatusLabel tb_cpu_id;
         public ToolStripLabel label_name;
         private ToolStripMenuItem debugToolStripMenuItem;
         private ToolStripMenuItem sDCardForSelectedDeviceToolStripMenuItem;

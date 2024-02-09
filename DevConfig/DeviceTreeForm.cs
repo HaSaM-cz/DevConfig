@@ -27,19 +27,7 @@ namespace DevConfig
             {
                 var item = items[0];
                 if (item != null)
-                {
-                    MainForm.selectedDevice = (Device)item.Tag;
-                    MainForm.selectedDeviceType = MainForm.GetDeviceType(MainForm.selectedDevice.DevId);
-                    Debug.WriteLine($"Selected DevID = {MainForm.selectedDevice.DevId:X}");
-                    MainForm.tb_address.Text = MainForm.selectedDevice.AddressStr;
-                    MainForm.tb_dev_id.Text = MainForm.selectedDevice.DevIdStr;
-                    MainForm.tb_version.Text = MainForm.selectedDevice.FwVer;
-                    MainForm.tb_cpu_id.Text = MainForm.selectedDevice.CpuId;
-                    MainForm.label_name.Text = MainForm.selectedDevice.Name;
-                    MainForm.label_name.ForeColor = MainForm.tb_address.ForeColor = MainForm.tb_dev_id.ForeColor = MainForm.tb_version.ForeColor = MainForm.tb_cpu_id.ForeColor = SystemColors.WindowText;
-
-                    MainForm.SetTabPage();
-                }
+                    MainForm.SelectItem((Device)item.Tag);
             }
         }
     }

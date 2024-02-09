@@ -28,7 +28,7 @@ namespace DevConfig
         enum DeviceSubItem { Address, DevID, Name, Version, CpuID };
         enum ParmaterSubItem { ParamID, Type, RO, Min, Max, Index, Name, Value };
 
-        bool btn_update_active = false;
+        public bool btn_update_active = false;
         ManualResetEvent MessageReceived = new(false);
         byte MessageFlag = 0xFF;
 
@@ -157,6 +157,10 @@ namespace DevConfig
 
                 InputPeriph = connectForm.InputPeriph;
                 InputPeriph!.MessageReceived += InputPeriph_MessageReceived;
+                //TreeWnd?.NewInputPeriph();
+                //DebugWnd?.NewInputPeriph();
+                DeviceWnd?.NewInputPeriph();
+
                 RefreshDeviceList();
 
                 // TODO pripadne nastaveni noveho InputPeriph pro zarizeni
@@ -212,10 +216,10 @@ namespace DevConfig
 
                 NewIdent(deviceID, address, fwVer, cpuId, state);
             }
-            else if ((message.CMD == Command.StartUpdate || message.CMD == Command.UpdateMsg) && message.Data.Count == 1)
+            /*else if ((message.CMD == Command.StartUpdate || message.CMD == Command.UpdateMsg) && message.Data.Count == 1)
             {
                 MessageFlag = message.Data[0];
-            }
+            }*/
             /*else if (message.CMD == Command.ParamRead)
             {
                 if (message.Data[0] == 0)
@@ -346,12 +350,16 @@ namespace DevConfig
                         tb_address.Text = device.AddressStr;
                         tb_dev_id.Text = device.DevIdStr;
                         tb_version.Text = device.FwVer;
-                        tb_cpu_id.Text = device.CpuId;
                         if (btn_update_active)
                         {
                             btn_update_active = false;
-                            label_name.ForeColor = tb_address.ForeColor = tb_dev_id.ForeColor = tb_version.ForeColor = tb_cpu_id.ForeColor = Color.Green;
-                            //tb_address.Font = tb_dev_id.Font = tb_version.Font = tb_cpu_id.Font = new Font(tb_address.Font, FontStyle.Bold);
+                            label_name.ForeColor = tb_address.ForeColor = tb_dev_id.ForeColor = tb_version.ForeColor = Color.Green;
+                            if (DeviceWnd != null)
+                            {
+                                DeviceWnd.label_name.ForeColor = 
+                                DeviceWnd.tb_address.ForeColor = DeviceWnd.tb_dev_id.ForeColor = DeviceWnd.tb_version.ForeColor = DeviceWnd.tb_cpu_id.ForeColor = Color.Green;
+                                DeviceWnd.tb_address.Font      = DeviceWnd.tb_dev_id.Font      = DeviceWnd.tb_version.Font      = DeviceWnd.tb_cpu_id.Font = new Font(DeviceWnd.tb_address.Font, FontStyle.Bold);
+                            }
                         }
                     });
                 }
@@ -491,24 +499,7 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void btnIdent_Click(object sender, EventArgs e)
-        {
-            if (selectedDevice != null)
-            {
-                Debug.Assert(selectedDevice.listViewItem != null);
-                btn_update_active = true;
-                label_name.ForeColor = tb_address.ForeColor = tb_dev_id.ForeColor = tb_version.ForeColor = tb_cpu_id.ForeColor = Color.LightGray;
-                //tb_address.Font = tb_dev_id.Font = tb_version.Font = tb_cpu_id.Font = new Font(tb_address.Font, FontStyle.Regular);
-                Task.Delay(1000).ContinueWith(task =>
-                {
-                    Message message = new() { CMD = Command.Ident, DEST = selectedDevice.Address };
-                    InputPeriph?.SendMsg(message);
-                });
-            }
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void btnUpdate_Click(object sender, EventArgs e)
+        /*private void btnUpdate_Click(object sender, EventArgs e)
         {
             if (selectedDevice != null && selectedDeviceType != null)
             {
@@ -565,7 +556,7 @@ namespace DevConfig
                     {
                         if (MessageFlag != 0x00)
                         {
-                            MessageBox.Show((/*(UpdateEnum)*/MessageFlag).ToString());
+                            MessageBox.Show((MessageFlag).ToString());
                             //pgbUpdate.Visible = false;
                             //Disable_DEBUG_msg = 0;
                             return;
@@ -624,7 +615,7 @@ namespace DevConfig
 
             }
         }
-
+        */
         ///////////////////////////////////////////////////////////////////////////////////////////
         public void SetTabPage()
         {
@@ -756,6 +747,33 @@ namespace DevConfig
         internal void AppendToDebug(string text, bool bNewLine = true, bool bBolt = false, Color? color = null)
         {
             DebugWnd?.AppendText(text, bNewLine, bBolt, color);
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        internal void SelectItem(Device tag)
+        {
+            selectedDevice = tag;
+            selectedDeviceType = GetDeviceType(selectedDevice.DevId);
+            Debug.WriteLine($"Selected DevID = {selectedDevice.DevId:X}");
+            tb_address.Text = selectedDevice.AddressStr;
+            tb_dev_id.Text = selectedDevice.DevIdStr;
+            tb_version.Text = selectedDevice.FwVer;
+            label_name.Text = selectedDevice.Name;
+            label_name.ForeColor = tb_address.ForeColor = tb_dev_id.ForeColor = tb_version.ForeColor = SystemColors.WindowText;
+
+            SetTabPage();
+
+            if(DeviceWnd != null)
+            {
+                DeviceWnd.label_name.Text = selectedDevice.Name;
+                DeviceWnd.tbFwFileName.Text = selectedDeviceType.FirmwarePath;
+                DeviceWnd.tb_address.Text = selectedDevice.AddressStr;
+                DeviceWnd.tb_cpu_id.Text = selectedDevice.CpuId;
+                DeviceWnd.tb_dev_id.Text= selectedDevice.DevIdStr;
+                DeviceWnd.tb_version.Text = selectedDevice.FwVer;
+                DeviceWnd.label_name.ForeColor = DeviceWnd.tb_address.ForeColor = DeviceWnd.tb_dev_id.ForeColor = DeviceWnd.tb_version.ForeColor = DeviceWnd.tb_cpu_id.ForeColor = SystemColors.WindowText;
+                DeviceWnd.tb_address.Font = DeviceWnd.tb_dev_id.Font = DeviceWnd.tb_version.Font = DeviceWnd.tb_cpu_id.Font = new Font(DeviceWnd.tb_address.Font, FontStyle.Regular);
+            }
         }
 
 

@@ -50,7 +50,7 @@
             tbFwFileName.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             tbFwFileName.Location = new Point(19, 144);
             tbFwFileName.Name = "tbFwFileName";
-            tbFwFileName.Size = new Size(469, 27);
+            tbFwFileName.Size = new Size(572, 27);
             tbFwFileName.TabIndex = 1;
             // 
             // tb_dev_id
@@ -143,7 +143,7 @@
             // btnBrowse
             // 
             btnBrowse.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnBrowse.Location = new Point(494, 143);
+            btnBrowse.Location = new Point(597, 143);
             btnBrowse.Name = "btnBrowse";
             btnBrowse.Size = new Size(29, 29);
             btnBrowse.TabIndex = 3;
@@ -154,7 +154,7 @@
             // btnUpdate
             // 
             btnUpdate.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnUpdate.Location = new Point(529, 143);
+            btnUpdate.Location = new Point(632, 143);
             btnUpdate.Name = "btnUpdate";
             btnUpdate.Size = new Size(94, 29);
             btnUpdate.TabIndex = 2;
@@ -165,7 +165,7 @@
             // btnIdent
             // 
             btnIdent.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnIdent.Location = new Point(529, 84);
+            btnIdent.Location = new Point(529, 83);
             btnIdent.Name = "btnIdent";
             btnIdent.Size = new Size(94, 29);
             btnIdent.TabIndex = 0;
@@ -176,7 +176,7 @@
             // btnReset
             // 
             btnReset.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnReset.Location = new Point(529, 202);
+            btnReset.Location = new Point(629, 83);
             btnReset.Name = "btnReset";
             btnReset.Size = new Size(94, 29);
             btnReset.TabIndex = 14;
@@ -188,7 +188,7 @@
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(632, 567);
+            ClientSize = new Size(735, 567);
             Controls.Add(btnReset);
             Controls.Add(btnIdent);
             Controls.Add(btnUpdate);
@@ -211,21 +211,20 @@
         }
 
         #endregion
-
-        private TextBox tbFwFileName;
-        private TextBox tb_dev_id;
-        private TextBox tb_cpu_id;
-        private TextBox tb_version;
-        private TextBox tb_address;
         private Label label1;
         private Label label2;
         private Label label3;
         private Label label4;
         private Label label5;
-        private Label label_name;
         private Button btnBrowse;
         private Button btnUpdate;
         private Button btnIdent;
         private Button btnReset;
+        public TextBox tbFwFileName;
+        public TextBox tb_dev_id;
+        public TextBox tb_cpu_id;
+        public TextBox tb_version;
+        public TextBox tb_address;
+        public Label label_name;
     }
 }
