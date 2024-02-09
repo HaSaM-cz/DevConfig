@@ -44,6 +44,8 @@
             btn_DelFile = new Button();
             btn_AddDir = new Button();
             btn_DelDir = new Button();
+            textBox1 = new TextBox();
+            btn_RenDir = new Button();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -83,7 +85,7 @@
             // 
             btn_List.Location = new Point(12, 12);
             btn_List.Name = "btn_List";
-            btn_List.Size = new Size(94, 29);
+            btn_List.Size = new Size(73, 29);
             btn_List.TabIndex = 1;
             btn_List.Text = "List";
             btn_List.UseVisualStyleBackColor = true;
@@ -91,14 +93,19 @@
             // 
             // listView1
             // 
+            listView1.AllowColumnReorder = true;
             listView1.Columns.AddRange(new ColumnHeader[] { columnHeader1, columnHeader3, columnHeader2 });
             listView1.Dock = DockStyle.Fill;
+            listView1.DoubleClickActivation = false;
+            listView1.FullRowSelect = true;
             listView1.Location = new Point(0, 0);
             listView1.Name = "listView1";
             listView1.Size = new Size(554, 403);
             listView1.TabIndex = 2;
             listView1.UseCompatibleStateImageBehavior = false;
             listView1.View = View.Details;
+            listView1.SubItemClicked += listView1_SubItemClicked;
+            listView1.SubItemEndEditing += listView1_SubItemEndEditing;
             listView1.ColumnClick += listView1_ColumnClick;
             listView1.ItemDrag += listView1_ItemDrag;
             listView1.DragDrop += listView1_DragDrop;
@@ -168,27 +175,50 @@
             // 
             // btn_AddDir
             // 
-            btn_AddDir.Location = new Point(112, 12);
+            btn_AddDir.Location = new Point(91, 12);
             btn_AddDir.Name = "btn_AddDir";
-            btn_AddDir.Size = new Size(94, 29);
+            btn_AddDir.Size = new Size(73, 29);
             btn_AddDir.TabIndex = 7;
             btn_AddDir.Text = "Add Dir.";
             btn_AddDir.UseVisualStyleBackColor = true;
+            btn_AddDir.Click += btn_AddDir_Click;
             // 
             // btn_DelDir
             // 
-            btn_DelDir.Location = new Point(212, 12);
+            btn_DelDir.Location = new Point(170, 12);
             btn_DelDir.Name = "btn_DelDir";
-            btn_DelDir.Size = new Size(94, 29);
+            btn_DelDir.Size = new Size(73, 29);
             btn_DelDir.TabIndex = 8;
             btn_DelDir.Text = "Del Dir.";
             btn_DelDir.UseVisualStyleBackColor = true;
+            btn_DelDir.Click += btn_DelDir_Click;
+            // 
+            // textBox1
+            // 
+            textBox1.Location = new Point(370, 12);
+            textBox1.Name = "textBox1";
+            textBox1.Size = new Size(118, 27);
+            textBox1.TabIndex = 9;
+            textBox1.Text = "for list view edit";
+            textBox1.Visible = false;
+            // 
+            // btn_RenDir
+            // 
+            btn_RenDir.Location = new Point(249, 12);
+            btn_RenDir.Name = "btn_RenDir";
+            btn_RenDir.Size = new Size(73, 29);
+            btn_RenDir.TabIndex = 10;
+            btn_RenDir.Text = "Ren. Dir.";
+            btn_RenDir.UseVisualStyleBackColor = true;
+            btn_RenDir.Click += btn_RenDir_Click;
             // 
             // SDCardCtrl
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
+            Controls.Add(btn_RenDir);
+            Controls.Add(textBox1);
             Controls.Add(btn_DelDir);
             Controls.Add(btn_AddDir);
             Controls.Add(btn_DelFile);
@@ -204,6 +234,7 @@
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
@@ -221,5 +252,7 @@
         private Button btn_AddDir;
         private ColumnHeader columnHeader2;
         private Button btn_DelDir;
+        private TextBox textBox1;
+        private Button btn_RenDir;
     }
 }

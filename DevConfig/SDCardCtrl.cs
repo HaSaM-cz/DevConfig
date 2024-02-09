@@ -1,24 +1,11 @@
 ﻿using CanDiagSupport;
 using DevConfig.Utils;
-using DevConfigSupp;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography;
-using System.Security.Policy;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using System.Xml.Linq;
-using System.Xml.XPath;
 using WeifenLuo.WinFormsUI.Docking;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 using Message = CanDiagSupport.Message;
 
@@ -42,10 +29,61 @@ namespace DevConfig
         const byte SD_SubCmd_GetFilePart = 0x11;
         const byte SD_SubCmd_PutFile = 0x20;
         const byte SD_SubCmd_PutFilePart = 0x21;
-        const byte SD_SubCmd_DelFile = 0x05;
-        const byte SD_SubCmd_RenFile = 0x06;
+        const byte SD_SubCmd_DelFile = 0x30;
+        const byte SD_SubCmd_RenFileOld = 0x31;
+        const byte SD_SubCmd_RenFileNew = 0x32;
+        const byte SD_SubCmd_DelDir = 0x40;
+        const byte SD_SubCmd_RenDirOld = 0x41;
+        const byte SD_SubCmd_RenDirNew = 0x42;
+        const byte SD_SubCmd_CreateDir = 0x43;
 
-        byte address;
+        enum FxError
+        {
+            FX_SUCCESS = 0xF1,
+            FX_BOOT_ERROR = 0xF0,
+            FX_MEDIA_INVALID = 0x97,
+            FX_FAT_READ_ERROR = 0x96,
+            FX_NOT_FOUND = 0x95,
+            FX_NOT_A_FILE = 0x94,
+            FX_ACCESS_ERROR = 0x93,
+            FX_NOT_OPEN = 0x92,
+            FX_FILE_CORRUPT = 0x91,
+            FX_END_OF_FILE = 0x90,
+            FX_NO_MORE_SPACE = 0x89,
+            FX_ALREADY_CREATED = 0x24,
+            FX_INVALID_NAME = 0x23,
+            FX_INVALID_PATH = 0x22,
+            FX_NOT_DIRECTORY = 0x21,
+            FX_NO_MORE_ENTRIES = 0x20,
+            FX_DIR_NOT_EMPTY = 0x19,
+            FX_MEDIA_NOT_OPEN = 0x18,
+            FX_INVALID_YEAR = 0x17,
+            FX_INVALID_MONTH = 0x16,
+            FX_INVALID_DAY = 0x15,
+            FX_INVALID_HOUR = 0x14,
+            FX_INVALID_MINUTE = 0x13,
+            FX_INVALID_SECOND = 0x12,
+            FX_PTR_ERROR = 0x11,
+            FX_INVALID_ATTR = 0x10,
+            FX_CALLER_ERROR = 0x0F,
+            FX_BUFFER_ERROR = 0x0E,
+            FX_NOT_IMPLEMENTED = 0x0D,
+            FX_WRITE_PROTECT = 0x0C,
+            FX_INVALID_OPTION = 0x0B,
+            FX_SECTOR_INVALID = 0x0A,
+            FX_IO_ERROR = 0x09,
+            FX_NOT_ENOUGH_MEMORY = 0x08,
+            FX_ERROR_FIXED = 0x07,
+            FX_ERROR_NOT_FIXED = 0x06,
+            FX_NOT_AVAILABLE = 0x05,
+            FX_INVALID_CHECKSUM = 0x04,
+            FX_READ_CONTINUE = 0x03,
+            FX_INVALID_STATE = 0x02,
+            FX_NOT_INIT_TRANSFER = 0x01,
+            FX_CRC_ERROR = 0x00,
+        }
+
+        byte DeviceAddress;
         MainForm MainForm;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -63,9 +101,9 @@ namespace DevConfig
         private void SDCardCtrl_Load(object sender, EventArgs e)
         {
             Debug.Assert(MainForm.selectedDevice != null);
-            address = MainForm.selectedDevice.Address;
-            Debug.WriteLine($"CAN ID = {address}");
-            Text += $" ({address:X2})";
+            DeviceAddress = MainForm.selectedDevice.Address;
+            Debug.WriteLine($"CAN ID = {DeviceAddress}");
+            Text += $" ({DeviceAddress:X2})";
             PopulateTreeView();
         }
         #region FORM COMMAND
@@ -84,11 +122,11 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void btn_Get_Click(object sender, EventArgs e)
         {
-            if(listView1.SelectedItems.Count > 0)
+            if (listView1.SelectedItems.Count > 0)
             {
                 List<string> file_paths = new();
 
-                foreach(ListViewItem item in listView1.SelectedItems)
+                foreach (ListViewItem item in listView1.SelectedItems)
                 {
                     string path = MakePath((TreeNode)item.Tag);
                     path = Path.Combine(path, item.Text).Replace('\\', '/');
@@ -112,7 +150,7 @@ namespace DevConfig
                     path = Path.Combine(path, item.Text).Replace('\\', '/');
                     file_paths.Add(path);
                 }
-                
+
                 DeleteFiles(file_paths);
             }
         }
@@ -194,20 +232,79 @@ namespace DevConfig
             this.listView1.Sort();
         }
 
-        
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        DateTime LvItemLastClikTime = DateTime.MinValue;
+        ListViewItem? LvItemLastClik = null;
+        private void listView1_SubItemClicked(object sender, SubItemEventArgs e)
+        {
+            if (e.SubItem == 0)
+            {
+                if (e.Item.Equals(LvItemLastClik) && (DateTime.Now - LvItemLastClikTime) <= new TimeSpan(0, 0, 2))
+                {
+                    LvItemLastClik = null;
+                    listView1.StartEditing(textBox1, e.Item, e.SubItem);
+                }
+                else
+                {
+                    LvItemLastClikTime = DateTime.Now;
+                    LvItemLastClik = e.Item;
+                }
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void listView1_SubItemEndEditing(object sender, SubItemEndEditingEventArgs e)
+        {
+            if (e.DisplayText != e.Item.Text)
+            {
+                Debug.WriteLine($"Rename {e.Item.Text} to {e.DisplayText}");
+                RenameFile(e.Item.Text, e.DisplayText, e.Item);
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void btn_AddDir_Click(object sender, EventArgs e)
+        {
+            AddDirGetName addDirGetName = new AddDirGetName();
+            if(addDirGetName.ShowDialog() == DialogResult.OK)
+            {
+                AddDirectory(addDirGetName.textBoxName.Text);
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void btn_DelDir_Click(object sender, EventArgs e)
+        {
+            DelDirectory();
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void btn_RenDir_Click(object sender, EventArgs e)
+        {
+            AddDirGetName addDirGetName = new AddDirGetName();
+            addDirGetName.textBoxName.Text = treeView1.SelectedNode.Text;
+            if (addDirGetName.ShowDialog() == DialogResult.OK)
+            {
+                RenDirectory(addDirGetName.textBoxName.Text);
+            }
+        }
+
         #endregion
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         ushort files_to_read = 0;
         uint file_len_req = 0;
         uint file_len_act = 0;
+        uint file_crc32 = 0;
+        uint file_timestamp = 0;
+        byte file_attributes = 0;
         List<Message> messages = new List<Message>();
         readonly ManualResetEvent sync_obj = new(false);
         Dictionary<uint, List<byte>> file_bytes_map = new();
 
         private void InputPeriph_MessageReceived(Message msg)
         {
-            if (msg.SRC == address)
+            if (msg.SRC == DeviceAddress)
             {
                 if (msg.CMD == ECmd_SD_Command)
                 {
@@ -238,13 +335,16 @@ namespace DevConfig
 
                         // response zahájení čtení souboru
                         case SD_SubCmd_GetFile:
-                            if(msg.Data[1] != 0)
+                            if (msg.Data[1] != 0)
                             {
                                 Debug.WriteLine($"Error {msg.Data[1]}");
                                 return;
                             }
                             file_bytes_map.Clear();
                             file_len_req = BitConverter.ToUInt32(msg.Data.Skip(2).Take(4).Reverse().ToArray());
+                            file_crc32 = BitConverter.ToUInt32(msg.Data.Skip(6).Take(4).Reverse().ToArray());
+                            file_timestamp = BitConverter.ToUInt32(msg.Data.Skip(10).Take(4).Reverse().ToArray());
+                            // TODO file_attributes = msg.Data[14];
                             file_len_act = 0;
                             Debug.WriteLine($"Get file with {file_len_req} bytes");
                             sync_obj.Set();
@@ -263,10 +363,12 @@ namespace DevConfig
                             sync_obj.Set();
                             break;
 
-                        // response zahájení odeslání souboru
-                        case SD_SubCmd_PutFile:
-                        // response odeslání další čísti souboru
-                        case SD_SubCmd_PutFilePart:
+                        case SD_SubCmd_RenDirNew:
+                        case SD_SubCmd_RenDirOld:
+                        case SD_SubCmd_RenFileNew:
+                        case SD_SubCmd_RenFileOld:
+                        case SD_SubCmd_PutFile: // response zahájení odeslání souboru
+                        case SD_SubCmd_PutFilePart: // response odeslání další čísti souboru
                             if (msg.Data[1] != 0)
                             {
                                 Debug.WriteLine($"Error {msg.Data[1]}");
@@ -278,6 +380,7 @@ namespace DevConfig
                 }
             }
         }
+
         #region LIST FILES
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void PopulateTreeView()
@@ -364,10 +467,10 @@ namespace DevConfig
             Cursor = Cursors.WaitCursor;
             Debug.WriteLine($"GetFileList({directory})");
 
-            List<FileInfo> fileinfolist = new ();
+            List<FileInfo> fileinfolist = new();
 
             Message message = new Message();
-            message.DEST = address;
+            message.DEST = DeviceAddress;
             message.CMD = ECmd_SD_Command;
 
             message.Data = new List<byte>();
@@ -437,6 +540,7 @@ namespace DevConfig
 
         }
         #endregion
+
         #region DRAG/DROP
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void listView1_DragEnter(object sender, DragEventArgs e)
@@ -468,7 +572,7 @@ namespace DevConfig
             var dob = new DataObject();
             dob.SetData(DataFormats.FileDrop, file_paths);
             DoDragDrop(dob, DragDropEffects.Copy);
-            
+
         }
 
         #endregion
@@ -497,7 +601,7 @@ namespace DevConfig
 
             if (exist_files.Count > 0)
             {
-                if (MessageBox.Show("One or more files exist in the destination directory.\nDo you want to replace the files?", "DevConfig - File exists", 
+                if (MessageBox.Show("One or more files exist in the destination directory.\nDo you want to replace the files?", "DevConfig - File exists",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                     return;
 
@@ -520,7 +624,7 @@ namespace DevConfig
         private void CopyToLocal(string file_path, string local_file_path)
         {
             Message message = new Message();
-            message.DEST = address;
+            message.DEST = DeviceAddress;
             message.CMD = ECmd_SD_Command;
 
             message.Data = new List<byte>();
@@ -536,7 +640,7 @@ namespace DevConfig
 
             while (true)
             {
-                if(sync_obj.WaitOne(1000))
+                if (sync_obj.WaitOne(1000))
                 {
                     sync_obj.Reset();
                     if (file_len_req == file_len_act)
@@ -553,11 +657,23 @@ namespace DevConfig
                         file.Dispose();
 
                         file_bytes_map.Clear();
-                        break; 
+
+                        // file_timestamp
+                        DateTimeOffset dateTime = DateTimeOffset.FromUnixTimeSeconds(file_timestamp);
+                        File.SetLastWriteTime(local_file_path, dateTime.DateTime);
+
+                        // CRC32
+                        uint crc32 = CRC.CRC32WideFast(File.ReadAllBytes(local_file_path), 0, file_len_req);
+                        if (crc32 != file_crc32)
+                        {
+                            Debug.WriteLine("CRC error");
+                            File.Delete(local_file_path);
+                        }
+                        break;
                     }
                     else
                     {
-                        if(MainForm.progressBar.Maximum < file_len_req)
+                        if (MainForm.progressBar.Maximum < file_len_req)
                             MainForm.progressBar.Maximum = (int)file_len_req;
                         if (file_len_act > MainForm.progressBar.Maximum)
                             MainForm.progressBar.Value = MainForm.progressBar.Maximum;
@@ -568,21 +684,21 @@ namespace DevConfig
                 else
                 {
                     Debug.WriteLine("Error Timeout");
-                    break; 
+                    break;
                 }
             }
         }
         #endregion
 
-        ///////////////////////////////////////////////////////////////////////////////////////////
         #region ADD FILE
+        ///////////////////////////////////////////////////////////////////////////////////////////
         private void AddFiles()
         {
             OpenFileDialog fileDialog = new OpenFileDialog();
             fileDialog.Filter = "All files (*.*)|*.*";
             if (fileDialog.ShowDialog() == DialogResult.OK)
             {
-                foreach(string file_name in fileDialog.FileNames)
+                foreach (string file_name in fileDialog.FileNames)
                 {
                     AddFile(file_name);
                 }
@@ -595,34 +711,35 @@ namespace DevConfig
 
             System.IO.FileInfo fileInfo = new System.IO.FileInfo(src_file_name);
 
-            Debug.WriteLine($"Copy from {src_file_name}, len = {fileInfo.Length:X}");
-            Debug.WriteLine($"     to   {dest_file_name}");
+            Debug.WriteLine($"Copy from '{src_file_name}', to '{dest_file_name}', len = {fileInfo.Length:X}");
 
             // fileInfo.LastWriteTime je localtime ale potrebujeme pro prevod utc time
-            var dt = DateTime.SpecifyKind(fileInfo.LastWriteTime, DateTimeKind.Utc); 
+            var dt = DateTime.SpecifyKind(fileInfo.LastWriteTime, DateTimeKind.Utc);
             var dateTimeOffset = new DateTimeOffset(dt);
             var timestamp = dateTimeOffset.ToUnixTimeSeconds();
 
+            byte[] file_bytes = File.ReadAllBytes(src_file_name);
+
             Message message = new Message();
-            message.DEST = address;
+            message.DEST = DeviceAddress;
             message.CMD = ECmd_SD_Command;
 
             message.Data = new List<byte>();
             message.Data.Add(SD_SubCmd_PutFile);
             message.Data.AddRange(((uint)fileInfo.Length).GetBytes().Reverse());    // size
             message.Data.AddRange(((uint)timestamp).GetBytes().Reverse());          // timestamp
-            Debug.WriteLine($"timestamp = {timestamp}({timestamp:X8})");
-
+            Debug.WriteLine($"timestamp = {timestamp}({timestamp:X8}) {fileInfo.LastWriteTime}");
+            uint crc32 = CRC.CRC32WideFast(file_bytes, 0, (uint)fileInfo.Length);
+            message.Data.AddRange(((uint)crc32).GetBytes().Reverse());              // crc32
+            Debug.WriteLine($"crc32 = {crc32}({crc32:X8})");
             message.Data.AddRange(Encoding.ASCII.GetBytes(dest_file_name + "\0"));  // file name
 
             sync_obj.Reset();
             MainForm.InputPeriph?.SendMsg(message);
 
-
-            using FileStream fs = File.OpenRead(src_file_name);
+            MemoryStream fs = new MemoryStream(file_bytes); //using FileStream fs = File.OpenRead(src_file_name);
 
             byte[] data = new byte[240];
-           
 
             while (true)
             {
@@ -630,7 +747,8 @@ namespace DevConfig
                 {
 
                     message.Data = new byte[] { SD_SubCmd_PutFilePart }.ToList();
-                    int readed = fs.Read(data, 0, 240);
+                    int readed = fs.Read(data, 0, data.Length);
+                    Debug.WriteLine($"readed {readed}");
                     if (readed <= 0)
                         break;
                     message.Data.AddRange(data.Take(readed));
@@ -645,14 +763,11 @@ namespace DevConfig
                     break;
                 }
             }
-            
-
-
         }
 
         #endregion
 
-        #region DEL FILE
+        #region DEL,REN FILE
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void DeleteFiles(List<string> file_paths)
         {
@@ -671,7 +786,7 @@ namespace DevConfig
         private void DeleteFile(string file_path)
         {
             Message message = new Message();
-            message.DEST = address;
+            message.DEST = DeviceAddress;
             message.CMD = ECmd_SD_Command;
 
             message.Data = new List<byte>();
@@ -680,7 +795,129 @@ namespace DevConfig
 
             MainForm.InputPeriph?.SendMsg(message);
         }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void RenameFile(string old_file_name, string new_file_name, ListViewItem item)
+        {
+            string path = MakePath(treeView1.SelectedNode);
+            if (!path.EndsWith('/'))
+                path += "/";
+            if (MoveFile(path + old_file_name, path + new_file_name))
+                Debug.WriteLine("Move OK");
+            else
+                Debug.WriteLine("Move ERROR");
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private bool MoveFile(string old_file_name, string new_file_name)
+        {
+            Message message = new Message();
+            message.DEST = DeviceAddress;
+            message.CMD = ECmd_SD_Command;
+
+            message.Data = new List<byte>();
+            message.Data.Add(SD_SubCmd_RenFileOld);
+            message.Data.AddRange(Encoding.ASCII.GetBytes(old_file_name + "\0"));
+            sync_obj.Reset();
+            MainForm.InputPeriph?.SendMsg(message);
+
+            if (sync_obj.WaitOne(1000))
+            {
+                message.Data = new List<byte>();
+                message.Data.Add(SD_SubCmd_RenFileNew);
+                message.Data.AddRange(Encoding.ASCII.GetBytes(new_file_name + "\0"));
+                sync_obj.Reset();
+                MainForm.InputPeriph?.SendMsg(message);
+
+                if (sync_obj.WaitOne(1000))
+                    return true;
+            }
+
+            return false;
+        }
+
         #endregion
+
+        #region DIRECTORY
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void AddDirectory(string text)
+        {
+            //var obj = treeView1.SelectedNode.Tag;
+            string path = MakePath(treeView1.SelectedNode);
+            if (!path.EndsWith('/'))
+                path += "/";
+            path += text;
+
+            Debug.WriteLine($"Create Directory{path}");
+
+            Message message = new Message();
+            message.DEST = DeviceAddress;
+            message.CMD = ECmd_SD_Command;
+            message.Data = new List<byte>();
+            message.Data.Add(SD_SubCmd_CreateDir);
+            message.Data.AddRange(Encoding.ASCII.GetBytes(path + "\0"));
+            sync_obj.Reset();
+            MainForm.InputPeriph?.SendMsg(message);
+
+        }
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void DelDirectory()
+        {
+            if (treeView1.SelectedNode.Level > 0)
+            {
+                string path = MakePath(treeView1.SelectedNode);
+
+                Debug.WriteLine($"Delete Directory{path}");
+
+                Message message = new Message();
+                message.DEST = DeviceAddress;
+                message.CMD = ECmd_SD_Command;
+                message.Data = new List<byte>();
+                message.Data.Add(SD_SubCmd_DelDir);
+                message.Data.AddRange(Encoding.ASCII.GetBytes(path + "\0"));
+                sync_obj.Reset();
+                MainForm.InputPeriph?.SendMsg(message);
+            }
+        }
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void RenDirectory(string text)
+        {
+            if (treeView1.SelectedNode.Level > 0)
+            {
+                string path = MakePath(treeView1.SelectedNode);
+
+                string new_path = MakePath(treeView1.SelectedNode.Parent);
+                if (!new_path.EndsWith('/'))
+                    new_path += "/";
+                new_path += text;
+
+                Debug.WriteLine($"Rename Directory {path} to {new_path}");
+
+                Message message = new Message();
+                message.DEST = DeviceAddress;
+                message.CMD = ECmd_SD_Command;
+
+                message.Data = new List<byte>();
+                message.Data.Add(SD_SubCmd_RenDirOld);
+                message.Data.AddRange(Encoding.ASCII.GetBytes(path + "\0"));
+                sync_obj.Reset();
+                MainForm.InputPeriph?.SendMsg(message);
+
+                if (sync_obj.WaitOne(1000))
+                {
+                    message.Data = new List<byte>();
+                    message.Data.Add(SD_SubCmd_RenDirNew);
+                    message.Data.AddRange(Encoding.ASCII.GetBytes(new_path + "\0"));
+                    sync_obj.Reset();
+                    MainForm.InputPeriph?.SendMsg(message);
+
+                    if (sync_obj.WaitOne(1000))
+                        return;
+                }
+            }
+        }
+        #endregion
+
     }
 
     class DirInfo

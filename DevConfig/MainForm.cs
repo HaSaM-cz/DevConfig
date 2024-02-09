@@ -18,7 +18,8 @@ namespace DevConfig
     {
         const byte SrcAddress = 0x08;
 
-        DeviceForm? TreeWnd = null;
+        DeviceForm? DeviceWnd = null;
+        DeviceTreeForm? TreeWnd = null;
         DebugForm? DebugWnd = null;
 
         public Device? selectedDevice = null;
@@ -33,7 +34,7 @@ namespace DevConfig
 
         List<DeviceType>? DevicesTypeList;
 
-        List<Device> DevicesList = new();
+        public List<Device> DevicesList = new();
         public IInputPeriph? InputPeriph = null;
         IMainApp MainApp;
 
@@ -59,10 +60,11 @@ namespace DevConfig
                 DeviceType t = GetDeviceType(devid);
                 t.FirmwarePath = BLPaths[i + 1];
             }
-            TreeWnd = CreateChild<DeviceForm>("Device");
+            TreeWnd = CreateChild<DeviceTreeForm>("Device tree");
             TreeWnd!.DockState = DockState.DockLeft;
             DebugWnd = CreateChild<DebugForm>("Debug");
             DebugWnd!.DockState = DockState.DockLeft;
+            DeviceWnd = CreateChild <DeviceForm>("Device");
             //DebugWnd!.DockTo(this.dockPanel.Panes[1], DockStyle.Bottom, 0);
         }
 
@@ -423,7 +425,7 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private string GetDeviceName(byte address, uint deviceID)
+        public string GetDeviceName(byte address, uint deviceID)
         {
             return GetDeviceType(deviceID).Name;
             //return TraceExtension?.GetUnitName(address) ?? "";
