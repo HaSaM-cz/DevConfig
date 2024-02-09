@@ -679,7 +679,6 @@ namespace DevConfig
             message.Data.AddRange(Encoding.ASCII.GetBytes(file_path + "\0"));
 
             MainForm.InputPeriph?.SendMsg(message);
-
         }
         #endregion
     }

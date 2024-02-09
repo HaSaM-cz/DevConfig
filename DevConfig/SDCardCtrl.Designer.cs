@@ -34,7 +34,7 @@
             treeView1 = new TreeView();
             imageList = new ImageList(components);
             btn_List = new Button();
-            listView1 = new ListView();
+            listView1 = new ListViewEx();
             columnHeader1 = new ColumnHeader();
             columnHeader3 = new ColumnHeader();
             columnHeader2 = new ColumnHeader();
@@ -210,7 +210,7 @@
 
         private TreeView treeView1;
         private Button btn_List;
-        private ListView listView1;
+        private ListViewEx listView1;
         private SplitContainer splitContainer1;
         private ColumnHeader columnHeader1;
         private ColumnHeader columnHeader3;
