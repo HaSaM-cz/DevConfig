@@ -30,6 +30,7 @@ namespace DevConfig
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             dockPanel = new WeifenLuo.WinFormsUI.Docking.DockPanel();
             vS2015LightTheme1 = new WeifenLuo.WinFormsUI.Docking.VS2015LightTheme();
             menuStrip1 = new MenuStrip();
@@ -43,7 +44,6 @@ namespace DevConfig
             deviceToolStripMenuItem = new ToolStripMenuItem();
             controlToolStripMenuItem = new ToolStripMenuItem();
             refreshListToolStripMenuItem = new ToolStripMenuItem();
-            progressBar = new ProgressBar();
             toolStrip1 = new ToolStrip();
             label_name = new ToolStripLabel();
             toolStripStatusLabel9 = new ToolStripStatusLabel();
@@ -52,6 +52,8 @@ namespace DevConfig
             tb_dev_id = new ToolStripStatusLabel();
             toolStripStatusLabel13 = new ToolStripStatusLabel();
             tb_version = new ToolStripStatusLabel();
+            btnAbort = new ToolStripButton();
+            tsProgressBar = new ToolStripProgressBar();
             menuStrip1.SuspendLayout();
             toolStrip1.SuspendLayout();
             SuspendLayout();
@@ -65,7 +67,7 @@ namespace DevConfig
             dockPanel.Name = "dockPanel";
             dockPanel.Padding = new Padding(6);
             dockPanel.ShowAutoHideContentOnHover = false;
-            dockPanel.Size = new Size(1119, 814);
+            dockPanel.Size = new Size(1119, 828);
             dockPanel.TabIndex = 2;
             dockPanel.Theme = vS2015LightTheme1;
             // 
@@ -112,7 +114,6 @@ namespace DevConfig
             deviceTreeToolStripMenuItem.Name = "deviceTreeToolStripMenuItem";
             deviceTreeToolStripMenuItem.Size = new Size(275, 26);
             deviceTreeToolStripMenuItem.Text = "Device Tree";
-            deviceTreeToolStripMenuItem.Click += DeviceTreeToolStripMenuItem_Click;
             // 
             // debugToolStripMenuItem
             // 
@@ -147,19 +148,10 @@ namespace DevConfig
             refreshListToolStripMenuItem.Text = "Refresh list";
             refreshListToolStripMenuItem.Click += RefreshList_Click;
             // 
-            // progressBar
-            // 
-            progressBar.Dock = DockStyle.Bottom;
-            progressBar.Location = new Point(0, 842);
-            progressBar.Name = "progressBar";
-            progressBar.Size = new Size(1119, 14);
-            progressBar.Step = 1;
-            progressBar.TabIndex = 1;
-            // 
             // toolStrip1
             // 
             toolStrip1.ImageScalingSize = new Size(20, 20);
-            toolStrip1.Items.AddRange(new ToolStripItem[] { label_name, toolStripStatusLabel9, tb_address, toolStripStatusLabel11, tb_dev_id, toolStripStatusLabel13, tb_version });
+            toolStrip1.Items.AddRange(new ToolStripItem[] { label_name, toolStripStatusLabel9, tb_address, toolStripStatusLabel11, tb_dev_id, toolStripStatusLabel13, tb_version, btnAbort, tsProgressBar });
             toolStrip1.Location = new Point(0, 28);
             toolStrip1.Name = "toolStrip1";
             toolStrip1.Size = new Size(1119, 32);
@@ -219,6 +211,25 @@ namespace DevConfig
             tb_version.Size = new Size(38, 28);
             tb_version.Text = "0.0";
             // 
+            // btnAbort
+            // 
+            btnAbort.Alignment = ToolStripItemAlignment.Right;
+            btnAbort.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            btnAbort.Image = (Image)resources.GetObject("btnAbort.Image");
+            btnAbort.ImageTransparentColor = Color.Magenta;
+            btnAbort.Margin = new Padding(0, 4, 4, 2);
+            btnAbort.Name = "btnAbort";
+            btnAbort.Size = new Size(51, 26);
+            btnAbort.Text = "Abort";
+            btnAbort.Click += btnAbort_Click;
+            // 
+            // tsProgressBar
+            // 
+            tsProgressBar.Alignment = ToolStripItemAlignment.Right;
+            tsProgressBar.Margin = new Padding(1, 10, 3, 5);
+            tsProgressBar.Name = "tsProgressBar";
+            tsProgressBar.Size = new Size(300, 17);
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -227,7 +238,6 @@ namespace DevConfig
             Controls.Add(toolStrip1);
             Controls.Add(dockPanel);
             Controls.Add(menuStrip1);
-            Controls.Add(progressBar);
             DoubleBuffered = true;
             IsMdiContainer = true;
             Name = "MainForm";
@@ -251,7 +261,6 @@ namespace DevConfig
         private ToolStripMenuItem refreshListToolStripMenuItem;
         private ToolStrip toolStrip1;
         private ToolStrip toolStrip2;
-        public ProgressBar progressBar;
         private WeifenLuo.WinFormsUI.Docking.DockPanel dockPanel;
         private WeifenLuo.WinFormsUI.Docking.VS2015LightTheme vS2015LightTheme1;
         private ToolStripMenuItem viewToolStripMenuItem;
@@ -271,5 +280,7 @@ namespace DevConfig
         private ToolStripMenuItem debugToolStripMenuItem;
         private ToolStripMenuItem sDCardForSelectedDeviceToolStripMenuItem;
         private ToolStripMenuItem deviceToolStripMenuItem;
+        private ToolStripButton btnAbort;
+        private ToolStripProgressBar tsProgressBar;
     }
 }

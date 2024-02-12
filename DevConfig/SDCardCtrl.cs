@@ -1,10 +1,12 @@
 ﻿using CanDiagSupport;
+using DevConfig.Service;
 using DevConfig.Utils;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Intrinsics.Arm;
 using System.Text;
+using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 using Message = CanDiagSupport.Message;
@@ -36,6 +38,7 @@ namespace DevConfig
         const byte SD_SubCmd_RenDirOld = 0x41;
         const byte SD_SubCmd_RenDirNew = 0x42;
         const byte SD_SubCmd_CreateDir = 0x43;
+        const byte SD_SubCmd_Abort = 0xF0;
 
         enum FxError
         {
@@ -83,6 +86,8 @@ namespace DevConfig
             FX_CRC_ERROR = 0x00,
         }
 
+        bool bSendBreak = false;
+        bool bContinue = true;
         byte DeviceAddress;
         MainForm MainForm;
 
@@ -90,18 +95,19 @@ namespace DevConfig
         public SDCardCtrl(MainForm mainForm)
         {
             MainForm = mainForm;
-            Debug.Assert(MainForm.InputPeriph != null);
-            MainForm.InputPeriph.MessageReceived += InputPeriph_MessageReceived;
+            Debug.Assert(DevConfigService.Instance.InputPeriph != null);
+            DevConfigService.Instance.InputPeriph.MessageReceived += InputPeriph_MessageReceived;
             InitializeComponent();
             lvwColumnSorter = new ListViewColumnSorter();
             listView1.ListViewItemSorter = lvwColumnSorter;
+            MainForm.AbortEvent += MainForm_CancelEvent;
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void SDCardCtrl_Load(object sender, EventArgs e)
         {
-            Debug.Assert(MainForm.selectedDevice != null);
-            DeviceAddress = MainForm.selectedDevice.Address;
+            Debug.Assert(DevConfigService.Instance.selectedDevice != null);
+            DeviceAddress = DevConfigService.Instance.selectedDevice.Address;
             Debug.WriteLine($"CAN ID = {DeviceAddress}");
             Text += $" ({DeviceAddress:X2})";
             PopulateTreeView();
@@ -116,7 +122,12 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void btn_Add_Click(object sender, EventArgs e)
         {
-            AddFiles();
+            OpenFileDialog fileDialog = new OpenFileDialog();
+            fileDialog.Filter = "All files (*.*)|*.*";
+            if (fileDialog.ShowDialog() == DialogResult.OK)
+            {
+                Task.Run(() => { AddFiles(fileDialog.FileNames); });
+            }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -133,7 +144,31 @@ namespace DevConfig
                     file_paths.Add(path);
                 }
 
-                CopyToLocal(file_paths);
+                // Dotaz na adresar.
+                FolderBrowserDialog dialog = new FolderBrowserDialog();
+                if (dialog.ShowDialog() != DialogResult.OK)
+                    return;
+                string dest_path = dialog.SelectedPath;
+
+                // Kontrola jmen.
+                List<string> exist_files = new List<string>();
+                foreach (string file_path in file_paths)
+                {
+                    string local_file_path = Path.Combine(dest_path, Path.GetFileName(file_path));
+                    if (File.Exists(local_file_path))
+                        exist_files.Add(local_file_path);
+                }
+
+                if (exist_files.Count > 0)
+                {
+                    if (MessageBox.Show("One or more files exist in the destination directory.\nDo you want to replace the files?", "DevConfig - File exists",
+                        MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                        return;
+
+                    exist_files.ForEach(file_path => { File.Delete(file_path); });
+                }
+
+                Task.Run(() => { CopyToLocal(file_paths, dest_path); });
             }
         }
 
@@ -292,6 +327,23 @@ namespace DevConfig
         #endregion
 
         ///////////////////////////////////////////////////////////////////////////////////////////
+        private void MainForm_CancelEvent()
+        {
+            if (bSendBreak)
+            {
+                bSendBreak = false;
+                Message message = new Message();
+                message.DEST = DeviceAddress;
+                message.CMD = ECmd_SD_Command;
+                message.Data = new List<byte>() { SD_SubCmd_Abort };
+                DevConfigService.Instance.InputPeriph?.SendMsg(message);
+            }
+
+            bContinue = false;
+            sync_obj.Set();
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
         ushort files_to_read = 0;
         uint file_len_req = 0;
         uint file_len_act = 0;
@@ -358,7 +410,8 @@ namespace DevConfig
                                 return;
                             }
                             uint file_pos = BitConverter.ToUInt32(msg.Data.Skip(2).Take(4).Reverse().ToArray());
-                            file_bytes_map[file_pos] = msg.Data.Skip(6).ToList();
+                            lock(file_bytes_map)
+                                file_bytes_map[file_pos] = msg.Data.Skip(6).ToList();
                             file_len_act += (uint)(msg.Data.Count - 6);
                             sync_obj.Set();
                             break;
@@ -481,9 +534,9 @@ namespace DevConfig
                 messages.Clear();
             sync_obj.Reset();
 
-            MainForm.InputPeriph?.SendMsg(message);
+            DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
-            while (sync_obj.WaitOne(1000))
+            while (sync_obj.WaitOne(2000))
             {
                 lock (messages)
                 {
@@ -579,46 +632,27 @@ namespace DevConfig
 
         #region GET FILE
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void CopyToLocal(List<string> file_paths, string? dest_path = null)
+        private void CopyToLocal(List<string> file_paths, string dest_path)
         {
-            // Dotaz na adresar.
-            if (dest_path == null)
-            {
-                FolderBrowserDialog dialog = new FolderBrowserDialog();
-                if (dialog.ShowDialog() != DialogResult.OK)
-                    return;
-                dest_path = dialog.SelectedPath;
-            }
-
-            // Kontrola jmen.
-            List<string> exist_files = new List<string>();
-            foreach (string file_path in file_paths)
-            {
-                string local_file_path = Path.Combine(dest_path, Path.GetFileName(file_path));
-                if (File.Exists(local_file_path))
-                    exist_files.Add(local_file_path);
-            }
-
-            if (exist_files.Count > 0)
-            {
-                if (MessageBox.Show("One or more files exist in the destination directory.\nDo you want to replace the files?", "DevConfig - File exists",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-                    return;
-
-                exist_files.ForEach(file_path => { File.Delete(file_path); });
-            }
-
             // Kopirujeme
-            Cursor = Cursors.WaitCursor;
+            this.Invoke(delegate { Cursor = Cursors.WaitCursor; });
+
+            bContinue = true;
             foreach (string file_path in file_paths)
             {
+                if (!bContinue)
+                    break;
+
                 string local_file_path = Path.Combine(dest_path, Path.GetFileName(file_path));
                 File.Delete(local_file_path);
                 CopyToLocal(file_path, local_file_path);
                 Debug.WriteLine($"{file_path}\n   {local_file_path}");
             }
-            MainForm.progressBar.Value = 0;
-            Cursor = Cursors.Default;
+            this.Invoke(delegate 
+            { 
+                Cursor = Cursors.Default;
+                MainForm.ProgressBar_Value = 0;
+            });
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void CopyToLocal(string file_path, string local_file_path)
@@ -632,16 +666,23 @@ namespace DevConfig
             message.Data.AddRange(Encoding.ASCII.GetBytes(file_path + "\0"));
 
             sync_obj.Reset();
-            MainForm.InputPeriph?.SendMsg(message);
+            bSendBreak = true;
+            DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
-            MainForm.progressBar.Minimum = 0;
-            MainForm.progressBar.Maximum = 1;
-            MainForm.progressBar.Value = MainForm.progressBar.Minimum;
+            MainForm.Invoke(delegate 
+            {
+                MainForm.ProgressBar_Minimum = 0;
+                MainForm.ProgressBar_Maximum = 1;
+                MainForm.ProgressBar_Value = 0;
+            });
 
-            while (true)
+            while (bContinue)
             {
                 if (sync_obj.WaitOne(1000))
                 {
+                    if (!bContinue)
+                        break;
+
                     sync_obj.Reset();
                     if (file_len_req == file_len_act)
                     {
@@ -655,8 +696,6 @@ namespace DevConfig
 
                         file.Close();
                         file.Dispose();
-
-                        file_bytes_map.Clear();
 
                         // file_timestamp
                         DateTimeOffset dateTime = DateTimeOffset.FromUnixTimeSeconds(file_timestamp);
@@ -673,12 +712,16 @@ namespace DevConfig
                     }
                     else
                     {
-                        if (MainForm.progressBar.Maximum < file_len_req)
-                            MainForm.progressBar.Maximum = (int)file_len_req;
-                        if (file_len_act > MainForm.progressBar.Maximum)
-                            MainForm.progressBar.Value = MainForm.progressBar.Maximum;
-                        else
-                            MainForm.progressBar.Value = (int)file_len_act;
+                        MainForm.Invoke(delegate
+                        {
+                            //if (MainForm.progressBar.Maximum < file_len_req)
+                                MainForm.ProgressBar_Maximum = (int)file_len_req;
+
+                            /*if (file_len_act > MainForm.progressBar.Maximum)
+                                MainForm.progressBar.Value = MainForm.progressBar.Maximum;
+                            else*/
+                                MainForm.ProgressBar_Value = (int)file_len_act;
+                        });
                     }
                 }
                 else
@@ -687,27 +730,39 @@ namespace DevConfig
                     break;
                 }
             }
+            lock(file_bytes_map)
+                file_bytes_map.Clear();
+            bSendBreak = false;
         }
         #endregion
 
         #region ADD FILE
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void AddFiles()
+        private void AddFiles(string[] fileNames)
         {
-            OpenFileDialog fileDialog = new OpenFileDialog();
-            fileDialog.Filter = "All files (*.*)|*.*";
-            if (fileDialog.ShowDialog() == DialogResult.OK)
+            this.Invoke(delegate { Cursor = Cursors.WaitCursor; });
+
+            bContinue = true;
+            foreach (string file_name in fileNames)
             {
-                foreach (string file_name in fileDialog.FileNames)
-                {
-                    AddFile(file_name);
-                }
+                if (!bContinue)
+                    break;
+                AddFile(file_name);
             }
+
+            this.Invoke(delegate
+            {
+                Cursor = Cursors.Default;
+                MainForm.ProgressBar_Value = 0;
+            });
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void AddFile(string src_file_name)
         {
-            string dest_file_name = Path.Combine(MakePath(treeView1.SelectedNode), Path.GetFileName(src_file_name)).Replace('\\', '/');
+            string dest_file_name = string.Empty;
+            this.Invoke(delegate {  
+                dest_file_name = Path.Combine(MakePath(treeView1.SelectedNode), Path.GetFileName(src_file_name)).Replace('\\', '/');
+            });
 
             System.IO.FileInfo fileInfo = new System.IO.FileInfo(src_file_name);
 
@@ -735,18 +790,17 @@ namespace DevConfig
             message.Data.AddRange(Encoding.ASCII.GetBytes(dest_file_name + "\0"));  // file name
 
             sync_obj.Reset();
-            MainForm.InputPeriph?.SendMsg(message);
+            DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
             MemoryStream fs = new MemoryStream(file_bytes); //using FileStream fs = File.OpenRead(src_file_name);
 
             byte[] data = new byte[240];
 
-            while (true)
+            while (bContinue)
             {
                 if (sync_obj.WaitOne(2000))
                 {
-
-                    message.Data = new byte[] { SD_SubCmd_PutFilePart }.ToList();
+                    message.Data = new List<byte>() { SD_SubCmd_PutFilePart };
                     int readed = fs.Read(data, 0, data.Length);
                     Debug.WriteLine($"readed {readed}");
                     if (readed <= 0)
@@ -754,8 +808,7 @@ namespace DevConfig
                     message.Data.AddRange(data.Take(readed));
 
                     sync_obj.Reset();
-                    MainForm.InputPeriph?.SendMsg(message);
-
+                    DevConfigService.Instance.InputPeriph?.SendMsg(message);
                 }
                 else
                 {
@@ -777,7 +830,6 @@ namespace DevConfig
                 Debug.WriteLine($"DleteFile {file_path}");
                 DeleteFile(file_path);
             }
-            MainForm.progressBar.Value = 0;
             Cursor = Cursors.Default;
 
         }
@@ -793,7 +845,7 @@ namespace DevConfig
             message.Data.Add(SD_SubCmd_DelFile);
             message.Data.AddRange(Encoding.ASCII.GetBytes(file_path + "\0"));
 
-            MainForm.InputPeriph?.SendMsg(message);
+            DevConfigService.Instance.InputPeriph?.SendMsg(message);
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -819,7 +871,7 @@ namespace DevConfig
             message.Data.Add(SD_SubCmd_RenFileOld);
             message.Data.AddRange(Encoding.ASCII.GetBytes(old_file_name + "\0"));
             sync_obj.Reset();
-            MainForm.InputPeriph?.SendMsg(message);
+            DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
             if (sync_obj.WaitOne(1000))
             {
@@ -827,7 +879,7 @@ namespace DevConfig
                 message.Data.Add(SD_SubCmd_RenFileNew);
                 message.Data.AddRange(Encoding.ASCII.GetBytes(new_file_name + "\0"));
                 sync_obj.Reset();
-                MainForm.InputPeriph?.SendMsg(message);
+                DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
                 if (sync_obj.WaitOne(1000))
                     return true;
@@ -857,7 +909,7 @@ namespace DevConfig
             message.Data.Add(SD_SubCmd_CreateDir);
             message.Data.AddRange(Encoding.ASCII.GetBytes(path + "\0"));
             sync_obj.Reset();
-            MainForm.InputPeriph?.SendMsg(message);
+            DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -876,7 +928,7 @@ namespace DevConfig
                 message.Data.Add(SD_SubCmd_DelDir);
                 message.Data.AddRange(Encoding.ASCII.GetBytes(path + "\0"));
                 sync_obj.Reset();
-                MainForm.InputPeriph?.SendMsg(message);
+                DevConfigService.Instance.InputPeriph?.SendMsg(message);
             }
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -901,7 +953,7 @@ namespace DevConfig
                 message.Data.Add(SD_SubCmd_RenDirOld);
                 message.Data.AddRange(Encoding.ASCII.GetBytes(path + "\0"));
                 sync_obj.Reset();
-                MainForm.InputPeriph?.SendMsg(message);
+                DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
                 if (sync_obj.WaitOne(1000))
                 {
@@ -909,13 +961,14 @@ namespace DevConfig
                     message.Data.Add(SD_SubCmd_RenDirNew);
                     message.Data.AddRange(Encoding.ASCII.GetBytes(new_path + "\0"));
                     sync_obj.Reset();
-                    MainForm.InputPeriph?.SendMsg(message);
+                    DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
                     if (sync_obj.WaitOne(1000))
                         return;
                 }
             }
         }
+
         #endregion
 
     }

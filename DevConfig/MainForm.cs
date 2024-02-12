@@ -1,6 +1,7 @@
 using CanDiag;
 using CanDiagSupport;
 using DevConfig.Properties;
+using DevConfig.Service;
 using DevConfig.Utils;
 using DevConfigSupp;
 using Microsoft.CodeAnalysis;
@@ -16,13 +17,12 @@ namespace DevConfig
 {
     public partial class MainForm : Form
     {
-        const byte SrcAddress = 0x08;
+        public const byte SrcAddress = 0x08;
 
-        DeviceForm? DeviceWnd = null;
-        DeviceTreeForm? TreeWnd = null;
-        DebugForm? DebugWnd = null;
+        public DeviceForm? DeviceWnd = null;
+        public DeviceTreeForm? TreeWnd = null;
+        public DebugForm? DebugWnd = null;
 
-        public Device? selectedDevice = null;
         public DeviceType? selectedDeviceType = null;
 
         enum DeviceSubItem { Address, DevID, Name, Version, CpuID };
@@ -35,18 +35,18 @@ namespace DevConfig
         List<DeviceType>? DevicesTypeList;
 
         public List<Device> DevicesList = new();
-        public IInputPeriph? InputPeriph = null;
         IMainApp MainApp;
 
         public BindingList<Device>? DeviceList = new();
+
+        public delegate void CancelEventDelegate();
+        public event CancelEventDelegate? AbortEvent;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         public MainForm()
         {
             MainApp = new MainAppClass(this);
             InitializeComponent();
-            //listViewDevices.AutoResizeColumn(listViewDevices.Columns.Count - 1, ColumnHeaderAutoResizeStyle.HeaderSize);
-            //tb_address.BackColor = tb_dev_id.BackColor = tb_version.BackColor = tb_cpu_id.BackColor = tb_address.BackColor;
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -62,32 +62,19 @@ namespace DevConfig
             }
             TreeWnd = CreateChild<DeviceTreeForm>("Device tree");
             TreeWnd!.DockState = DockState.DockLeft;
+
             DebugWnd = CreateChild<DebugForm>("Debug");
             DebugWnd!.DockState = DockState.DockLeft;
-            DeviceWnd = CreateChild <DeviceForm>("Device");
-            //DebugWnd!.DockTo(this.dockPanel.Panes[1], DockStyle.Bottom, 0);
+
+            DeviceWnd = CreateChild<DeviceForm>("Device");
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void DeviceTreeToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            /*if (TreeWnd == null)
-            {
-                CreateTreeWnd();
-            }
-            else
-            {
-                if (TreeWnd.WindowState != FormWindowState.Maximized)
-                    TreeWnd.WindowState = FormWindowState.Normal;
-                TreeWnd.BringToFront();
-            }*/
-        }
-
         private void sDCardForSelectedDeviceToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (selectedDevice != null)
+            if (DevConfigService.Instance.selectedDevice != null)
             {
-                SDCardCtrl? a = CreateChild<SDCardCtrl>($"SD Card ({selectedDevice.Address})");
+                SDCardCtrl? a = CreateChild<SDCardCtrl>($"SD Card ({DevConfigService.Instance.selectedDevice.Address})");
             }
             else
             {
@@ -132,38 +119,22 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void listViewDevices_Resize(object sender, EventArgs e)
-        {
-            //listViewDevices.AutoResizeColumn(listViewDevices.Columns.Count - 1, ColumnHeaderAutoResizeStyle.HeaderSize);
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void listViewDevices_ColumnWidthChanged(object sender, ColumnWidthChangedEventArgs e)
-        {
-            /*int col = listViewDevices.Columns.Count - 1;
-            if (col != e.ColumnIndex)
-                listViewDevices.AutoResizeColumn(col, ColumnHeaderAutoResizeStyle.HeaderSize);*/
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
         private void Open_Click(object sender, EventArgs e)
         {
             ConnectForm connectForm = new ConnectForm();
 
             if (connectForm.ShowDialog() == DialogResult.Continue && connectForm.InputPeriph != null)
             {
-                if (InputPeriph != null)
-                    InputPeriph.Close();
+                if (DevConfigService.Instance.InputPeriph != null)
+                    DevConfigService.Instance.InputPeriph.Close();
 
-                InputPeriph = connectForm.InputPeriph;
-                InputPeriph!.MessageReceived += InputPeriph_MessageReceived;
+                DevConfigService.Instance.InputPeriph = connectForm.InputPeriph;
+                //DevConfigService.Instance.InputPeriph!.MessageReceived += InputPeriph_MessageReceived;
                 //TreeWnd?.NewInputPeriph();
                 //DebugWnd?.NewInputPeriph();
-                DeviceWnd?.NewInputPeriph();
+                //DeviceWnd?.NewInputPeriph();
 
-                RefreshDeviceList();
-
-                // TODO pripadne nastaveni noveho InputPeriph pro zarizeni
+                DevConfigService.Instance.RefreshDeviceList();
             }
 
         }
@@ -171,155 +142,15 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void Close_Click(object sender, EventArgs e)
         {
-            // TODO pripadne zavreni karet zarizeni
-            /*foreach (var x in tabControl.TabPages)
+            if (DevConfigService.Instance.InputPeriph != null)
             {
-                if (((TabPage)x).Controls[0].GetType().BaseType == typeof(UserControl))
-                {
-                    Debug.WriteLine($"{((TabPage)x).Controls[0].GetType().BaseType}");
-                    Debug.WriteLine($"{((TabPage)x).Controls[0]}");
-                }
-            }*/
-
-
-
-            /*var ucs = from x in DevicesTypeList where x.UserControls.Count > 0 select x;
-            foreach (var item in ucs)
-            {
-                foreach (var u in item.UserControls)
-                {
-                    
-                }
-
-                //item.UserControls.ForEach(x => { x.Enabled = false; });
-            }*/
-
-            if (InputPeriph != null)
-            {
-                InputPeriph.Close();
-                InputPeriph = null;
+                DevConfigService.Instance.InputPeriph.Close();
+                DevConfigService.Instance.InputPeriph = null;
             }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void InputPeriph_MessageReceived(Message message)
-        {
-            if (message.CMD == Command.Ident && message.Data.Count >= 14) // TODO && msg.RF)
-            {
-                Debug.WriteLine(message);
-
-                byte state = message.Data[0];
-                uint deviceID = (uint)(message.Data[1] << 24 | message.Data[2] << 16 | message.Data[3] << 8 | message.Data[4]);
-                byte address = InputPeriph!.GetType() == typeof(UsbSerialNs.UsbSerial) ? message.Data[5] : address = message.SRC;
-                string fwVer = $"{message.Data[6]}.{message.Data[7]}";
-                string cpuId = $"{BitConverter.ToString(message.Data.Skip(8).Take(12).ToArray()).Replace("-", " ")}";
-
-                NewIdent(deviceID, address, fwVer, cpuId, state);
-            }
-            /*else if ((message.CMD == Command.StartUpdate || message.CMD == Command.UpdateMsg) && message.Data.Count == 1)
-            {
-                MessageFlag = message.Data[0];
-            }*/
-            /*else if (message.CMD == Command.ParamRead)
-            {
-                if (message.Data[0] == 0)
-                    NewParamData(MessageFlag, message.Data.ToArray());
-                MessageReceived.Set();
-            }*/
-            /*else if (message.CMD == Command.GetListParam)
-            {
-                MessageFlag = message.Data[0];
-                if (MessageFlag == 0)
-                    NewParamItem(message.Data.ToArray());
-                MessageReceived.Set();
-            }*/
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        /*private void NewParamData(byte ParamID, byte[] bytes)
-        {
-            try
-            {
-                Parameter parameter = (from xxx in parameters where xxx.ParameterID == ParamID select xxx).First();
-                switch (parameter.ParType)
-                {
-                    case type.UInt8:
-                        parameter.Value = bytes[1];
-                        break;
-                    case type.UInt16:
-                        parameter.Value = BitConverter.ToUInt16(bytes, 1);
-                        break;
-                    case type.UInt32:
-                        parameter.Value = BitConverter.ToUInt32(bytes, 1);
-                        break;
-                    case type.String:
-                        parameter.Value = System.Text.Encoding.ASCII.GetString(bytes, 1, bytes.Length - 1);
-                        break;
-                    case type.IpAddr:
-                        break;
-                }
-
-                listViewParameters.Invoke(delegate { parameter.listViewItem!.SubItems[listViewParameters.Columns.Count - 1].Text = $"{parameter.Value}"; });
-
-                //Debug.WriteLine($"{parameter.ParName} - {parameter.ParType} - {parameter.Value:X} - {bytes.Length - 1}");
-            }
-            catch
-            {
-
-            }
-        }*/
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        /*enum type { UInt8, UInt16, UInt32, String, IpAddr };
-
-        class Parameter
-        {
-            //internal byte Status;
-            internal byte ParameterID;
-            internal type ParType;
-            internal bool ReadOnly;
-            internal uint ParValMin;
-            internal uint ParValMax;
-            internal byte ParIndex;
-            internal string? ParName;
-            internal object? Value;
-            internal ListViewItem? listViewItem = null;
-        }
-
-        List<Parameter> parameters = new List<Parameter>();
-
-        private void NewParamItem(byte[] data)
-        {
-            Parameter parameter = new Parameter();
-
-            //parameter.Status = data[0];
-            parameter.ParameterID = data[1];
-            parameter.ParType = (type)(data[2] & 0x7F);
-            parameter.ReadOnly = (data[2] & 0x80) == 0x80;
-            parameter.ParValMin = BitConverter.ToUInt32(data, 3);
-            parameter.ParValMax = BitConverter.ToUInt32(data, 7);
-            parameter.ParIndex = data[11];
-            parameter.ParName = System.Text.Encoding.ASCII.GetString(data, 12, data.Length - 12);
-
-            parameter.listViewItem = new ListViewItem($"{parameter.ParameterID}");
-            parameter.listViewItem.SubItems.Add($"{parameter.ParType}");
-            parameter.listViewItem.SubItems.Add($"{parameter.ReadOnly}");
-            parameter.listViewItem.SubItems.Add($"{parameter.ParValMin}");
-            parameter.listViewItem.SubItems.Add($"{parameter.ParValMax}");
-            parameter.listViewItem.SubItems.Add($"{parameter.ParIndex}");
-            parameter.listViewItem.SubItems.Add($"{parameter.ParName}");
-            parameter.listViewItem.SubItems.Add($"");
-
-            parameters.Add(parameter);
-            listViewParameters.Invoke(delegate
-            {
-                var item = listViewParameters.Items.Add(parameter.listViewItem);
-                item.Tag = parameter;
-            });
-        }*/
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void NewIdent(uint deviceID, byte address, string fwVer, string cpuId, byte state)
+        public void NewIdent(uint deviceID, byte address, string fwVer, string cpuId, byte state)
         {
             Device? device = (from xxx in DevicesList where xxx.CpuId == cpuId select xxx).FirstOrDefault();
             if (device != null)
@@ -343,7 +174,7 @@ namespace DevConfig
                     });
                 }
 
-                if (device.Equals(selectedDevice))
+                if (device.Equals(DevConfigService.Instance.selectedDevice))
                 {
                     this.Invoke(delegate
                     {
@@ -356,9 +187,9 @@ namespace DevConfig
                             label_name.ForeColor = tb_address.ForeColor = tb_dev_id.ForeColor = tb_version.ForeColor = Color.Green;
                             if (DeviceWnd != null)
                             {
-                                DeviceWnd.label_name.ForeColor = 
+                                DeviceWnd.label_name.ForeColor =
                                 DeviceWnd.tb_address.ForeColor = DeviceWnd.tb_dev_id.ForeColor = DeviceWnd.tb_version.ForeColor = DeviceWnd.tb_cpu_id.ForeColor = Color.Green;
-                                DeviceWnd.tb_address.Font      = DeviceWnd.tb_dev_id.Font      = DeviceWnd.tb_version.Font      = DeviceWnd.tb_cpu_id.Font = new Font(DeviceWnd.tb_address.Font, FontStyle.Bold);
+                                DeviceWnd.tb_address.Font = DeviceWnd.tb_dev_id.Font = DeviceWnd.tb_version.Font = DeviceWnd.tb_cpu_id.Font = new Font(DeviceWnd.tb_address.Font, FontStyle.Bold);
                             }
                         }
                     });
@@ -436,190 +267,18 @@ namespace DevConfig
         public string GetDeviceName(byte address, uint deviceID)
         {
             return GetDeviceType(deviceID).Name;
-            //return TraceExtension?.GetUnitName(address) ?? "";
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void RefreshList_Click(object sender, EventArgs e)
         {
-            RefreshDeviceList();
+            DevConfigService.Instance.RefreshDeviceList();
         }
 
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void RefreshDeviceList()
-        {
-            if (InputPeriph != null)
-            {
-                selectedDevice = null;
-                DevicesList.Clear();
-                TreeWnd?.listViewDevices.Items.Clear();
-
-                Task.Run(() =>
-                {
-                    Message message = new Message();
-                    message.CMD = Command.Ident;
-                    message.SRC = SrcAddress;
-
-                    byte SearchFrom = 0x00;
-                    byte SearchTo = 0xFE - 1;
-
-                    if (InputPeriph!.GetType() == typeof(UsbSerialNs.UsbSerial))
-                        SearchFrom = SearchTo = 0xFE;
-
-                    Invoke(delegate
-                    {
-                        Cursor = Cursors.WaitCursor;
-                        progressBar.Minimum = SearchFrom;
-                        progressBar.Maximum = SearchTo;
-                        if (progressBar.Minimum == progressBar.Maximum)
-                            progressBar.Minimum--;
-                        progressBar.Value = progressBar.Minimum;
-                    });
-
-                    // pošleme ident do všech zažízení
-                    for (byte dest = SearchFrom; dest <= SearchTo; dest++)
-                    {
-                        progressBar.Invoke(delegate { progressBar.Value = dest; });
-                        message.DEST = dest;
-                        InputPeriph.SendMsg(message);
-                        Task.Delay(3).Wait();
-                    }
-
-                    // Pockame na dobehnuti
-                    Task.Delay(1500).ContinueWith(t =>
-                    {
-                        progressBar.Invoke(delegate
-                        {
-                            Cursor = Cursors.Default;
-                            progressBar.Value = progressBar.Minimum;
-                        });
-                    });
-                });
-            }
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        /*private void btnUpdate_Click(object sender, EventArgs e)
-        {
-            if (selectedDevice != null && selectedDeviceType != null)
-            {
-                OpenFileDialog ofd = new OpenFileDialog();
-                ofd.Filter = "Encrypted binary files (*.bin)|*.bin|All files (*.*)|*.*";
-                ofd.FileName = selectedDeviceType.FirmwarePath;
-                if (ofd.ShowDialog() != DialogResult.OK)
-                    return;
-
-                selectedDeviceType.FirmwarePath = ofd.FileName;
-                Debug.Assert(selectedDeviceType.FirmwarePath != null);
-
-
-                progressBar.Minimum = 0;
-                progressBar.Maximum = 100;
-                progressBar.Value = 0;
-
-                const int UpdateTmeout = 3000;
-                byte[] sendbuf = new byte[260];
-
-                MessageFlag = 0xFF;
-                Message message = new Message() { CMD = Command.StartUpdate, DEST = selectedDevice.Address };
-                InputPeriph?.SendMsg(message);
-
-                int time = 10;
-                while (time-- > 0)
-                {
-                    Task.Delay(100).Wait(); //Thread.Sleep(100);
-                    Application.DoEvents();
-                }
-
-                System.IO.Stream fBin = System.IO.File.OpenRead(selectedDeviceType.FirmwarePath);
-
-                byte[] buf = new byte[fBin.Length];
-
-                fBin.Read(buf, 0, buf.Length);
-                fBin.Close();
-
-                AppendToDebug("Uploading FW");
-
-                //Disable_DEBUG_msg = 1;
-
-                //pgbUpdate.Visible = true;
-
-                byte perc = 0;
-                progressBar.Value = 0;
-                Application.DoEvents();
-                int offset = 0;
-                byte ptr = 0;
-                time = UpdateTmeout;
-                while (offset < buf.Length)
-                {
-                    if (MessageFlag != 0xFF)
-                    {
-                        if (MessageFlag != 0x00)
-                        {
-                            MessageBox.Show((MessageFlag).ToString());
-                            //pgbUpdate.Visible = false;
-                            //Disable_DEBUG_msg = 0;
-                            return;
-                        }
-
-                        time = UpdateTmeout;
-                        MessageFlag = 0xFF;
-                        ptr = 0;
-                        for (int i = 0; i < 240; i++)
-                        {
-                            sendbuf[i] = buf[offset];
-                            offset++;
-                            ptr++;
-                            if (offset >= buf.Length)
-                                break;
-                        }
-
-                        message.CMD = Command.UpdateMsg;
-                        message.Data = sendbuf.Take(ptr).ToList();
-
-                        InputPeriph?.SendMsg(message);
-
-                        byte px = (byte)(((float)offset / buf.Length) * 100);
-                        if (perc != px)
-                        {
-                            perc = px;
-                            progressBar.Value = perc;
-                            Application.DoEvents();
-                        }
-                    }
-
-                    time--;
-                    if (time == 0)
-                    {
-                        MessageBox.Show("No response");
-                        progressBar.Value = 0; //pgbUpdate.Visible = false;
-                        //Disable_DEBUG_msg = 0;
-                        return;
-                    }
-                    Task.Delay(1).Wait(); //Thread.Sleep(1);
-                    Application.DoEvents();
-                }
-
-                //Disable_DEBUG_msg = 0;
-
-                AppendToDebug("Uploading FW DONE");
-
-                //Task.Delay(200).Wait(); //Thread.Sleep(200);
-                //Application.DoEvents();
-                //Task.Delay(200).Wait(); //Thread.Sleep(200);
-
-                //CloseSerialPort(false);
-                //AppendToDebug("REOPEN THE PORT FOR FUTURE OPERATIONS");
-
-                progressBar.Value = 0;//pgbUpdate.Visible = false;
-
-            }
-        }
-        */
         ///////////////////////////////////////////////////////////////////////////////////////////
         public void SetTabPage()
         {
-            Debug.Assert(InputPeriph != null);
+            Debug.Assert(DevConfigService.Instance.InputPeriph != null);
 
             var ucs = from x in DevicesTypeList where x.UserControlsList.Count > 0 select x;
             foreach (var item in ucs)
@@ -668,82 +327,6 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        /*private void button1_Click(object sender, EventArgs e)
-        {
-            if (InputPeriph != null && selectedDevice != null)
-            {
-                Task.Run(() =>
-                {
-                    Invoke(delegate { Cursor = Cursors.WaitCursor; });
-
-                    Message message = new Message();
-                    message.CMD = Command.GetListParam;
-                    message.SRC = SrcAddress;
-                    message.DEST = selectedDevice.Address;
-                    message.Data.Add(0);
-                    MessageReceived.Reset();
-                    InputPeriph.SendMsg(message);
-
-                    message.Data[0] = 1;
-
-                    while (true)
-                    {
-                        if (!MessageReceived.WaitOne(1000))
-                            break;
-
-                        if (MessageFlag != 0)
-                            break;
-
-                        MessageReceived.Reset();
-                        InputPeriph.SendMsg(message);
-                    }
-
-                    message.CMD = Command.ParamRead;
-                    foreach (var p in parameters)
-                    {
-                        MessageFlag = message.Data[0] = p.ParameterID;
-                        MessageReceived.Reset();
-                        InputPeriph.SendMsg(message);
-                        if (!MessageReceived.WaitOne(1000))
-                            continue;
-                    }
-
-                    progressBar.Invoke(delegate
-                    {
-                        progressBar.Value = 0;
-                        Cursor = Cursors.Default;
-                        listViewParameters.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
-                    });
-                });
-            }
-        }*/
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void listViewParameters_Resize(object sender, EventArgs e)
-        {
-            /*int width = 0;
-            for (int i = 0; i < listViewParameters.Columns.Count; i++)
-                width += listViewParameters.Columns[i].Width;
-            width -= listViewParameters.Columns[listViewParameters.Columns.Count - 2].Width;
-            listViewParameters.Columns[listViewParameters.Columns.Count - 2].Width = listViewParameters.Width - width;*/
-            //listViewParameters.AutoResizeColumn(listViewParameters.Columns.Count - 2, ColumnHeaderAutoResizeStyle.ColumnContent);
-        }
-
-        /*private void listViewParameters_SubItemClicked(object sender, SubItemEventArgs e)
-        {
-            if (e.SubItem == (int)ParmaterSubItem.Value && !((Parameter)e.Item.Tag).ReadOnly)
-                listViewParameters.StartEditing(textBox1, e.Item, e.SubItem);
-        }
-
-        private void listViewParameters_SubItemEndEditing(object sender, SubItemEndEditingEventArgs e)
-        {
-            if ($"{((Parameter)e.Item.Tag).Value}" != e.DisplayText)
-                e.Item.ForeColor = Color.Red;
-            else
-                e.Item.ForeColor = SystemColors.WindowText;
-        }*/
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
         internal void AppendToDebug(string text, bool bNewLine = true, bool bBolt = false, Color? color = null)
         {
             DebugWnd?.AppendText(text, bNewLine, bBolt, color);
@@ -752,46 +335,76 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         internal void SelectItem(Device tag)
         {
-            selectedDevice = tag;
-            selectedDeviceType = GetDeviceType(selectedDevice.DevId);
-            Debug.WriteLine($"Selected DevID = {selectedDevice.DevId:X}");
-            tb_address.Text = selectedDevice.AddressStr;
-            tb_dev_id.Text = selectedDevice.DevIdStr;
-            tb_version.Text = selectedDevice.FwVer;
-            label_name.Text = selectedDevice.Name;
+            DevConfigService.Instance.selectedDevice = tag;
+            selectedDeviceType = GetDeviceType(DevConfigService.Instance.selectedDevice.DevId);
+            Debug.WriteLine($"Selected DevID = {DevConfigService.Instance.selectedDevice.DevId:X}");
+            tb_address.Text = DevConfigService.Instance.selectedDevice.AddressStr;
+            tb_dev_id.Text = DevConfigService.Instance.selectedDevice.DevIdStr;
+            tb_version.Text = DevConfigService.Instance.selectedDevice.FwVer;
+            label_name.Text = DevConfigService.Instance.selectedDevice.Name;
             label_name.ForeColor = tb_address.ForeColor = tb_dev_id.ForeColor = tb_version.ForeColor = SystemColors.WindowText;
 
             SetTabPage();
 
-            if(DeviceWnd != null)
+            if (DeviceWnd != null)
             {
-                DeviceWnd.label_name.Text = selectedDevice.Name;
+                DeviceWnd.label_name.Text = DevConfigService.Instance.selectedDevice.Name;
                 DeviceWnd.tbFwFileName.Text = selectedDeviceType.FirmwarePath;
-                DeviceWnd.tb_address.Text = selectedDevice.AddressStr;
-                DeviceWnd.tb_cpu_id.Text = selectedDevice.CpuId;
-                DeviceWnd.tb_dev_id.Text= selectedDevice.DevIdStr;
-                DeviceWnd.tb_version.Text = selectedDevice.FwVer;
+                DeviceWnd.tb_address.Text = DevConfigService.Instance.selectedDevice.AddressStr;
+                DeviceWnd.tb_cpu_id.Text = DevConfigService.Instance.selectedDevice.CpuId;
+                DeviceWnd.tb_dev_id.Text = DevConfigService.Instance.selectedDevice.DevIdStr;
+                DeviceWnd.tb_version.Text = DevConfigService.Instance.selectedDevice.FwVer;
                 DeviceWnd.label_name.ForeColor = DeviceWnd.tb_address.ForeColor = DeviceWnd.tb_dev_id.ForeColor = DeviceWnd.tb_version.ForeColor = DeviceWnd.tb_cpu_id.ForeColor = SystemColors.WindowText;
                 DeviceWnd.tb_address.Font = DeviceWnd.tb_dev_id.Font = DeviceWnd.tb_version.Font = DeviceWnd.tb_cpu_id.Font = new Font(DeviceWnd.tb_address.Font, FontStyle.Regular);
             }
         }
 
-
         ///////////////////////////////////////////////////////////////////////////////////////////
-    }
+        private void btnAbort_Click(object sender, EventArgs e)
+        {
+            AbortEvent?.Invoke();
 
-    public class Device
-    {
-        public byte Address { get; set; }
-        public string AddressStr { get { return $"{Address:X2}"; } }
-        public uint DevId { get; set; }
-        public string DevIdStr { get { return $"{DevId:X}"; } }
+        }
 
-        public string? Name;// { get; set; }
-        public string? FwVer;// { get; set; }
-        public string? CpuId;// { get; set; }
+        #region PROGRESS
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        public int ProgressBar_Minimum
+        { 
+            set 
+            {
+                tsProgressBar.Minimum = value;
+            } 
+        }
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        public int ProgressBar_Maximum
+        {
+            set 
+            {
+                if (tsProgressBar.Minimum >= value)
+                    tsProgressBar.Minimum = tsProgressBar.Maximum - 1;
+                tsProgressBar.Maximum = value;
+            } 
+        }
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        public int ProgressBar_Value
+        {
+            set 
+            {
+                if (tsProgressBar.Maximum < value)
+                    tsProgressBar.Value = tsProgressBar.Maximum;
+                else if (tsProgressBar.Minimum > value)
+                    tsProgressBar.Value = tsProgressBar.Minimum;
+                else
+                    tsProgressBar.Value = value;
+            } 
+        }
 
-        public ListViewItem? listViewItem = null;
+        public void ProgressBar_Step(int value)
+        {
+            tsProgressBar.Increment(value);
+        }
+
+        #endregion
     }
 
     ////////////////////////////////////////////////////////////////////////////

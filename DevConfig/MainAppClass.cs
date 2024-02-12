@@ -1,4 +1,5 @@
 ﻿using CanDiagSupport;
+using DevConfig.Service;
 using DevConfigSupp;
 using System;
 using System.Collections.Generic;
@@ -19,7 +20,7 @@ namespace DevConfig
             MainForm = main_form;
         }
 
-        public IInputPeriph? inputPeriph => MainForm.InputPeriph;
+        public IInputPeriph? inputPeriph => DevConfigService.Instance.InputPeriph;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         public void AppendToDebug(string text, bool bNewLine = true, bool bBolt = false, Color? color = null)
@@ -33,7 +34,7 @@ namespace DevConfig
             switch (PropName)
             {
                 case "SelectedDeviceCanID":
-                    return MainForm.selectedDevice?.Address;
+                    return DevConfigService.Instance.selectedDevice?.Address;
             }
             return null;
         }
@@ -48,18 +49,13 @@ namespace DevConfig
                     Debug.WriteLine($"{PropValue}");
                     break;
                 case "ProgressMin":
-                    MainForm.progressBar.Minimum = (int)PropValue;
+                    MainForm.ProgressBar_Minimum = (int)PropValue;
                     break;
                 case "ProgressMax":
-                    MainForm.progressBar.Maximum = (int)PropValue;
+                    MainForm.ProgressBar_Maximum = (int)PropValue;
                     break;
                 case "ProgressValue":
-                    if (MainForm.progressBar.Maximum < (int)PropValue)
-                    {
-                        Debug.WriteLine($"PropName = {PropName}, PropValue = {PropValue}");
-                        PropValue = MainForm.progressBar.Maximum;
-                    }
-                    MainForm.progressBar.Value = (int)PropValue;
+                    MainForm.ProgressBar_Value = (int)PropValue;
                     break;
             }
         }
