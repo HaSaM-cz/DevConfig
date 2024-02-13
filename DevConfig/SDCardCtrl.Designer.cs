@@ -66,7 +66,7 @@
             treeNode1.Text = "SD Card";
             treeView1.Nodes.AddRange(new TreeNode[] { treeNode1 });
             treeView1.SelectedImageIndex = 0;
-            treeView1.Size = new Size(242, 403);
+            treeView1.Size = new Size(359, 661);
             treeView1.TabIndex = 0;
             treeView1.AfterCollapse += treeView1_AfterCollapse;
             treeView1.AfterExpand += treeView1_AfterExpand;
@@ -100,7 +100,7 @@
             listView1.FullRowSelect = true;
             listView1.Location = new Point(0, 0);
             listView1.Name = "listView1";
-            listView1.Size = new Size(554, 403);
+            listView1.Size = new Size(826, 661);
             listView1.TabIndex = 2;
             listView1.UseCompatibleStateImageBehavior = false;
             listView1.View = View.Details;
@@ -136,14 +136,14 @@
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(listView1);
-            splitContainer1.Size = new Size(800, 403);
-            splitContainer1.SplitterDistance = 242;
+            splitContainer1.Size = new Size(1189, 661);
+            splitContainer1.SplitterDistance = 359;
             splitContainer1.TabIndex = 3;
             // 
             // btn_AddFile
             // 
             btn_AddFile.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btn_AddFile.Location = new Point(494, 12);
+            btn_AddFile.Location = new Point(883, 12);
             btn_AddFile.Name = "btn_AddFile";
             btn_AddFile.Size = new Size(94, 29);
             btn_AddFile.TabIndex = 4;
@@ -154,7 +154,7 @@
             // btn_GetFile
             // 
             btn_GetFile.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btn_GetFile.Location = new Point(594, 12);
+            btn_GetFile.Location = new Point(983, 12);
             btn_GetFile.Name = "btn_GetFile";
             btn_GetFile.Size = new Size(94, 29);
             btn_GetFile.TabIndex = 5;
@@ -165,7 +165,7 @@
             // btn_DelFile
             // 
             btn_DelFile.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btn_DelFile.Location = new Point(694, 12);
+            btn_DelFile.Location = new Point(1083, 12);
             btn_DelFile.Name = "btn_DelFile";
             btn_DelFile.Size = new Size(94, 29);
             btn_DelFile.TabIndex = 6;
@@ -216,7 +216,7 @@
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(1189, 708);
             Controls.Add(btn_RenDir);
             Controls.Add(textBox1);
             Controls.Add(btn_DelDir);

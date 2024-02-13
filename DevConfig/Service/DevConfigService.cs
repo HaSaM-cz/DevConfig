@@ -16,7 +16,7 @@ namespace DevConfig.Service
         public Device? selectedDevice = null;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        enum UpdateEnumFlags
+        public enum UpdateEnumFlags
         {
             RespOK = 0x00,
             ERR_FlashErase = 0x01,

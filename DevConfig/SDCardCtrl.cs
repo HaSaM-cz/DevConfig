@@ -1,13 +1,16 @@
 ﻿using CanDiagSupport;
 using DevConfig.Service;
 using DevConfig.Utils;
+using Renci.SshNet.Messages;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
+using static DevConfig.Service.DevConfigService;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 using Message = CanDiagSupport.Message;
 
@@ -39,51 +42,52 @@ namespace DevConfig
         const byte SD_SubCmd_RenDirNew = 0x42;
         const byte SD_SubCmd_CreateDir = 0x43;
         const byte SD_SubCmd_Abort = 0xF0;
+        const byte SD_SubCmd_Format = 0xF1;
 
         enum FxError
         {
-            FX_SUCCESS = 0xF1,
-            FX_BOOT_ERROR = 0xF0,
-            FX_MEDIA_INVALID = 0x97,
-            FX_FAT_READ_ERROR = 0x96,
-            FX_NOT_FOUND = 0x95,
-            FX_NOT_A_FILE = 0x94,
-            FX_ACCESS_ERROR = 0x93,
-            FX_NOT_OPEN = 0x92,
-            FX_FILE_CORRUPT = 0x91,
-            FX_END_OF_FILE = 0x90,
-            FX_NO_MORE_SPACE = 0x89,
-            FX_ALREADY_CREATED = 0x24,
-            FX_INVALID_NAME = 0x23,
-            FX_INVALID_PATH = 0x22,
-            FX_NOT_DIRECTORY = 0x21,
-            FX_NO_MORE_ENTRIES = 0x20,
-            FX_DIR_NOT_EMPTY = 0x19,
-            FX_MEDIA_NOT_OPEN = 0x18,
-            FX_INVALID_YEAR = 0x17,
-            FX_INVALID_MONTH = 0x16,
-            FX_INVALID_DAY = 0x15,
-            FX_INVALID_HOUR = 0x14,
-            FX_INVALID_MINUTE = 0x13,
-            FX_INVALID_SECOND = 0x12,
-            FX_PTR_ERROR = 0x11,
-            FX_INVALID_ATTR = 0x10,
-            FX_CALLER_ERROR = 0x0F,
-            FX_BUFFER_ERROR = 0x0E,
-            FX_NOT_IMPLEMENTED = 0x0D,
-            FX_WRITE_PROTECT = 0x0C,
-            FX_INVALID_OPTION = 0x0B,
-            FX_SECTOR_INVALID = 0x0A,
-            FX_IO_ERROR = 0x09,
-            FX_NOT_ENOUGH_MEMORY = 0x08,
-            FX_ERROR_FIXED = 0x07,
-            FX_ERROR_NOT_FIXED = 0x06,
-            FX_NOT_AVAILABLE = 0x05,
-            FX_INVALID_CHECKSUM = 0x04,
-            FX_READ_CONTINUE = 0x03,
-            FX_INVALID_STATE = 0x02,
-            FX_NOT_INIT_TRANSFER = 0x01,
-            FX_CRC_ERROR = 0x00,
+            FX_SUCCESS = 0x00,
+            FX_BOOT_ERROR = 0x01,
+            FX_MEDIA_INVALID = 0x02,
+            FX_FAT_READ_ERROR = 0x03,
+            FX_NOT_FOUND = 0x04,
+            FX_NOT_A_FILE = 0x05,
+            FX_ACCESS_ERROR = 0x06,
+            FX_NOT_OPEN = 0x07,
+            FX_FILE_CORRUPT = 0x08,
+            FX_END_OF_FILE = 0x09,
+            FX_NO_MORE_SPACE = 0x0A,
+            FX_ALREADY_CREATED = 0x0B,
+            FX_INVALID_NAME = 0x0C,
+            FX_INVALID_PATH = 0x0D,
+            FX_NOT_DIRECTORY = 0x0E,
+            FX_NO_MORE_ENTRIES = 0x0F,
+            FX_DIR_NOT_EMPTY = 0x10,
+            FX_MEDIA_NOT_OPEN = 0x11,
+            FX_INVALID_YEAR = 0x12,
+            FX_INVALID_MONTH = 0x13,
+            FX_INVALID_DAY = 0x14,
+            FX_INVALID_HOUR = 0x15,
+            FX_INVALID_MINUTE = 0x16,
+            FX_INVALID_SECOND = 0x17,
+            FX_PTR_ERROR = 0x18,
+            FX_INVALID_ATTR = 0x19,
+            FX_CALLER_ERROR = 0x20,
+            FX_BUFFER_ERROR = 0x21,
+            FX_NOT_IMPLEMENTED = 0x22,
+            FX_WRITE_PROTECT = 0x23,
+            FX_INVALID_OPTION = 0x24,
+            FX_SECTOR_INVALID = 0x89,
+            FX_IO_ERROR = 0x90,
+            FX_NOT_ENOUGH_MEMORY = 0x91,
+            FX_ERROR_FIXED = 0x92,
+            FX_ERROR_NOT_FIXED = 0x93,
+            FX_NOT_AVAILABLE = 0x94,
+            FX_INVALID_CHECKSUM = 0x95,
+            FX_READ_CONTINUE = 0x96,
+            FX_INVALID_STATE = 0x97,
+            FX_NOT_INIT_TRANSFER = 0xF0,
+            FX_CRC_ERROR = 0xF1,
         }
 
         bool bSendBreak = false;
@@ -116,7 +120,10 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void btn_List_Click(object sender, EventArgs e)
         {
-            PopulateTreeView();
+            if (Control.ModifierKeys == (Keys.Shift | Keys.Control))
+                SDFormat();
+            else
+                PopulateTreeView();
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -350,6 +357,7 @@ namespace DevConfig
         uint file_crc32 = 0;
         uint file_timestamp = 0;
         byte file_attributes = 0;
+        byte MessageFlag = 0;
         List<Message> messages = new List<Message>();
         readonly ManualResetEvent sync_obj = new(false);
         Dictionary<uint, List<byte>> file_bytes_map = new();
@@ -360,28 +368,44 @@ namespace DevConfig
             {
                 if (msg.CMD == ECmd_SD_Command)
                 {
-                    if (msg.Data.Count < 2)
+                    if (msg.Data.Count == 1 && msg.Data[0] == 0x0F )
                     {
-                        Debug.WriteLine($"Bad msg length {msg.Data.Count} bytes");
+                        bContinue = false;
+                        MainForm.AppendToDebug("Unknown operation", true, true, Color.Red);
                         return;
                     }
+                    if (msg.Data.Count < 2)
+                    {
+                        bContinue = false;
+                        MainForm.AppendToDebug($"Bad msg length {msg.Data.Count} bytes.", true, true, Color.Red);
+                        return;
+                    }
+                    MessageFlag = msg.Data[1];
                     switch (msg.Data[0])
                     {
                         case SD_SubCmd_ListFiles:
-                            byte error = msg.Data[1];
-                            if (error == 0)
+                            if (MessageFlag == 0)
                             {
                                 files_to_read = BitConverter.ToUInt16(msg.Data.Skip(2).Take(2).Reverse().ToArray());
                                 Debug.WriteLine($"Get {files_to_read} files");
                             }
                             else
                             {
-                                Debug.WriteLine($"Error {error}");
+                                bContinue = false;
+                                Debug.WriteLine($"Error {MessageFlag}");
                             }
+                            sync_obj.Set();
                             break;
                         case SD_SubCmd_FileItemName: // FileInfo file
-                            lock (messages)
-                                messages.Add(msg);
+                            if (MessageFlag == 0)
+                            {
+                                lock (messages)
+                                    messages.Add(msg);
+                            }
+                            else
+                            {
+                                bContinue = false;
+                            }
                             sync_obj.Set();
                             break;
 
@@ -416,16 +440,19 @@ namespace DevConfig
                             sync_obj.Set();
                             break;
 
+                        case SD_SubCmd_Format:
                         case SD_SubCmd_RenDirNew:
                         case SD_SubCmd_RenDirOld:
                         case SD_SubCmd_RenFileNew:
                         case SD_SubCmd_RenFileOld:
+                        case SD_SubCmd_CreateDir:
+                        case SD_SubCmd_DelDir:
                         case SD_SubCmd_PutFile: // response zahájení odeslání souboru
                         case SD_SubCmd_PutFilePart: // response odeslání další čísti souboru
-                            if (msg.Data[1] != 0)
+                            if (MessageFlag != 0)
                             {
-                                Debug.WriteLine($"Error {msg.Data[1]}");
-                                return;
+                                bContinue = false;
+                                Debug.WriteLine($"Error {MessageFlag}");
                             }
                             sync_obj.Set();
                             break;
@@ -455,7 +482,7 @@ namespace DevConfig
 
             int node_ix = treeView1.Nodes.IndexOfKey("SDCard");
             TreeNode rootNode = treeView1.Nodes[node_ix];
-
+            bContinue = true;
             ExpandNode(rootNode, true);
             treeView1.SelectedNode = rootNode;
             treeView1.Focus();
@@ -518,7 +545,7 @@ namespace DevConfig
         private List<FileInfo> GetFileList(string directory)
         {
             Cursor = Cursors.WaitCursor;
-            Debug.WriteLine($"GetFileList({directory})");
+            MainForm.AppendToDebug($"GetFileList ({directory})");
 
             List<FileInfo> fileinfolist = new();
 
@@ -536,7 +563,7 @@ namespace DevConfig
 
             DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
-            while (sync_obj.WaitOne(2000))
+            while (sync_obj.WaitOne(2000) && bContinue)
             {
                 lock (messages)
                 {
@@ -546,52 +573,102 @@ namespace DevConfig
                 sync_obj.Reset();
             }
 
-            foreach (Message msg in messages)
+            if (bContinue)
             {
-                byte error = msg.Data[1];
-                if (error == 0x00)
+                foreach (Message msg in messages)
                 {
-                    ushort idx = BitConverter.ToUInt16(msg.Data.Skip(2).Take(2).Reverse().ToArray());
-                    byte attr = msg.Data[4];
-                    string filename = System.Text.Encoding.ASCII.GetString(msg.Data.Skip(13).ToArray());
-                    if ((attr & FX_HIDDEN) != FX_HIDDEN)
+                    byte error = msg.Data[1];
+                    if (error == 0x00)
                     {
-                        FileInfo fileinfo = new FileInfo(filename);
-
-                        if ((attr & FX_DIRECTORY) == FX_DIRECTORY)
+                        ushort idx = BitConverter.ToUInt16(msg.Data.Skip(2).Take(2).Reverse().ToArray());
+                        byte attr = msg.Data[4];
+                        //string filename = System.Text.Encoding.GetEncoding("CP852").GetString(msg.Data.Skip(13).ToArray());
+                        string filename = System.Text.Encoding.ASCII.GetString(msg.Data.Skip(13).ToArray());
+                        if ((attr & FX_HIDDEN) != FX_HIDDEN)
                         {
-                            Debug.WriteLine($"Dir {idx}, attr = {attr:X2}, {filename}");
-                            if (filename != "." && filename != "..")
+                            FileInfo fileinfo = new FileInfo(filename);
+
+                            if ((attr & FX_DIRECTORY) == FX_DIRECTORY)
                             {
-                                fileinfo.IsDirectory = true;
+                                Debug.WriteLine($"Dir {idx}, attr = {attr:X2}, {filename}");
+                                if (filename != "." && filename != "..")
+                                {
+                                    fileinfo.IsDirectory = true;
+                                    fileinfolist.Add(fileinfo);
+                                }
+                            }
+                            else
+                            {
+                                fileinfo.IsDirectory = false;
+                                fileinfo.Size = BitConverter.ToUInt32(msg.Data.Skip(5).Take(4).Reverse().ToArray());
+                                uint time = BitConverter.ToUInt32(msg.Data.Skip(9).Take(4).Reverse().ToArray());
+
+                                DateTimeOffset dateTime = DateTimeOffset.FromUnixTimeSeconds(time);
+                                fileinfo.ModifyTime = dateTime.DateTime;//.ToLocalTime();
+
+                                Debug.WriteLine($"File {idx}, attr = {attr:X2}, size = {fileinfo.Size}, time = {time}, {filename}");
                                 fileinfolist.Add(fileinfo);
                             }
+
                         }
-                        else
-                        {
-                            fileinfo.IsDirectory = false;
-                            fileinfo.Size = BitConverter.ToUInt32(msg.Data.Skip(5).Take(4).Reverse().ToArray());
-                            uint time = BitConverter.ToUInt32(msg.Data.Skip(9).Take(4).Reverse().ToArray());
-
-                            DateTimeOffset dateTime = DateTimeOffset.FromUnixTimeSeconds(time);
-                            fileinfo.ModifyTime = dateTime.DateTime;//.ToLocalTime();
-
-                            Debug.WriteLine($"File {idx}, attr = {attr:X2}, size = {fileinfo.Size}, time = {time}, {filename}");
-                            fileinfolist.Add(fileinfo);
-                        }
-
+                    }
+                    else
+                    {
+                        MessageFlag = error;
+                        break;
                     }
                 }
-                else
-                {
-                    Debug.WriteLine($"Error {error}");
-                }
             }
+
+            if (MessageFlag != 0)
+                MainForm.AppendToDebug($"GetFileList Error {(FxError)MessageFlag}", true, false, Color.Red);
+            else
+                MainForm.AppendToDebug($"GetFileList OK", true, false, Color.DarkGreen);
 
             Cursor = Cursors.Default;
             return fileinfolist;
 
         }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void SDFormat()
+        {
+            if (MessageBox.Show("Do you want to format the SD card on your device?", "DevConfig - FORMAT", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
+            {
+                Task.Run(() =>
+                {
+                    MainForm.AppendToDebug("Format SD card");
+
+                    Debug.WriteLine("Format SD");
+                    Message message = new Message();
+                    message.DEST = DeviceAddress;
+                    message.CMD = ECmd_SD_Command;
+                    message.Data = new List<byte>();
+                    message.Data.Add(SD_SubCmd_Format);
+                    bContinue = true;
+                    sync_obj.Reset();
+                    DevConfigService.Instance.InputPeriph?.SendMsg(message);
+
+                    if (sync_obj.WaitOne(3000))
+                    {
+                        if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
+                        {
+                            MainForm.AppendToDebug("Format SD card OK", true, false, Color.DarkGreen);
+                        }
+                        else
+                        {
+                            MainForm.AppendToDebug($"Format SD card ERROR ({(UpdateEnumFlags)MessageFlag})", true, true, Color.Red);
+                        }
+                    }
+                    else
+                    {
+                        if(bContinue)
+                            MainForm.AppendToDebug("Format SD card TIMEOUT", true, true, Color.Red);
+                    }
+                });
+            }
+        }
+
         #endregion
 
         #region DRAG/DROP
@@ -894,22 +971,51 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void AddDirectory(string text)
         {
-            //var obj = treeView1.SelectedNode.Tag;
             string path = MakePath(treeView1.SelectedNode);
             if (!path.EndsWith('/'))
                 path += "/";
             path += text;
 
-            Debug.WriteLine($"Create Directory{path}");
+            Task.Run(() =>
+            {
+                MainForm.AppendToDebug($"Create Directory ({path})");
 
-            Message message = new Message();
-            message.DEST = DeviceAddress;
-            message.CMD = ECmd_SD_Command;
-            message.Data = new List<byte>();
-            message.Data.Add(SD_SubCmd_CreateDir);
-            message.Data.AddRange(Encoding.ASCII.GetBytes(path + "\0"));
-            sync_obj.Reset();
-            DevConfigService.Instance.InputPeriph?.SendMsg(message);
+                var dt = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
+                var dateTimeOffset = new DateTimeOffset(dt);
+                var timestamp = dateTimeOffset.ToUnixTimeSeconds();
+
+                Message message = new Message();
+                message.DEST = DeviceAddress;
+                message.CMD = ECmd_SD_Command;
+                message.Data = new List<byte>();
+                message.Data.Add(SD_SubCmd_CreateDir);                                  // sub cmd
+                message.Data.AddRange(((uint)timestamp).GetBytes().Reverse());          // timestamp
+
+                message.Data.AddRange(Encoding.ASCII.GetBytes(path + "\0"));            // dir name
+                //message.Data.AddRange(Encoding.UTF7.GetBytes(path + "\0"));            // dir name
+
+                sync_obj.Reset();
+                bContinue = true;
+                DevConfigService.Instance.InputPeriph?.SendMsg(message);
+                if (sync_obj.WaitOne(3000))
+                {
+                    if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
+                    {
+                        MainForm.AppendToDebug("Create Directory OK", true, false, Color.DarkGreen);
+                    }
+                    else
+                    {
+                        MainForm.AppendToDebug($"Create Directory ERROR ({(UpdateEnumFlags)MessageFlag})", true, true, Color.Red);
+                    }
+                }
+                else
+                {
+                    if (bContinue)
+                        MainForm.AppendToDebug("Create Directory TIMEOUT", true, true, Color.Red);
+                }
+            });
+
+
 
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -919,16 +1025,36 @@ namespace DevConfig
             {
                 string path = MakePath(treeView1.SelectedNode);
 
-                Debug.WriteLine($"Delete Directory{path}");
+                Task.Run(() =>
+                {
+                    MainForm.AppendToDebug($"Delete Directory ({path})");
 
-                Message message = new Message();
-                message.DEST = DeviceAddress;
-                message.CMD = ECmd_SD_Command;
-                message.Data = new List<byte>();
-                message.Data.Add(SD_SubCmd_DelDir);
-                message.Data.AddRange(Encoding.ASCII.GetBytes(path + "\0"));
-                sync_obj.Reset();
-                DevConfigService.Instance.InputPeriph?.SendMsg(message);
+                    Message message = new Message();
+                    message.DEST = DeviceAddress;
+                    message.CMD = ECmd_SD_Command;
+                    message.Data = new List<byte>();
+                    message.Data.Add(SD_SubCmd_DelDir);
+                    message.Data.AddRange(Encoding.ASCII.GetBytes(path + "\0"));
+                    sync_obj.Reset();
+                    bContinue = true;
+                    DevConfigService.Instance.InputPeriph?.SendMsg(message);
+                    if (sync_obj.WaitOne(3000))
+                    {
+                        if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
+                        {
+                            MainForm.AppendToDebug("Delete Directory OK", true, false, Color.DarkGreen);
+                        }
+                        else
+                        {
+                            MainForm.AppendToDebug($"Delete Directory ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
+                        }
+                    }
+                    else
+                    {
+                        if (bContinue)
+                            MainForm.AppendToDebug("Delete Directory TIMEOUT", true, false, Color.Red);
+                    }
+                });
             }
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -943,32 +1069,58 @@ namespace DevConfig
                     new_path += "/";
                 new_path += text;
 
-                Debug.WriteLine($"Rename Directory {path} to {new_path}");
-
-                Message message = new Message();
-                message.DEST = DeviceAddress;
-                message.CMD = ECmd_SD_Command;
-
-                message.Data = new List<byte>();
-                message.Data.Add(SD_SubCmd_RenDirOld);
-                message.Data.AddRange(Encoding.ASCII.GetBytes(path + "\0"));
-                sync_obj.Reset();
-                DevConfigService.Instance.InputPeriph?.SendMsg(message);
-
-                if (sync_obj.WaitOne(1000))
+                Task.Run(() =>
                 {
-                    message.Data = new List<byte>();
-                    message.Data.Add(SD_SubCmd_RenDirNew);
-                    message.Data.AddRange(Encoding.ASCII.GetBytes(new_path + "\0"));
-                    sync_obj.Reset();
-                    DevConfigService.Instance.InputPeriph?.SendMsg(message);
+                    MainForm.AppendToDebug($"Rename Directory ({path}) to ({new_path})");
 
-                    if (sync_obj.WaitOne(1000))
-                        return;
-                }
+                    Message[] msg_arr = new Message[2];
+
+                    msg_arr[0] = new Message();
+                    msg_arr[0].DEST = DeviceAddress;
+                    msg_arr[0].CMD = ECmd_SD_Command;
+                    msg_arr[0].Data = new List<byte>() { SD_SubCmd_RenDirOld };
+                    msg_arr[0].Data.AddRange(Encoding.ASCII.GetBytes(path + "\0"));
+
+                    msg_arr[1] = new Message();
+                    msg_arr[1].DEST = DeviceAddress;
+                    msg_arr[1].CMD = ECmd_SD_Command;
+                    msg_arr[1].Data = new List<byte> { SD_SubCmd_RenDirNew };
+                    msg_arr[1].Data.AddRange(Encoding.ASCII.GetBytes(new_path + "\0"));
+
+                    bContinue = true;
+                    foreach (Message message in msg_arr)
+                    {
+                        if (!bContinue)
+                            break;
+
+                        sync_obj.Reset();
+                        DevConfigService.Instance.InputPeriph?.SendMsg(message);
+
+                        if (sync_obj.WaitOne(1000))
+                        {
+                            if (MessageFlag != (byte)UpdateEnumFlags.RespOK)
+                            {
+                                bContinue = false;
+                                MessageFlag = 0xFF;
+                                MainForm.AppendToDebug($"Rename Directory ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            bContinue = false;
+                            MessageFlag = 0xFF;
+                            MainForm.AppendToDebug("Rename Directory TIMEOUT", true, false, Color.Red);
+                            break;
+                        }
+
+                    }
+
+                    if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
+                        MainForm.AppendToDebug("Rename Directory OK", true, false, Color.DarkGreen);
+                });
             }
         }
-
         #endregion
 
     }
