@@ -1,17 +1,11 @@
 ﻿using CanDiagSupport;
 using DevConfig.Service;
 using DevConfig.Utils;
-using Renci.SshNet.Messages;
 using System.Data;
 using System.Diagnostics;
-using System.IO;
-using System.Reflection;
-using System.Runtime.Intrinsics.Arm;
 using System.Text;
-using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 using static DevConfig.Service.DevConfigService;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 using Message = CanDiagSupport.Message;
 
 namespace DevConfig
@@ -94,6 +88,11 @@ namespace DevConfig
         bool bContinue = true;
         byte DeviceAddress;
         MainForm MainForm;
+
+        Encoding name_encoding = Encoding.ASCII;
+        //Encoding name_encoding = Encoding.UTF8;
+        //Encoding name_encoding = CodePagesEncodingProvider.Instance.GetEncoding(852);
+        //Encoding name_encoding = CodePagesEncodingProvider.Instance.GetEncoding(1250);
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         public SDCardCtrl(MainForm mainForm)
@@ -555,7 +554,7 @@ namespace DevConfig
 
             message.Data = new List<byte>();
             message.Data.Add(SD_SubCmd_ListFiles);
-            message.Data.AddRange(Encoding.ASCII.GetBytes(directory + "\0"));
+            message.Data.AddRange(name_encoding.GetBytes(directory + "\0"));
 
             lock (messages)
                 messages.Clear();
@@ -582,8 +581,7 @@ namespace DevConfig
                     {
                         ushort idx = BitConverter.ToUInt16(msg.Data.Skip(2).Take(2).Reverse().ToArray());
                         byte attr = msg.Data[4];
-                        //string filename = System.Text.Encoding.GetEncoding("CP852").GetString(msg.Data.Skip(13).ToArray());
-                        string filename = System.Text.Encoding.ASCII.GetString(msg.Data.Skip(13).ToArray());
+                        string filename = name_encoding.GetString(msg.Data.Skip(13).ToArray());
                         if ((attr & FX_HIDDEN) != FX_HIDDEN)
                         {
                             FileInfo fileinfo = new FileInfo(filename);
@@ -740,7 +738,7 @@ namespace DevConfig
 
             message.Data = new List<byte>();
             message.Data.Add(SD_SubCmd_GetFile);
-            message.Data.AddRange(Encoding.ASCII.GetBytes(file_path + "\0"));
+            message.Data.AddRange(name_encoding.GetBytes(file_path + "\0"));
 
             sync_obj.Reset();
             bSendBreak = true;
@@ -864,7 +862,7 @@ namespace DevConfig
             uint crc32 = CRC.CRC32WideFast(file_bytes, 0, (uint)fileInfo.Length);
             message.Data.AddRange(((uint)crc32).GetBytes().Reverse());              // crc32
             Debug.WriteLine($"crc32 = {crc32}({crc32:X8})");
-            message.Data.AddRange(Encoding.ASCII.GetBytes(dest_file_name + "\0"));  // file name
+            message.Data.AddRange(name_encoding.GetBytes(dest_file_name + "\0"));  // file name
 
             sync_obj.Reset();
             DevConfigService.Instance.InputPeriph?.SendMsg(message);
@@ -920,7 +918,7 @@ namespace DevConfig
 
             message.Data = new List<byte>();
             message.Data.Add(SD_SubCmd_DelFile);
-            message.Data.AddRange(Encoding.ASCII.GetBytes(file_path + "\0"));
+            message.Data.AddRange(name_encoding.GetBytes(file_path + "\0"));
 
             DevConfigService.Instance.InputPeriph?.SendMsg(message);
         }
@@ -946,7 +944,7 @@ namespace DevConfig
 
             message.Data = new List<byte>();
             message.Data.Add(SD_SubCmd_RenFileOld);
-            message.Data.AddRange(Encoding.ASCII.GetBytes(old_file_name + "\0"));
+            message.Data.AddRange(name_encoding.GetBytes(old_file_name + "\0"));
             sync_obj.Reset();
             DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
@@ -954,7 +952,7 @@ namespace DevConfig
             {
                 message.Data = new List<byte>();
                 message.Data.Add(SD_SubCmd_RenFileNew);
-                message.Data.AddRange(Encoding.ASCII.GetBytes(new_file_name + "\0"));
+                message.Data.AddRange(name_encoding.GetBytes(new_file_name + "\0"));
                 sync_obj.Reset();
                 DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
@@ -976,47 +974,47 @@ namespace DevConfig
                 path += "/";
             path += text;
 
-            Task.Run(() =>
+            MainForm.AppendToDebug($"Create Directory ({path})");
+
+            var dt = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
+            var dateTimeOffset = new DateTimeOffset(dt);
+            var timestamp = dateTimeOffset.ToUnixTimeSeconds();
+
+            Message message = new Message();
+            message.DEST = DeviceAddress;
+            message.CMD = ECmd_SD_Command;
+            message.Data = new List<byte>();
+            message.Data.Add(SD_SubCmd_CreateDir);                                  // sub cmd
+            message.Data.AddRange(((uint)timestamp).GetBytes().Reverse());          // timestamp
+            message.Data.AddRange(name_encoding.GetBytes(path + "\0"));            // dir name
+
+            sync_obj.Reset();
+            bContinue = true;
+            DevConfigService.Instance.InputPeriph?.SendMsg(message);
+            if (sync_obj.WaitOne(3000))
             {
-                MainForm.AppendToDebug($"Create Directory ({path})");
-
-                var dt = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
-                var dateTimeOffset = new DateTimeOffset(dt);
-                var timestamp = dateTimeOffset.ToUnixTimeSeconds();
-
-                Message message = new Message();
-                message.DEST = DeviceAddress;
-                message.CMD = ECmd_SD_Command;
-                message.Data = new List<byte>();
-                message.Data.Add(SD_SubCmd_CreateDir);                                  // sub cmd
-                message.Data.AddRange(((uint)timestamp).GetBytes().Reverse());          // timestamp
-
-                message.Data.AddRange(Encoding.ASCII.GetBytes(path + "\0"));            // dir name
-                //message.Data.AddRange(Encoding.UTF7.GetBytes(path + "\0"));            // dir name
-
-                sync_obj.Reset();
-                bContinue = true;
-                DevConfigService.Instance.InputPeriph?.SendMsg(message);
-                if (sync_obj.WaitOne(3000))
+                if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
                 {
-                    if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
-                    {
-                        MainForm.AppendToDebug("Create Directory OK", true, false, Color.DarkGreen);
-                    }
-                    else
-                    {
-                        MainForm.AppendToDebug($"Create Directory ERROR ({(UpdateEnumFlags)MessageFlag})", true, true, Color.Red);
-                    }
+                    MainForm.AppendToDebug("Create Directory OK", true, false, Color.DarkGreen);
+                    // OK vytvorime polozku ve stromu
+                    DirInfo dirInfo1 = new DirInfo(path);
+                    dirInfo1.FileInfoList = new List<FileInfo>();
+                    TreeNode new_node = new TreeNode(Path.GetFileName(path));
+                    new_node.ImageKey = "FolderClosed.bmp";
+                    new_node.SelectedImageKey = "FolderClosed.bmp";
+                    new_node.Tag = dirInfo1;
+                    treeView1.SelectedNode.Nodes.Add(new_node);
                 }
                 else
                 {
-                    if (bContinue)
-                        MainForm.AppendToDebug("Create Directory TIMEOUT", true, true, Color.Red);
+                    MainForm.AppendToDebug($"Create Directory ERROR ({(UpdateEnumFlags)MessageFlag})", true, true, Color.Red);
                 }
-            });
-
-
-
+            }
+            else
+            {
+                if (bContinue)
+                    MainForm.AppendToDebug("Create Directory TIMEOUT", true, true, Color.Red);
+            }
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void DelDirectory()
@@ -1025,36 +1023,35 @@ namespace DevConfig
             {
                 string path = MakePath(treeView1.SelectedNode);
 
-                Task.Run(() =>
-                {
-                    MainForm.AppendToDebug($"Delete Directory ({path})");
+                MainForm.AppendToDebug($"Delete Directory ({path})");
 
-                    Message message = new Message();
-                    message.DEST = DeviceAddress;
-                    message.CMD = ECmd_SD_Command;
-                    message.Data = new List<byte>();
-                    message.Data.Add(SD_SubCmd_DelDir);
-                    message.Data.AddRange(Encoding.ASCII.GetBytes(path + "\0"));
-                    sync_obj.Reset();
-                    bContinue = true;
-                    DevConfigService.Instance.InputPeriph?.SendMsg(message);
-                    if (sync_obj.WaitOne(3000))
+                Message message = new Message();
+                message.DEST = DeviceAddress;
+                message.CMD = ECmd_SD_Command;
+                message.Data = new List<byte>();
+                message.Data.Add(SD_SubCmd_DelDir);
+                message.Data.AddRange(name_encoding.GetBytes(path + "\0"));
+                sync_obj.Reset();
+                bContinue = true;
+                DevConfigService.Instance.InputPeriph?.SendMsg(message);
+                if (sync_obj.WaitOne(3000))
+                {
+                    if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
                     {
-                        if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
-                        {
-                            MainForm.AppendToDebug("Delete Directory OK", true, false, Color.DarkGreen);
-                        }
-                        else
-                        {
-                            MainForm.AppendToDebug($"Delete Directory ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
-                        }
+                        MainForm.AppendToDebug("Delete Directory OK", true, false, Color.DarkGreen);
+                        // OK odstranime polozku ze stromu
+                        treeView1.Nodes.Remove(treeView1.SelectedNode);
                     }
                     else
                     {
-                        if (bContinue)
-                            MainForm.AppendToDebug("Delete Directory TIMEOUT", true, false, Color.Red);
+                        MainForm.AppendToDebug($"Delete Directory ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
                     }
-                });
+                }
+                else
+                {
+                    if (bContinue)
+                        MainForm.AppendToDebug("Delete Directory TIMEOUT", true, false, Color.Red);
+                }
             }
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -1069,56 +1066,57 @@ namespace DevConfig
                     new_path += "/";
                 new_path += text;
 
-                Task.Run(() =>
+                MainForm.AppendToDebug($"Rename Directory ({path}) to ({new_path})");
+
+                Message[] msg_arr = new Message[2];
+
+                msg_arr[0] = new Message();
+                msg_arr[0].DEST = DeviceAddress;
+                msg_arr[0].CMD = ECmd_SD_Command;
+                msg_arr[0].Data = new List<byte>() { SD_SubCmd_RenDirOld };
+                msg_arr[0].Data.AddRange(name_encoding.GetBytes(path + "\0"));
+
+                msg_arr[1] = new Message();
+                msg_arr[1].DEST = DeviceAddress;
+                msg_arr[1].CMD = ECmd_SD_Command;
+                msg_arr[1].Data = new List<byte> { SD_SubCmd_RenDirNew };
+                msg_arr[1].Data.AddRange(name_encoding.GetBytes(new_path + "\0"));
+
+                bContinue = true;
+                foreach (Message message in msg_arr)
                 {
-                    MainForm.AppendToDebug($"Rename Directory ({path}) to ({new_path})");
+                    if (!bContinue)
+                        break;
 
-                    Message[] msg_arr = new Message[2];
+                    sync_obj.Reset();
+                    DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
-                    msg_arr[0] = new Message();
-                    msg_arr[0].DEST = DeviceAddress;
-                    msg_arr[0].CMD = ECmd_SD_Command;
-                    msg_arr[0].Data = new List<byte>() { SD_SubCmd_RenDirOld };
-                    msg_arr[0].Data.AddRange(Encoding.ASCII.GetBytes(path + "\0"));
-
-                    msg_arr[1] = new Message();
-                    msg_arr[1].DEST = DeviceAddress;
-                    msg_arr[1].CMD = ECmd_SD_Command;
-                    msg_arr[1].Data = new List<byte> { SD_SubCmd_RenDirNew };
-                    msg_arr[1].Data.AddRange(Encoding.ASCII.GetBytes(new_path + "\0"));
-
-                    bContinue = true;
-                    foreach (Message message in msg_arr)
+                    if (sync_obj.WaitOne(1000))
                     {
-                        if (!bContinue)
-                            break;
-
-                        sync_obj.Reset();
-                        DevConfigService.Instance.InputPeriph?.SendMsg(message);
-
-                        if (sync_obj.WaitOne(1000))
-                        {
-                            if (MessageFlag != (byte)UpdateEnumFlags.RespOK)
-                            {
-                                bContinue = false;
-                                MessageFlag = 0xFF;
-                                MainForm.AppendToDebug($"Rename Directory ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
-                                break;
-                            }
-                        }
-                        else
+                        if (MessageFlag != (byte)UpdateEnumFlags.RespOK)
                         {
                             bContinue = false;
                             MessageFlag = 0xFF;
-                            MainForm.AppendToDebug("Rename Directory TIMEOUT", true, false, Color.Red);
+                            MainForm.AppendToDebug($"Rename Directory ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
                             break;
                         }
-
+                    }
+                    else
+                    {
+                        bContinue = false;
+                        MessageFlag = 0xFF;
+                        MainForm.AppendToDebug("Rename Directory TIMEOUT", true, false, Color.Red);
+                        break;
                     }
 
-                    if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
-                        MainForm.AppendToDebug("Rename Directory OK", true, false, Color.DarkGreen);
-                });
+                }
+
+                if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
+                {
+                    MainForm.AppendToDebug("Rename Directory OK", true, false, Color.DarkGreen);
+                    treeView1.SelectedNode.Text = Path.GetFileName(new_path);
+                    ((DirInfo)treeView1.SelectedNode.Tag).Name = Path.GetFileName(new_path);
+                }
             }
         }
         #endregion

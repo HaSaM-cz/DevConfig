@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -54,9 +55,25 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void MainForm_Load(object sender, EventArgs e)
         {
-            //message.Data.AddRange(Encoding.UTF7.GetBytes(path + "\0"));            // dir name
-            //var a = System.Text.Encoding.GetEncoding(852);
+            /*var enc = CodePagesEncodingProvider.Instance.GetEncoding(852);
+            CultureInfo ci = new CultureInfo("cs-CZ");
+            foreach (EncodingInfo ei in Encoding.GetEncodings())
+            {
+                Encoding E2 = ei.GetEncoding();
 
+                //if ((ei.Name != E2.BodyName) || (ei.Name != E2.HeaderName) || (ei.Name != E2.WebName))
+                {
+                    Debug.Write("{0,-18} ", ei.Name);
+                    Debug.Write("{0,-9}  ", E2.CodePage.ToString());
+                    Debug.Write("{0,-18} ", E2.BodyName);
+                    Debug.Write("{0,-18} ", E2.HeaderName);
+                    Debug.Write("{0,-18} ", E2.WebName);
+                    Debug.WriteLine("{0} ", E2.EncodingName);
+                }
+            }
+            //message.Data.AddRange(Encoding.UTF7.GetBytes(path + "\0"));            // dir name
+            //var a = System.Text.Encoding.GetEncoding("cp852");
+            */
             DevicesTypeList = JsonConvert.DeserializeObject<List<DeviceType>>(File.ReadAllText(@"Resources\Devices.json"));
             string[] BLPaths = Settings.Default.BLPath.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             for (int i = 0; i < BLPaths.Length; i += 2)
