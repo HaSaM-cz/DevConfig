@@ -95,13 +95,9 @@ namespace DevConfig
         private void sDCardForSelectedDeviceToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (DevConfigService.Instance.selectedDevice != null)
-            {
-                SDCardCtrl? a = CreateChild<SDCardCtrl>($"SD Card ({DevConfigService.Instance.selectedDevice.Address})");
-            }
+                CreateChild<SDCardCtrl>($"SD Card (0x{DevConfigService.Instance.selectedDevice.Address:X2})");
             else
-            {
-                // TODO
-            }
+                MessageBox.Show("First you need to select device.", "DevConfig - info", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -349,8 +345,15 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
+        internal void AppendToDebugIf(bool bCond, string text, bool bNewLine = true, bool bBolt = false, Color? color = null)
+        {
+            if (bCond)
+                AppendToDebug(text, bNewLine, bBolt, color);
+        }
+        ///////////////////////////////////////////////////////////////////////////////////////////
         internal void AppendToDebug(string text, bool bNewLine = true, bool bBolt = false, Color? color = null)
         {
+            Debug.WriteLine(text);
             DebugWnd?.AppendText(text, bNewLine, bBolt, color);
         }
 

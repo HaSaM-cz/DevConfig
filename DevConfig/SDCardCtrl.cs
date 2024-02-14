@@ -3,15 +3,19 @@ using DevConfig.Service;
 using DevConfig.Utils;
 using System.Data;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
+using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
-using static DevConfig.Service.DevConfigService;
+using static System.Windows.Forms.ListView;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Message = CanDiagSupport.Message;
 
 namespace DevConfig
 {
     public partial class SDCardCtrl : DockContent
     {
+        #region CONSTANT
         const byte FX_DIR_ENTRY_DONE = 0x00;
         const byte FX_READ_ONLY = 0x01;
         const byte FX_HIDDEN = 0x02;
@@ -83,7 +87,7 @@ namespace DevConfig
             FX_NOT_INIT_TRANSFER = 0xF0,
             FX_CRC_ERROR = 0xF1,
         }
-
+        #endregion
         bool bSendBreak = false;
         bool bContinue = true;
         byte DeviceAddress;
@@ -112,7 +116,6 @@ namespace DevConfig
             Debug.Assert(DevConfigService.Instance.selectedDevice != null);
             DeviceAddress = DevConfigService.Instance.selectedDevice.Address;
             Debug.WriteLine($"CAN ID = {DeviceAddress}");
-            Text += $" ({DeviceAddress:X2})";
             PopulateTreeView();
         }
         #region FORM COMMAND
@@ -128,12 +131,13 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void btn_Add_Click(object sender, EventArgs e)
         {
-            OpenFileDialog fileDialog = new OpenFileDialog();
-            fileDialog.Filter = "All files (*.*)|*.*";
-            if (fileDialog.ShowDialog() == DialogResult.OK)
+            OpenFileDialog fileDialog = new OpenFileDialog()
             {
+                Multiselect = true,
+                Filter = "All files (*.*)|*.*",
+            };
+            if (fileDialog.ShowDialog() == DialogResult.OK)
                 Task.Run(() => { AddFiles(fileDialog.FileNames); });
-            }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -182,18 +186,7 @@ namespace DevConfig
         private void btn_DelFile_Click(object sender, EventArgs e)
         {
             if (listView1.SelectedItems.Count > 0)
-            {
-                List<string> file_paths = new();
-
-                foreach (ListViewItem item in listView1.SelectedItems)
-                {
-                    string path = MakePath((TreeNode)item.Tag);
-                    path = Path.Combine(path, item.Text).Replace('\\', '/');
-                    file_paths.Add(path);
-                }
-
-                DeleteFiles(file_paths);
-            }
+                DeleteFiles(listView1.SelectedItems);
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -229,16 +222,17 @@ namespace DevConfig
                 {
                     if (!f.IsDirectory)
                     {
-                        ListViewItem.ListViewSubItem[] subItems;
-                        ListViewItem item = new ListViewItem(Path.GetFileName(f.Name), 1);
-                        subItems = new ListViewItem.ListViewSubItem[]
+                        ListViewItem item = new ListViewItem(Path.GetFileName(f.Name), 1)
+                        {
+                            Tag = e.Node,
+                        };
+                        ListViewItem.ListViewSubItem[] subItems = new ListViewItem.ListViewSubItem[]
                         {
                             new ListViewItem.ListViewSubItem(item, $"{f.ModifyTime}"),
                             new ListViewItem.ListViewSubItem(item, $"{f.Size}")
                         };
                         item.SubItems.AddRange(subItems);
-                        var new_item = listView1.Items.Add(item);
-                        new_item.Tag = e.Node;
+                        listView1.Items.Add(item);
                     }
                 }
                 listView1.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
@@ -307,7 +301,7 @@ namespace DevConfig
         private void btn_AddDir_Click(object sender, EventArgs e)
         {
             AddDirGetName addDirGetName = new AddDirGetName();
-            if(addDirGetName.ShowDialog() == DialogResult.OK)
+            if (addDirGetName.ShowDialog() == DialogResult.OK)
             {
                 AddDirectory(addDirGetName.textBoxName.Text);
             }
@@ -328,6 +322,102 @@ namespace DevConfig
             {
                 RenDirectory(addDirGetName.textBoxName.Text);
             }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void listView1_KeyDown(object sender, KeyEventArgs e)
+        {
+            switch ((Keys)e.KeyValue)
+            {
+                case Keys.Insert:
+                    btn_Add_Click(sender, new EventArgs());
+                    break;
+
+                case Keys.Delete:
+                    btn_DelFile_Click(sender, new EventArgs());
+                    break;
+
+                case Keys.F2:
+                    if (listView1.SelectedItems.Count == 1)
+                        listView1.StartEditing(textBox1, listView1.SelectedItems[0], 0);
+                    break;
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void treeView1_KeyDown(object sender, KeyEventArgs e)
+        {
+            switch ((Keys)e.KeyValue)
+            {
+                case Keys.Insert:
+                    btn_AddDir_Click(sender, new EventArgs());
+                    break;
+
+                case Keys.Delete:
+                    btn_DelDir_Click(sender, new EventArgs());
+                    break;
+
+                case Keys.F2:
+                    btn_RenDir_Click(sender, new EventArgs());
+                    break;
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void GetFileMenuItem_Click(object sender, EventArgs e)
+        {
+            btn_Get_Click(sender, new EventArgs());
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void AddFileMenuItem_Click(object sender, EventArgs e)
+        {
+            btn_Add_Click(sender, new EventArgs());
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void RenFileMenuItem_Click(object sender, EventArgs e)
+        {
+            if (listView1.SelectedItems.Count == 1)
+                listView1.StartEditing(textBox1, listView1.SelectedItems[0], 0);
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void DelFileMenuItem_Click(object sender, EventArgs e)
+        {
+            btn_DelFile_Click(sender, new EventArgs());
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void treeView1_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+                contextMenuTree.Show(Cursor.Position);
+        }
+
+        private void addDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            btn_AddDir_Click(sender, new EventArgs());
+        }
+
+        private void renameDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            btn_RenDir_Click(sender, new EventArgs());
+        }
+
+        private void deleteDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            btn_DelDir_Click(sender, new EventArgs());
+        }
+
+        private void refreshToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            PopulateTreeView();
+        }
+
+        private void formatSDCardToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SDFormat();
         }
 
         #endregion
@@ -367,7 +457,7 @@ namespace DevConfig
             {
                 if (msg.CMD == ECmd_SD_Command)
                 {
-                    if (msg.Data.Count == 1 && msg.Data[0] == 0x0F )
+                    if (msg.Data.Count == 1 && msg.Data[0] == 0x0F)
                     {
                         bContinue = false;
                         MainForm.AppendToDebug("Unknown operation", true, true, Color.Red);
@@ -410,32 +500,38 @@ namespace DevConfig
 
                         // response zahájení čtení souboru
                         case SD_SubCmd_GetFile:
-                            if (msg.Data[1] != 0)
+                            if (MessageFlag == 0)
                             {
-                                Debug.WriteLine($"Error {msg.Data[1]}");
-                                return;
+                                file_bytes_map.Clear();
+                                file_len_req = BitConverter.ToUInt32(msg.Data.Skip(2).Take(4).Reverse().ToArray());
+                                file_crc32 = BitConverter.ToUInt32(msg.Data.Skip(6).Take(4).Reverse().ToArray());
+                                file_timestamp = BitConverter.ToUInt32(msg.Data.Skip(10).Take(4).Reverse().ToArray());
+                                // TODO file_attributes = msg.Data[14];
+                                file_len_act = 0;
+                                Debug.WriteLine($"Get file with {file_len_req} bytes");
                             }
-                            file_bytes_map.Clear();
-                            file_len_req = BitConverter.ToUInt32(msg.Data.Skip(2).Take(4).Reverse().ToArray());
-                            file_crc32 = BitConverter.ToUInt32(msg.Data.Skip(6).Take(4).Reverse().ToArray());
-                            file_timestamp = BitConverter.ToUInt32(msg.Data.Skip(10).Take(4).Reverse().ToArray());
-                            // TODO file_attributes = msg.Data[14];
-                            file_len_act = 0;
-                            Debug.WriteLine($"Get file with {file_len_req} bytes");
+                            else
+                            {
+                                bContinue = false;
+                                Debug.WriteLine($"Get file Error {msg.Data[1]}");
+                            }
                             sync_obj.Set();
                             break;
 
                         // response čtení další čísti souboru
                         case SD_SubCmd_GetFilePart:
-                            if (msg.Data[1] != 0)
+                            if (MessageFlag == 0)
                             {
-                                Debug.WriteLine($"Error {msg.Data[1]}");
-                                return;
+                                uint file_pos = BitConverter.ToUInt32(msg.Data.Skip(2).Take(4).Reverse().ToArray());
+                                lock (file_bytes_map)
+                                    file_bytes_map[file_pos] = msg.Data.Skip(6).ToList();
+                                file_len_act += (uint)(msg.Data.Count - 6);
                             }
-                            uint file_pos = BitConverter.ToUInt32(msg.Data.Skip(2).Take(4).Reverse().ToArray());
-                            lock(file_bytes_map)
-                                file_bytes_map[file_pos] = msg.Data.Skip(6).ToList();
-                            file_len_act += (uint)(msg.Data.Count - 6);
+                            else
+                            {
+                                bContinue = false;
+                                Debug.WriteLine($"Error {msg.Data[1]}");
+                            }
                             sync_obj.Set();
                             break;
 
@@ -562,7 +658,7 @@ namespace DevConfig
 
             DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
-            while (sync_obj.WaitOne(2000) && bContinue)
+            while (sync_obj.WaitOne(1000) && bContinue)
             {
                 lock (messages)
                 {
@@ -647,21 +743,16 @@ namespace DevConfig
                     sync_obj.Reset();
                     DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
-                    if (sync_obj.WaitOne(3000))
+                    if (sync_obj.WaitOne(2000))
                     {
-                        if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
-                        {
+                        if (MessageFlag == (byte)FxError.FX_SUCCESS)
                             MainForm.AppendToDebug("Format SD card OK", true, false, Color.DarkGreen);
-                        }
                         else
-                        {
-                            MainForm.AppendToDebug($"Format SD card ERROR ({(UpdateEnumFlags)MessageFlag})", true, true, Color.Red);
-                        }
+                            MainForm.AppendToDebug($"Format SD card ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
                     }
                     else
                     {
-                        if(bContinue)
-                            MainForm.AppendToDebug("Format SD card TIMEOUT", true, true, Color.Red);
+                        MainForm.AppendToDebugIf(bContinue, "Format SD card TIMEOUT", true, false, Color.Red);
                     }
                 });
             }
@@ -673,14 +764,20 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void listView1_DragEnter(object sender, DragEventArgs e)
         {
-            e.Effect = DragDropEffects.Copy;
+            //if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
+            //    e.Effect = DragDropEffects.Copy;
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void listView1_DragDrop(object sender, DragEventArgs e)
         {
+            Debug.WriteLine("listView1_DragDrop");
             // TODO DROP
-
+            if (e.Data != null)
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                AddFiles(files);
+            }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -690,6 +787,10 @@ namespace DevConfig
 
             List<string> file_paths = new();
 
+            //file_paths.Add(@"D:\Vymaz\tt\8.JPG");
+
+
+
             foreach (ListViewItem item in listView1.SelectedItems)
             {
                 string path = MakePath((TreeNode)item.Tag);
@@ -697,12 +798,32 @@ namespace DevConfig
                 file_paths.Add(path);
             }
 
-            var dob = new DataObject();
-            dob.SetData(DataFormats.FileDrop, file_paths);
-            DoDragDrop(dob, DragDropEffects.Copy);
+            //var dob = new DataObject();
+            //dob.SetData(DataFormats.FileDrop, file_paths);
 
+            var dob = new DataObject(DataFormats.FileDrop, file_paths);
+
+            var x = DoDragDrop(dob, DragDropEffects.Copy | DragDropEffects.Move);
+
+
+            Debug.WriteLine($"XXX {dob}");
         }
 
+
+        private void listView1_GiveFeedback(object sender, GiveFeedbackEventArgs e)
+        {
+            Debug.WriteLine($"GiveFeedback {sender}");
+        }
+
+        private void listView1_DragLeave(object sender, EventArgs e)
+        {
+            Debug.WriteLine($"DragLeave");
+        }
+
+        private void listView1_DragOver(object sender, DragEventArgs e)
+        {
+            Debug.WriteLine($"DragOver");
+        }
         #endregion
 
         #region GET FILE
@@ -723,8 +844,8 @@ namespace DevConfig
                 CopyToLocal(file_path, local_file_path);
                 Debug.WriteLine($"{file_path}\n   {local_file_path}");
             }
-            this.Invoke(delegate 
-            { 
+            this.Invoke(delegate
+            {
                 Cursor = Cursors.Default;
                 MainForm.ProgressBar_Value = 0;
             });
@@ -732,6 +853,10 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void CopyToLocal(string file_path, string local_file_path)
         {
+            bool bInit = true;
+
+            MainForm.AppendToDebug($"Get File ({file_path})");
+
             Message message = new Message();
             message.DEST = DeviceAddress;
             message.CMD = ECmd_SD_Command;
@@ -744,17 +869,16 @@ namespace DevConfig
             bSendBreak = true;
             DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
-            MainForm.Invoke(delegate 
-            {
-                MainForm.ProgressBar_Minimum = 0;
-                MainForm.ProgressBar_Maximum = 1;
-                MainForm.ProgressBar_Value = 0;
-            });
-
             while (bContinue)
             {
                 if (sync_obj.WaitOne(1000))
                 {
+                    if (MessageFlag != 0)
+                    {
+                        bContinue = false;
+                        MainForm.AppendToDebug($"Get File ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
+                    }
+
                     if (!bContinue)
                         break;
 
@@ -780,8 +904,12 @@ namespace DevConfig
                         uint crc32 = CRC.CRC32WideFast(File.ReadAllBytes(local_file_path), 0, file_len_req);
                         if (crc32 != file_crc32)
                         {
-                            Debug.WriteLine("CRC error");
+                            MainForm.AppendToDebug($"Get File CRC ERROR", true, false, Color.Red);
                             File.Delete(local_file_path);
+                        }
+                        else
+                        {
+                            MainForm.AppendToDebug($"Get File OK", true, false, Color.DarkGreen);
                         }
                         break;
                     }
@@ -789,25 +917,27 @@ namespace DevConfig
                     {
                         MainForm.Invoke(delegate
                         {
-                            //if (MainForm.progressBar.Maximum < file_len_req)
+                            if (bInit)
+                            {
+                                bInit = false;
+                                MainForm.ProgressBar_Minimum = 0;
                                 MainForm.ProgressBar_Maximum = (int)file_len_req;
-
-                            /*if (file_len_act > MainForm.progressBar.Maximum)
-                                MainForm.progressBar.Value = MainForm.progressBar.Maximum;
-                            else*/
-                                MainForm.ProgressBar_Value = (int)file_len_act;
+                            }
+                            MainForm.ProgressBar_Value = (int)file_len_act;
                         });
                     }
                 }
                 else
                 {
-                    Debug.WriteLine("Error Timeout");
+                    bContinue = false;
+                    MainForm.AppendToDebug($"Get File TIMEOUT", true, false, Color.Red);
                     break;
                 }
             }
-            lock(file_bytes_map)
+            lock (file_bytes_map)
                 file_bytes_map.Clear();
             bSendBreak = false;
+
         }
         #endregion
 
@@ -818,44 +948,76 @@ namespace DevConfig
             this.Invoke(delegate { Cursor = Cursors.WaitCursor; });
 
             bContinue = true;
-            foreach (string file_name in fileNames)
+            for (int i = 0; bContinue && i < fileNames.Length; i++)
             {
-                if (!bContinue)
-                    break;
-                AddFile(file_name);
+                System.IO.FileInfo fileInfo = new System.IO.FileInfo(fileNames[i]);
+
+                if (AddFile(fileInfo))
+                {
+                    FileInfo fi = new FileInfo(fileNames[i])
+                    {
+                        IsDirectory = false,
+                        ModifyTime = fileInfo.LastWriteTime,
+                        Size = (uint)fileInfo.Length
+                    };
+
+                    MainForm.Invoke(delegate
+                    {
+                        ListViewItem item = new ListViewItem(Path.GetFileName(fi.Name), 1)
+                        {
+                            Tag = treeView1.SelectedNode,
+                        };
+
+                        ListViewItem.ListViewSubItem[] subItems = new ListViewItem.ListViewSubItem[]
+                        {
+                                new ListViewItem.ListViewSubItem(item, $"{fi.ModifyTime}"),
+                                new ListViewItem.ListViewSubItem(item, $"{fi.Size}")
+                        };
+                        item.SubItems.AddRange(subItems);
+
+                        listView1.Items.Add(item);
+                        ((DirInfo)treeView1.SelectedNode.Tag).FileInfoList?.Add(fi);
+                    });
+                }
             }
+
 
             this.Invoke(delegate
             {
                 Cursor = Cursors.Default;
                 MainForm.ProgressBar_Value = 0;
+                listView1.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
             });
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void AddFile(string src_file_name)
+        private bool AddFile(System.IO.FileInfo fileInfo)
         {
+            bool bRet = false;
+            int progress_val = 0;
             string dest_file_name = string.Empty;
-            this.Invoke(delegate {  
-                dest_file_name = Path.Combine(MakePath(treeView1.SelectedNode), Path.GetFileName(src_file_name)).Replace('\\', '/');
+
+            this.Invoke(delegate
+            {
+                MainForm.ProgressBar_Minimum = 0;
+                MainForm.ProgressBar_Maximum = (int)fileInfo.Length;
+                MainForm.ProgressBar_Value = progress_val;
+                dest_file_name = Path.Combine(MakePath(treeView1.SelectedNode), Path.GetFileName(fileInfo.FullName)).Replace('\\', '/');
             });
 
-            System.IO.FileInfo fileInfo = new System.IO.FileInfo(src_file_name);
-
-            Debug.WriteLine($"Copy from '{src_file_name}', to '{dest_file_name}', len = {fileInfo.Length:X}");
+            MainForm.AppendToDebug($"Copy file '{fileInfo.FullName}', to '{dest_file_name}', len = {fileInfo.Length:X}");
 
             // fileInfo.LastWriteTime je localtime ale potrebujeme pro prevod utc time
             var dt = DateTime.SpecifyKind(fileInfo.LastWriteTime, DateTimeKind.Utc);
             var dateTimeOffset = new DateTimeOffset(dt);
             var timestamp = dateTimeOffset.ToUnixTimeSeconds();
 
-            byte[] file_bytes = File.ReadAllBytes(src_file_name);
+            byte[] file_bytes = File.ReadAllBytes(fileInfo.FullName);
 
             Message message = new Message();
             message.DEST = DeviceAddress;
             message.CMD = ECmd_SD_Command;
 
-            message.Data = new List<byte>();
-            message.Data.Add(SD_SubCmd_PutFile);
+            message.Data = new List<byte> { SD_SubCmd_PutFile };
             message.Data.AddRange(((uint)fileInfo.Length).GetBytes().Reverse());    // size
             message.Data.AddRange(((uint)timestamp).GetBytes().Reverse());          // timestamp
             Debug.WriteLine($"timestamp = {timestamp}({timestamp:X8}) {fileInfo.LastWriteTime}");
@@ -867,51 +1029,81 @@ namespace DevConfig
             sync_obj.Reset();
             DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
-            MemoryStream fs = new MemoryStream(file_bytes); //using FileStream fs = File.OpenRead(src_file_name);
+            using MemoryStream fs = new MemoryStream(file_bytes);
 
             byte[] data = new byte[240];
 
             while (bContinue)
             {
-                if (sync_obj.WaitOne(2000))
+                if (sync_obj.WaitOne(1000))
                 {
-                    message.Data = new List<byte>() { SD_SubCmd_PutFilePart };
-                    int readed = fs.Read(data, 0, data.Length);
-                    Debug.WriteLine($"readed {readed}");
-                    if (readed <= 0)
-                        break;
-                    message.Data.AddRange(data.Take(readed));
+                    if (MessageFlag == 0)
+                    {
+                        message.Data = new List<byte>() { SD_SubCmd_PutFilePart };
+                        int readed = fs.Read(data, 0, data.Length);
+                        MainForm.Invoke(delegate { MainForm.ProgressBar_Value = (progress_val += readed); });
+                        Debug.WriteLine($"readed {readed}");
+                        if (readed <= 0)
+                        {
+                            bRet = true;
+                            MainForm.AppendToDebug($"Add file OK", true, false, Color.DarkGreen);
+                            break;
+                        }
+                        message.Data.AddRange(data.Take(readed));
 
-                    sync_obj.Reset();
-                    DevConfigService.Instance.InputPeriph?.SendMsg(message);
+                        sync_obj.Reset();
+                        DevConfigService.Instance.InputPeriph?.SendMsg(message);
+                    }
+                    else
+                    {
+                        bContinue = false;
+                        MainForm.AppendToDebug($"Add file ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
+                        break;
+                    }
                 }
                 else
                 {
-                    // timeout
+                    bContinue = false;
+                    MainForm.AppendToDebug($"Add file TIMEOUT", true, false, Color.Red);
                     break;
                 }
             }
+
+            MainForm.Invoke(delegate { MainForm.ProgressBar_Value = 0; });
+            return bRet;
         }
 
         #endregion
 
         #region DEL,REN FILE
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void DeleteFiles(List<string> file_paths)
+        private void DeleteFiles(SelectedListViewItemCollection selectedItems)
         {
             Cursor = Cursors.WaitCursor;
-            foreach (string file_path in file_paths)
+
+            foreach (ListViewItem item in listView1.SelectedItems)
             {
-                Debug.WriteLine($"DleteFile {file_path}");
-                DeleteFile(file_path);
+                string path = MakePath((TreeNode)item.Tag);
+                path = Path.Combine(path, item.Text).Replace('\\', '/');
+                Debug.WriteLine($"DleteFile {path}");
+                if (DeleteFile(path))
+                {
+                    // smazano
+                    listView1.Items.Remove(item);
+                    ((DirInfo)((TreeNode)item.Tag).Tag).RemoveFileInfo(Path.GetFileName(path));
+                }
+
             }
             Cursor = Cursors.Default;
-
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void DeleteFile(string file_path)
+        private bool DeleteFile(string file_path)
         {
+            bool bRet = false;
+
+            MainForm.AppendToDebug($"Delete File ({file_path})");
+
             Message message = new Message();
             message.DEST = DeviceAddress;
             message.CMD = ECmd_SD_Command;
@@ -921,6 +1113,24 @@ namespace DevConfig
             message.Data.AddRange(name_encoding.GetBytes(file_path + "\0"));
 
             DevConfigService.Instance.InputPeriph?.SendMsg(message);
+
+            if (sync_obj.WaitOne(1000))
+            {
+                if (MessageFlag == (byte)FxError.FX_SUCCESS)
+                {
+                    bRet = true;
+                    MainForm.AppendToDebug("Delete File OK", true, false, Color.DarkGreen);
+                }
+                else
+                {
+                    MainForm.AppendToDebugIf(bContinue, $"Delete File ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
+                }
+            }
+            else
+            {
+                MainForm.AppendToDebugIf(bContinue, "Delete File TIMEOUT", true, false, Color.Red);
+            }
+            return bRet;
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -930,37 +1140,63 @@ namespace DevConfig
             if (!path.EndsWith('/'))
                 path += "/";
             if (MoveFile(path + old_file_name, path + new_file_name))
-                Debug.WriteLine("Move OK");
-            else
-                Debug.WriteLine("Move ERROR");
+            {
+                item.Text = Path.GetFileName(new_file_name);
+                ((DirInfo)((TreeNode)item.Tag).Tag).RenameFileInfo(old_file_name, new_file_name);
+            }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private bool MoveFile(string old_file_name, string new_file_name)
         {
-            Message message = new Message();
-            message.DEST = DeviceAddress;
-            message.CMD = ECmd_SD_Command;
+            bool bRet = true;
+            bContinue = true;
 
-            message.Data = new List<byte>();
-            message.Data.Add(SD_SubCmd_RenFileOld);
-            message.Data.AddRange(name_encoding.GetBytes(old_file_name + "\0"));
-            sync_obj.Reset();
-            DevConfigService.Instance.InputPeriph?.SendMsg(message);
+            MainForm.AppendToDebug($"Rename File ({old_file_name}) to ({new_file_name})");
 
-            if (sync_obj.WaitOne(1000))
+            Message[] msg_arr = new Message[2];
+
+            msg_arr[0] = new Message();
+            msg_arr[0].DEST = DeviceAddress;
+            msg_arr[0].CMD = ECmd_SD_Command;
+            msg_arr[0].Data = new List<byte>() { SD_SubCmd_RenFileOld };
+            msg_arr[0].Data.AddRange(name_encoding.GetBytes(old_file_name + "\0"));
+
+            msg_arr[1] = new Message();
+            msg_arr[1].DEST = DeviceAddress;
+            msg_arr[1].CMD = ECmd_SD_Command;
+            msg_arr[1].Data = new List<byte> { SD_SubCmd_RenFileNew };
+            msg_arr[1].Data.AddRange(name_encoding.GetBytes(new_file_name + "\0"));
+
+            for (int i = 0; bContinue && i < msg_arr.Length; i++)
             {
-                message.Data = new List<byte>();
-                message.Data.Add(SD_SubCmd_RenFileNew);
-                message.Data.AddRange(name_encoding.GetBytes(new_file_name + "\0"));
                 sync_obj.Reset();
-                DevConfigService.Instance.InputPeriph?.SendMsg(message);
+                DevConfigService.Instance.InputPeriph?.SendMsg(msg_arr[i]);
 
                 if (sync_obj.WaitOne(1000))
-                    return true;
+                {
+                    if (MessageFlag != (byte)FxError.FX_SUCCESS)
+                    {
+                        bRet = false;
+                        bContinue = false;
+                        MainForm.AppendToDebug($"Rename File ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
+                        break;
+                    }
+                }
+                else
+                {
+                    bRet = false;
+                    bContinue = false;
+                    MainForm.AppendToDebug("Rename File TIMEOUT", true, false, Color.Red);
+                    break;
+                }
+
             }
 
-            return false;
+            if (bRet)
+                MainForm.AppendToDebug("Rename File OK", true, false, Color.DarkGreen);
+
+            return bRet;
         }
 
         #endregion
@@ -991,9 +1227,9 @@ namespace DevConfig
             sync_obj.Reset();
             bContinue = true;
             DevConfigService.Instance.InputPeriph?.SendMsg(message);
-            if (sync_obj.WaitOne(3000))
+            if (sync_obj.WaitOne(1000))
             {
-                if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
+                if (MessageFlag == (byte)FxError.FX_SUCCESS)
                 {
                     MainForm.AppendToDebug("Create Directory OK", true, false, Color.DarkGreen);
                     // OK vytvorime polozku ve stromu
@@ -1004,16 +1240,17 @@ namespace DevConfig
                     new_node.SelectedImageKey = "FolderClosed.bmp";
                     new_node.Tag = dirInfo1;
                     treeView1.SelectedNode.Nodes.Add(new_node);
+                    ExpandNode(treeView1.SelectedNode, true);
                 }
                 else
                 {
-                    MainForm.AppendToDebug($"Create Directory ERROR ({(UpdateEnumFlags)MessageFlag})", true, true, Color.Red);
+                    MainForm.AppendToDebug($"Create Directory ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
                 }
             }
             else
             {
                 if (bContinue)
-                    MainForm.AppendToDebug("Create Directory TIMEOUT", true, true, Color.Red);
+                    MainForm.AppendToDebug("Create Directory TIMEOUT", true, false, Color.Red);
             }
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -1034,9 +1271,9 @@ namespace DevConfig
                 sync_obj.Reset();
                 bContinue = true;
                 DevConfigService.Instance.InputPeriph?.SendMsg(message);
-                if (sync_obj.WaitOne(3000))
+                if (sync_obj.WaitOne(1000))
                 {
-                    if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
+                    if (MessageFlag == (byte)FxError.FX_SUCCESS)
                     {
                         MainForm.AppendToDebug("Delete Directory OK", true, false, Color.DarkGreen);
                         // OK odstranime polozku ze stromu
@@ -1093,7 +1330,7 @@ namespace DevConfig
 
                     if (sync_obj.WaitOne(1000))
                     {
-                        if (MessageFlag != (byte)UpdateEnumFlags.RespOK)
+                        if (MessageFlag != (byte)FxError.FX_SUCCESS)
                         {
                             bContinue = false;
                             MessageFlag = 0xFF;
@@ -1111,7 +1348,7 @@ namespace DevConfig
 
                 }
 
-                if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
+                if (MessageFlag == (byte)FxError.FX_SUCCESS)
                 {
                     MainForm.AppendToDebug("Rename Directory OK", true, false, Color.DarkGreen);
                     treeView1.SelectedNode.Text = Path.GetFileName(new_path);
@@ -1120,7 +1357,6 @@ namespace DevConfig
             }
         }
         #endregion
-
     }
 
     class DirInfo
@@ -1131,6 +1367,20 @@ namespace DevConfig
         public DirInfo(string name)
         {
             Name = name;
+        }
+
+        internal void RemoveFileInfo(string name)
+        {
+            FileInfo? fi = (from xxx in FileInfoList where xxx.Name == name select xxx).FirstOrDefault();
+            if (fi != null)
+                FileInfoList?.Remove(fi);
+        }
+
+        internal void RenameFileInfo(string old_name, string new_name)
+        {
+            FileInfo? fi = (from xxx in FileInfoList where xxx.Name == old_name select xxx).FirstOrDefault();
+            if (fi != null)
+                fi.Name = new_name;
         }
     }
 
