@@ -29,11 +29,10 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            TreeNode treeNode2 = new TreeNode("SD Card");
+            TreeNode treeNode1 = new TreeNode("SD Card");
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SDCardCtrl));
             treeView1 = new TreeView();
             imageList = new ImageList(components);
-            btn_List = new Button();
             listView1 = new ListViewEx();
             columnHeader1 = new ColumnHeader();
             columnHeader3 = new ColumnHeader();
@@ -45,13 +44,7 @@
             RenFileMenuItem = new ToolStripMenuItem();
             DelFileMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
-            btn_AddFile = new Button();
-            btn_GetFile = new Button();
-            btn_DelFile = new Button();
-            btn_AddDir = new Button();
-            btn_DelDir = new Button();
             textBox1 = new TextBox();
-            btn_RenDir = new Button();
             contextMenuTree = new ContextMenuStrip(components);
             addDirectoryToolStripMenuItem = new ToolStripMenuItem();
             renameDirectoryToolStripMenuItem = new ToolStripMenuItem();
@@ -59,12 +52,30 @@
             toolStripSeparator2 = new ToolStripSeparator();
             refreshToolStripMenuItem = new ToolStripMenuItem();
             formatSDCardToolStripMenuItem = new ToolStripMenuItem();
+            menuStrip1 = new MenuStrip();
+            SdCardMenuItem = new ToolStripMenuItem();
+            BackupSdCardMenuItem = new ToolStripMenuItem();
+            RestoreSdCardMenuItem = new ToolStripMenuItem();
+            toolStripSeparator4 = new ToolStripSeparator();
+            ReloadSdCardMenuItem = new ToolStripMenuItem();
+            FormatSdCardMenuItem = new ToolStripMenuItem();
+            directoryToolStripMenuItem = new ToolStripMenuItem();
+            AddDirMenuItem2 = new ToolStripMenuItem();
+            RenDirMenuItem2 = new ToolStripMenuItem();
+            DelDirMenuItem2 = new ToolStripMenuItem();
+            fileToolStripMenuItem = new ToolStripMenuItem();
+            GetFileMenuItem2 = new ToolStripMenuItem();
+            toolStripSeparator3 = new ToolStripSeparator();
+            AddFileMenuItem2 = new ToolStripMenuItem();
+            RenFileMenuItem2 = new ToolStripMenuItem();
+            DelFileMenuItem2 = new ToolStripMenuItem();
             contextMenuList.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
             contextMenuTree.SuspendLayout();
+            menuStrip1.SuspendLayout();
             SuspendLayout();
             // 
             // treeView1
@@ -75,13 +86,13 @@
             treeView1.ImageList = imageList;
             treeView1.Location = new Point(0, 0);
             treeView1.Name = "treeView1";
-            treeNode2.ImageKey = "SDCard.png";
-            treeNode2.Name = "SDCard";
-            treeNode2.SelectedImageKey = "SDCard.png";
-            treeNode2.Text = "SD Card";
-            treeView1.Nodes.AddRange(new TreeNode[] { treeNode2 });
+            treeNode1.ImageKey = "SDCard.png";
+            treeNode1.Name = "SDCard";
+            treeNode1.SelectedImageKey = "SDCard.png";
+            treeNode1.Text = "SD Card";
+            treeView1.Nodes.AddRange(new TreeNode[] { treeNode1 });
             treeView1.SelectedImageIndex = 0;
-            treeView1.Size = new Size(359, 661);
+            treeView1.Size = new Size(356, 680);
             treeView1.TabIndex = 0;
             treeView1.AfterCollapse += treeView1_AfterCollapse;
             treeView1.AfterExpand += treeView1_AfterExpand;
@@ -98,16 +109,6 @@
             imageList.Images.SetKeyName(1, "FolderOpened.bmp");
             imageList.Images.SetKeyName(2, "SDCard.png");
             // 
-            // btn_List
-            // 
-            btn_List.Location = new Point(12, 12);
-            btn_List.Name = "btn_List";
-            btn_List.Size = new Size(73, 29);
-            btn_List.TabIndex = 1;
-            btn_List.Text = "Reload";
-            btn_List.UseVisualStyleBackColor = true;
-            btn_List.Click += btn_List_Click;
-            // 
             // listView1
             // 
             listView1.AllowColumnReorder = true;
@@ -119,7 +120,7 @@
             listView1.FullRowSelect = true;
             listView1.Location = new Point(0, 0);
             listView1.Name = "listView1";
-            listView1.Size = new Size(826, 661);
+            listView1.Size = new Size(829, 680);
             listView1.TabIndex = 2;
             listView1.UseCompatibleStateImageBehavior = false;
             listView1.View = View.Details;
@@ -188,8 +189,8 @@
             // 
             // splitContainer1
             // 
-            splitContainer1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            splitContainer1.Location = new Point(0, 47);
+            splitContainer1.Dock = DockStyle.Fill;
+            splitContainer1.Location = new Point(0, 28);
             splitContainer1.Name = "splitContainer1";
             // 
             // splitContainer1.Panel1
@@ -199,62 +200,9 @@
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(listView1);
-            splitContainer1.Size = new Size(1189, 661);
-            splitContainer1.SplitterDistance = 359;
+            splitContainer1.Size = new Size(1189, 680);
+            splitContainer1.SplitterDistance = 356;
             splitContainer1.TabIndex = 3;
-            // 
-            // btn_AddFile
-            // 
-            btn_AddFile.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btn_AddFile.Location = new Point(983, 12);
-            btn_AddFile.Name = "btn_AddFile";
-            btn_AddFile.Size = new Size(94, 29);
-            btn_AddFile.TabIndex = 4;
-            btn_AddFile.Text = "Add File";
-            btn_AddFile.UseVisualStyleBackColor = true;
-            btn_AddFile.Click += btn_Add_Click;
-            // 
-            // btn_GetFile
-            // 
-            btn_GetFile.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btn_GetFile.Location = new Point(883, 12);
-            btn_GetFile.Name = "btn_GetFile";
-            btn_GetFile.Size = new Size(94, 29);
-            btn_GetFile.TabIndex = 5;
-            btn_GetFile.Text = "Get File";
-            btn_GetFile.UseVisualStyleBackColor = true;
-            btn_GetFile.Click += btn_Get_Click;
-            // 
-            // btn_DelFile
-            // 
-            btn_DelFile.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btn_DelFile.Location = new Point(1083, 12);
-            btn_DelFile.Name = "btn_DelFile";
-            btn_DelFile.Size = new Size(94, 29);
-            btn_DelFile.TabIndex = 6;
-            btn_DelFile.Text = "Del File";
-            btn_DelFile.UseVisualStyleBackColor = true;
-            btn_DelFile.Click += btn_DelFile_Click;
-            // 
-            // btn_AddDir
-            // 
-            btn_AddDir.Location = new Point(91, 12);
-            btn_AddDir.Name = "btn_AddDir";
-            btn_AddDir.Size = new Size(73, 29);
-            btn_AddDir.TabIndex = 7;
-            btn_AddDir.Text = "Add Dir.";
-            btn_AddDir.UseVisualStyleBackColor = true;
-            btn_AddDir.Click += btn_AddDir_Click;
-            // 
-            // btn_DelDir
-            // 
-            btn_DelDir.Location = new Point(170, 12);
-            btn_DelDir.Name = "btn_DelDir";
-            btn_DelDir.Size = new Size(73, 29);
-            btn_DelDir.TabIndex = 8;
-            btn_DelDir.Text = "Del Dir.";
-            btn_DelDir.UseVisualStyleBackColor = true;
-            btn_DelDir.Click += btn_DelDir_Click;
             // 
             // textBox1
             // 
@@ -265,43 +213,33 @@
             textBox1.Text = "for list view edit";
             textBox1.Visible = false;
             // 
-            // btn_RenDir
-            // 
-            btn_RenDir.Location = new Point(249, 12);
-            btn_RenDir.Name = "btn_RenDir";
-            btn_RenDir.Size = new Size(73, 29);
-            btn_RenDir.TabIndex = 10;
-            btn_RenDir.Text = "Ren. Dir.";
-            btn_RenDir.UseVisualStyleBackColor = true;
-            btn_RenDir.Click += btn_RenDir_Click;
-            // 
             // contextMenuTree
             // 
             contextMenuTree.ImageScalingSize = new Size(20, 20);
             contextMenuTree.Items.AddRange(new ToolStripItem[] { addDirectoryToolStripMenuItem, renameDirectoryToolStripMenuItem, deleteDirectoryToolStripMenuItem, toolStripSeparator2, refreshToolStripMenuItem, formatSDCardToolStripMenuItem });
             contextMenuTree.Name = "contextMenuTree";
-            contextMenuTree.Size = new Size(211, 158);
+            contextMenuTree.Size = new Size(198, 130);
             // 
             // addDirectoryToolStripMenuItem
             // 
             addDirectoryToolStripMenuItem.Name = "addDirectoryToolStripMenuItem";
-            addDirectoryToolStripMenuItem.Size = new Size(210, 24);
+            addDirectoryToolStripMenuItem.Size = new Size(197, 24);
             addDirectoryToolStripMenuItem.Text = "Add Directory";
-            addDirectoryToolStripMenuItem.Click += addDirectoryToolStripMenuItem_Click;
+            addDirectoryToolStripMenuItem.Click += AddDirMenuItem_Click;
             // 
             // renameDirectoryToolStripMenuItem
             // 
             renameDirectoryToolStripMenuItem.Name = "renameDirectoryToolStripMenuItem";
-            renameDirectoryToolStripMenuItem.Size = new Size(210, 24);
+            renameDirectoryToolStripMenuItem.Size = new Size(197, 24);
             renameDirectoryToolStripMenuItem.Text = "Rename Directory";
-            renameDirectoryToolStripMenuItem.Click += renameDirectoryToolStripMenuItem_Click;
+            renameDirectoryToolStripMenuItem.Click += RenDirMenuItem_Click;
             // 
             // deleteDirectoryToolStripMenuItem
             // 
             deleteDirectoryToolStripMenuItem.Name = "deleteDirectoryToolStripMenuItem";
-            deleteDirectoryToolStripMenuItem.Size = new Size(210, 24);
+            deleteDirectoryToolStripMenuItem.Size = new Size(197, 24);
             deleteDirectoryToolStripMenuItem.Text = "Delete Directory";
-            deleteDirectoryToolStripMenuItem.Click += deleteDirectoryToolStripMenuItem_Click;
+            deleteDirectoryToolStripMenuItem.Click += DelDirMenuItem_Click;
             // 
             // toolStripSeparator2
             // 
@@ -311,31 +249,144 @@
             // refreshToolStripMenuItem
             // 
             refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
-            refreshToolStripMenuItem.Size = new Size(210, 24);
+            refreshToolStripMenuItem.Size = new Size(197, 24);
             refreshToolStripMenuItem.Text = "Refresh";
-            refreshToolStripMenuItem.Click += refreshToolStripMenuItem_Click;
+            refreshToolStripMenuItem.Click += ReloadSdCardMenuItem_Click;
             // 
             // formatSDCardToolStripMenuItem
             // 
             formatSDCardToolStripMenuItem.Name = "formatSDCardToolStripMenuItem";
-            formatSDCardToolStripMenuItem.Size = new Size(210, 24);
+            formatSDCardToolStripMenuItem.Size = new Size(197, 24);
             formatSDCardToolStripMenuItem.Text = "Format SD card";
-            formatSDCardToolStripMenuItem.Click += formatSDCardToolStripMenuItem_Click;
+            formatSDCardToolStripMenuItem.Click += FormatSdCardMenuItem_Click;
+            // 
+            // menuStrip1
+            // 
+            menuStrip1.ImageScalingSize = new Size(20, 20);
+            menuStrip1.Items.AddRange(new ToolStripItem[] { SdCardMenuItem, directoryToolStripMenuItem, fileToolStripMenuItem });
+            menuStrip1.Location = new Point(0, 0);
+            menuStrip1.Name = "menuStrip1";
+            menuStrip1.Size = new Size(1189, 28);
+            menuStrip1.TabIndex = 11;
+            menuStrip1.Text = "menuStrip1";
+            // 
+            // SdCardMenuItem
+            // 
+            SdCardMenuItem.DropDownItems.AddRange(new ToolStripItem[] { BackupSdCardMenuItem, RestoreSdCardMenuItem, toolStripSeparator4, ReloadSdCardMenuItem, FormatSdCardMenuItem });
+            SdCardMenuItem.Name = "SdCardMenuItem";
+            SdCardMenuItem.Size = new Size(77, 24);
+            SdCardMenuItem.Text = "SD Card";
+            // 
+            // BackupSdCardMenuItem
+            // 
+            BackupSdCardMenuItem.Name = "BackupSdCardMenuItem";
+            BackupSdCardMenuItem.Size = new Size(142, 26);
+            BackupSdCardMenuItem.Text = "Backup";
+            BackupSdCardMenuItem.Click += BackupSdCardMenuItem_Click;
+            // 
+            // RestoreSdCardMenuItem
+            // 
+            RestoreSdCardMenuItem.Name = "RestoreSdCardMenuItem";
+            RestoreSdCardMenuItem.Size = new Size(142, 26);
+            RestoreSdCardMenuItem.Text = "Restore";
+            RestoreSdCardMenuItem.Click += RestoreSdCardMenuItem_Click;
+            // 
+            // toolStripSeparator4
+            // 
+            toolStripSeparator4.Name = "toolStripSeparator4";
+            toolStripSeparator4.Size = new Size(139, 6);
+            // 
+            // ReloadSdCardMenuItem
+            // 
+            ReloadSdCardMenuItem.Name = "ReloadSdCardMenuItem";
+            ReloadSdCardMenuItem.Size = new Size(142, 26);
+            ReloadSdCardMenuItem.Text = "Reload";
+            ReloadSdCardMenuItem.Click += ReloadSdCardMenuItem_Click;
+            // 
+            // FormatSdCardMenuItem
+            // 
+            FormatSdCardMenuItem.Name = "FormatSdCardMenuItem";
+            FormatSdCardMenuItem.Size = new Size(142, 26);
+            FormatSdCardMenuItem.Text = "Format";
+            FormatSdCardMenuItem.Click += FormatSdCardMenuItem_Click;
+            // 
+            // directoryToolStripMenuItem
+            // 
+            directoryToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { AddDirMenuItem2, RenDirMenuItem2, DelDirMenuItem2 });
+            directoryToolStripMenuItem.Name = "directoryToolStripMenuItem";
+            directoryToolStripMenuItem.Size = new Size(84, 24);
+            directoryToolStripMenuItem.Text = "Directory";
+            // 
+            // AddDirMenuItem2
+            // 
+            AddDirMenuItem2.Name = "AddDirMenuItem2";
+            AddDirMenuItem2.Size = new Size(146, 26);
+            AddDirMenuItem2.Text = "Insert";
+            AddDirMenuItem2.Click += AddDirMenuItem_Click;
+            // 
+            // RenDirMenuItem2
+            // 
+            RenDirMenuItem2.Name = "RenDirMenuItem2";
+            RenDirMenuItem2.Size = new Size(146, 26);
+            RenDirMenuItem2.Text = "Rename";
+            RenDirMenuItem2.Click += RenDirMenuItem_Click;
+            // 
+            // DelDirMenuItem2
+            // 
+            DelDirMenuItem2.Name = "DelDirMenuItem2";
+            DelDirMenuItem2.Size = new Size(146, 26);
+            DelDirMenuItem2.Text = "Delete";
+            DelDirMenuItem2.Click += DelDirMenuItem_Click;
+            // 
+            // fileToolStripMenuItem
+            // 
+            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { GetFileMenuItem2, toolStripSeparator3, AddFileMenuItem2, RenFileMenuItem2, DelFileMenuItem2 });
+            fileToolStripMenuItem.Name = "fileToolStripMenuItem";
+            fileToolStripMenuItem.Size = new Size(46, 24);
+            fileToolStripMenuItem.Text = "File";
+            // 
+            // GetFileMenuItem2
+            // 
+            GetFileMenuItem2.Name = "GetFileMenuItem2";
+            GetFileMenuItem2.Size = new Size(224, 26);
+            GetFileMenuItem2.Text = "Get";
+            GetFileMenuItem2.Click += GetFileMenuItem_Click;
+            // 
+            // toolStripSeparator3
+            // 
+            toolStripSeparator3.Name = "toolStripSeparator3";
+            toolStripSeparator3.Size = new Size(221, 6);
+            // 
+            // AddFileMenuItem2
+            // 
+            AddFileMenuItem2.Name = "AddFileMenuItem2";
+            AddFileMenuItem2.Size = new Size(224, 26);
+            AddFileMenuItem2.Text = "Insert";
+            AddFileMenuItem2.Click += AddFileMenuItem_Click;
+            // 
+            // RenFileMenuItem2
+            // 
+            RenFileMenuItem2.Name = "RenFileMenuItem2";
+            RenFileMenuItem2.Size = new Size(224, 26);
+            RenFileMenuItem2.Text = "Rename";
+            RenFileMenuItem2.Click += RenFileMenuItem_Click;
+            // 
+            // DelFileMenuItem2
+            // 
+            DelFileMenuItem2.Name = "DelFileMenuItem2";
+            DelFileMenuItem2.Size = new Size(224, 26);
+            DelFileMenuItem2.Text = "Delete";
+            DelFileMenuItem2.Click += DelFileMenuItem_Click;
             // 
             // SDCardCtrl
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1189, 708);
-            Controls.Add(btn_RenDir);
             Controls.Add(textBox1);
-            Controls.Add(btn_DelDir);
-            Controls.Add(btn_AddDir);
-            Controls.Add(btn_DelFile);
-            Controls.Add(btn_GetFile);
-            Controls.Add(btn_AddFile);
             Controls.Add(splitContainer1);
-            Controls.Add(btn_List);
+            Controls.Add(menuStrip1);
+            MainMenuStrip = menuStrip1;
             Name = "SDCardCtrl";
             Text = "SDCardCtrl";
             Load += SDCardCtrl_Load;
@@ -345,6 +396,8 @@
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
             contextMenuTree.ResumeLayout(false);
+            menuStrip1.ResumeLayout(false);
+            menuStrip1.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -352,20 +405,13 @@
         #endregion
 
         private TreeView treeView1;
-        private Button btn_List;
         private ListViewEx listView1;
         private SplitContainer splitContainer1;
         private ColumnHeader columnHeader1;
         private ColumnHeader columnHeader3;
-        private Button btn_AddFile;
-        private Button btn_GetFile;
-        private Button btn_DelFile;
         private ImageList imageList;
-        private Button btn_AddDir;
         private ColumnHeader columnHeader2;
-        private Button btn_DelDir;
         private TextBox textBox1;
-        private Button btn_RenDir;
         private ContextMenuStrip contextMenuTree;
         private ContextMenuStrip contextMenuList;
         private ToolStripMenuItem GetFileMenuItem;
@@ -379,5 +425,22 @@
         private ToolStripSeparator toolStripSeparator2;
         private ToolStripMenuItem refreshToolStripMenuItem;
         private ToolStripMenuItem formatSDCardToolStripMenuItem;
+        private MenuStrip menuStrip1;
+        private ToolStripMenuItem SdCardMenuItem;
+        private ToolStripMenuItem directoryToolStripMenuItem;
+        private ToolStripMenuItem ReloadSdCardMenuItem;
+        private ToolStripMenuItem FormatSdCardMenuItem;
+        private ToolStripMenuItem AddDirMenuItem2;
+        private ToolStripMenuItem RenDirMenuItem2;
+        private ToolStripMenuItem DelDirMenuItem2;
+        private ToolStripMenuItem fileToolStripMenuItem;
+        private ToolStripMenuItem AddFileMenuItem2;
+        private ToolStripMenuItem RenFileMenuItem2;
+        private ToolStripMenuItem DelFileMenuItem2;
+        private ToolStripMenuItem GetFileMenuItem2;
+        private ToolStripMenuItem BackupSdCardMenuItem;
+        private ToolStripMenuItem RestoreSdCardMenuItem;
+        private ToolStripSeparator toolStripSeparator4;
+        private ToolStripSeparator toolStripSeparator3;
     }
 }

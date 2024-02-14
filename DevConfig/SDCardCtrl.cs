@@ -3,12 +3,9 @@ using DevConfig.Service;
 using DevConfig.Utils;
 using System.Data;
 using System.Diagnostics;
-using System.IO;
 using System.Text;
-using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 using static System.Windows.Forms.ListView;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Message = CanDiagSupport.Message;
 
 namespace DevConfig
@@ -120,76 +117,6 @@ namespace DevConfig
         }
         #region FORM COMMAND
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void btn_List_Click(object sender, EventArgs e)
-        {
-            if (Control.ModifierKeys == (Keys.Shift | Keys.Control))
-                SDFormat();
-            else
-                PopulateTreeView();
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void btn_Add_Click(object sender, EventArgs e)
-        {
-            OpenFileDialog fileDialog = new OpenFileDialog()
-            {
-                Multiselect = true,
-                Filter = "All files (*.*)|*.*",
-            };
-            if (fileDialog.ShowDialog() == DialogResult.OK)
-                Task.Run(() => { AddFiles(fileDialog.FileNames); });
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void btn_Get_Click(object sender, EventArgs e)
-        {
-            if (listView1.SelectedItems.Count > 0)
-            {
-                List<string> file_paths = new();
-
-                foreach (ListViewItem item in listView1.SelectedItems)
-                {
-                    string path = MakePath((TreeNode)item.Tag);
-                    path = Path.Combine(path, item.Text).Replace('\\', '/');
-                    file_paths.Add(path);
-                }
-
-                // Dotaz na adresar.
-                FolderBrowserDialog dialog = new FolderBrowserDialog();
-                if (dialog.ShowDialog() != DialogResult.OK)
-                    return;
-                string dest_path = dialog.SelectedPath;
-
-                // Kontrola jmen.
-                List<string> exist_files = new List<string>();
-                foreach (string file_path in file_paths)
-                {
-                    string local_file_path = Path.Combine(dest_path, Path.GetFileName(file_path));
-                    if (File.Exists(local_file_path))
-                        exist_files.Add(local_file_path);
-                }
-
-                if (exist_files.Count > 0)
-                {
-                    if (MessageBox.Show("One or more files exist in the destination directory.\nDo you want to replace the files?", "DevConfig - File exists",
-                        MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-                        return;
-
-                    exist_files.ForEach(file_path => { File.Delete(file_path); });
-                }
-
-                Task.Run(() => { CopyToLocal(file_paths, dest_path); });
-            }
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void btn_DelFile_Click(object sender, EventArgs e)
-        {
-            if (listView1.SelectedItems.Count > 0)
-                DeleteFiles(listView1.SelectedItems);
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
         private void treeView1_AfterExpand(object sender, TreeViewEventArgs e)
         {
             if (e.Node != null && e.Node.Name != "SDCard")
@@ -298,43 +225,16 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void btn_AddDir_Click(object sender, EventArgs e)
-        {
-            AddDirGetName addDirGetName = new AddDirGetName();
-            if (addDirGetName.ShowDialog() == DialogResult.OK)
-            {
-                AddDirectory(addDirGetName.textBoxName.Text);
-            }
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void btn_DelDir_Click(object sender, EventArgs e)
-        {
-            DelDirectory();
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void btn_RenDir_Click(object sender, EventArgs e)
-        {
-            AddDirGetName addDirGetName = new AddDirGetName();
-            addDirGetName.textBoxName.Text = treeView1.SelectedNode.Text;
-            if (addDirGetName.ShowDialog() == DialogResult.OK)
-            {
-                RenDirectory(addDirGetName.textBoxName.Text);
-            }
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
         private void listView1_KeyDown(object sender, KeyEventArgs e)
         {
             switch ((Keys)e.KeyValue)
             {
                 case Keys.Insert:
-                    btn_Add_Click(sender, new EventArgs());
+                    AddFileMenuItem_Click(sender, new EventArgs());
                     break;
 
                 case Keys.Delete:
-                    btn_DelFile_Click(sender, new EventArgs());
+                    DelFileMenuItem_Click(sender, new EventArgs());
                     break;
 
                 case Keys.F2:
@@ -350,15 +250,15 @@ namespace DevConfig
             switch ((Keys)e.KeyValue)
             {
                 case Keys.Insert:
-                    btn_AddDir_Click(sender, new EventArgs());
+                    AddDirMenuItem_Click(sender, new EventArgs());
                     break;
 
                 case Keys.Delete:
-                    btn_DelDir_Click(sender, new EventArgs());
+                    DelDirMenuItem_Click(sender, new EventArgs());
                     break;
 
                 case Keys.F2:
-                    btn_RenDir_Click(sender, new EventArgs());
+                    RenDirMenuItem_Click(sender, new EventArgs());
                     break;
             }
         }
@@ -366,13 +266,55 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void GetFileMenuItem_Click(object sender, EventArgs e)
         {
-            btn_Get_Click(sender, new EventArgs());
+            if (listView1.SelectedItems.Count > 0)
+            {
+                List<string> file_paths = new();
+
+                foreach (ListViewItem item in listView1.SelectedItems)
+                {
+                    string path = MakePath((TreeNode)item.Tag);
+                    path = Path.Combine(path, item.Text).Replace('\\', '/');
+                    file_paths.Add(path);
+                }
+
+                // Dotaz na adresar.
+                FolderBrowserDialog dialog = new FolderBrowserDialog();
+                if (dialog.ShowDialog() != DialogResult.OK)
+                    return;
+                string dest_path = dialog.SelectedPath;
+
+                // Kontrola jmen.
+                List<string> exist_files = new List<string>();
+                foreach (string file_path in file_paths)
+                {
+                    string local_file_path = Path.Combine(dest_path, Path.GetFileName(file_path));
+                    if (File.Exists(local_file_path))
+                        exist_files.Add(local_file_path);
+                }
+
+                if (exist_files.Count > 0)
+                {
+                    if (MessageBox.Show("One or more files exist in the destination directory.\nDo you want to replace the files?", "DevConfig - File exists",
+                        MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                        return;
+
+                    exist_files.ForEach(file_path => { File.Delete(file_path); });
+                }
+
+                Task.Run(() => { CopyToLocal(file_paths, dest_path); });
+            }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void AddFileMenuItem_Click(object sender, EventArgs e)
         {
-            btn_Add_Click(sender, new EventArgs());
+            OpenFileDialog fileDialog = new OpenFileDialog()
+            {
+                Multiselect = true,
+                Filter = "All files (*.*)|*.*",
+            };
+            if (fileDialog.ShowDialog() == DialogResult.OK)
+                Task.Run(() => { AddFiles(fileDialog.FileNames); });
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -385,7 +327,8 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void DelFileMenuItem_Click(object sender, EventArgs e)
         {
-            btn_DelFile_Click(sender, new EventArgs());
+            if (listView1.SelectedItems.Count > 0)
+                DeleteFiles(listView1.SelectedItems);
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -395,29 +338,48 @@ namespace DevConfig
                 contextMenuTree.Show(Cursor.Position);
         }
 
-        private void addDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
+        private void BackupSdCardMenuItem_Click(object sender, EventArgs e)
         {
-            btn_AddDir_Click(sender, new EventArgs());
+
         }
 
-        private void renameDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
+        private void RestoreSdCardMenuItem_Click(object sender, EventArgs e)
         {
-            btn_RenDir_Click(sender, new EventArgs());
+
         }
 
-        private void deleteDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            btn_DelDir_Click(sender, new EventArgs());
-        }
-
-        private void refreshToolStripMenuItem_Click(object sender, EventArgs e)
+        private void ReloadSdCardMenuItem_Click(object sender, EventArgs e)
         {
             PopulateTreeView();
         }
 
-        private void formatSDCardToolStripMenuItem_Click(object sender, EventArgs e)
+        private void FormatSdCardMenuItem_Click(object sender, EventArgs e)
         {
             SDFormat();
+        }
+
+        private void AddDirMenuItem_Click(object sender, EventArgs e)
+        {
+            AddDirGetName addDirGetName = new AddDirGetName();
+            if (addDirGetName.ShowDialog() == DialogResult.OK)
+            {
+                AddDirectory(addDirGetName.textBoxName.Text);
+            }
+        }
+
+        private void RenDirMenuItem_Click(object sender, EventArgs e)
+        {
+            AddDirGetName addDirGetName = new AddDirGetName();
+            addDirGetName.textBoxName.Text = treeView1.SelectedNode.Text;
+            if (addDirGetName.ShowDialog() == DialogResult.OK)
+            {
+                RenDirectory(addDirGetName.textBoxName.Text);
+            }
+        }
+
+        private void DelDirMenuItem_Click(object sender, EventArgs e)
+        {
+            DelDirectory();
         }
 
         #endregion
@@ -497,9 +459,7 @@ namespace DevConfig
                             }
                             sync_obj.Set();
                             break;
-
-                        // response zahájení čtení souboru
-                        case SD_SubCmd_GetFile:
+                        case SD_SubCmd_GetFile: // response zahájení čtení souboru
                             if (MessageFlag == 0)
                             {
                                 file_bytes_map.Clear();
@@ -517,9 +477,7 @@ namespace DevConfig
                             }
                             sync_obj.Set();
                             break;
-
-                        // response čtení další čísti souboru
-                        case SD_SubCmd_GetFilePart:
+                        case SD_SubCmd_GetFilePart: // response čtení další čísti souboru
                             if (MessageFlag == 0)
                             {
                                 uint file_pos = BitConverter.ToUInt32(msg.Data.Skip(2).Take(4).Reverse().ToArray());
@@ -534,13 +492,14 @@ namespace DevConfig
                             }
                             sync_obj.Set();
                             break;
-
+                        case SD_SubCmd_Abort:
                         case SD_SubCmd_Format:
                         case SD_SubCmd_RenDirNew:
                         case SD_SubCmd_RenDirOld:
                         case SD_SubCmd_RenFileNew:
                         case SD_SubCmd_RenFileOld:
                         case SD_SubCmd_CreateDir:
+                        case SD_SubCmd_DelFile:
                         case SD_SubCmd_DelDir:
                         case SD_SubCmd_PutFile: // response zahájení odeslání souboru
                         case SD_SubCmd_PutFilePart: // response odeslání další čísti souboru
@@ -1085,12 +1044,10 @@ namespace DevConfig
             {
                 string path = MakePath((TreeNode)item.Tag);
                 path = Path.Combine(path, item.Text).Replace('\\', '/');
-                Debug.WriteLine($"DleteFile {path}");
                 if (DeleteFile(path))
                 {
-                    // smazano
-                    listView1.Items.Remove(item);
                     ((DirInfo)((TreeNode)item.Tag).Tag).RemoveFileInfo(Path.GetFileName(path));
+                    listView1.Items.Remove(item);
                 }
 
             }
@@ -1112,6 +1069,7 @@ namespace DevConfig
             message.Data.Add(SD_SubCmd_DelFile);
             message.Data.AddRange(name_encoding.GetBytes(file_path + "\0"));
 
+            sync_obj.Reset();
             DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
             if (sync_obj.WaitOne(1000))
@@ -1357,6 +1315,7 @@ namespace DevConfig
             }
         }
         #endregion
+
     }
 
     class DirInfo
