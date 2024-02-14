@@ -94,6 +94,7 @@
             treeView1.SelectedImageIndex = 0;
             treeView1.Size = new Size(356, 680);
             treeView1.TabIndex = 0;
+            treeView1.AfterLabelEdit += treeView1_AfterLabelEdit;
             treeView1.AfterCollapse += treeView1_AfterCollapse;
             treeView1.AfterExpand += treeView1_AfterExpand;
             treeView1.AfterSelect += treeView1_AfterSelect;
@@ -348,33 +349,33 @@
             // GetFileMenuItem2
             // 
             GetFileMenuItem2.Name = "GetFileMenuItem2";
-            GetFileMenuItem2.Size = new Size(224, 26);
+            GetFileMenuItem2.Size = new Size(146, 26);
             GetFileMenuItem2.Text = "Get";
             GetFileMenuItem2.Click += GetFileMenuItem_Click;
             // 
             // toolStripSeparator3
             // 
             toolStripSeparator3.Name = "toolStripSeparator3";
-            toolStripSeparator3.Size = new Size(221, 6);
+            toolStripSeparator3.Size = new Size(143, 6);
             // 
             // AddFileMenuItem2
             // 
             AddFileMenuItem2.Name = "AddFileMenuItem2";
-            AddFileMenuItem2.Size = new Size(224, 26);
+            AddFileMenuItem2.Size = new Size(146, 26);
             AddFileMenuItem2.Text = "Insert";
             AddFileMenuItem2.Click += AddFileMenuItem_Click;
             // 
             // RenFileMenuItem2
             // 
             RenFileMenuItem2.Name = "RenFileMenuItem2";
-            RenFileMenuItem2.Size = new Size(224, 26);
+            RenFileMenuItem2.Size = new Size(146, 26);
             RenFileMenuItem2.Text = "Rename";
             RenFileMenuItem2.Click += RenFileMenuItem_Click;
             // 
             // DelFileMenuItem2
             // 
             DelFileMenuItem2.Name = "DelFileMenuItem2";
-            DelFileMenuItem2.Size = new Size(224, 26);
+            DelFileMenuItem2.Size = new Size(146, 26);
             DelFileMenuItem2.Text = "Delete";
             DelFileMenuItem2.Click += DelFileMenuItem_Click;
             // 

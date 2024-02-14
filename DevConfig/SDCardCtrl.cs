@@ -264,6 +264,16 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
+        private void treeView1_AfterLabelEdit(object sender, NodeLabelEditEventArgs e)
+        {
+            if (e.Label != null && e.Node.Text != e.Label)
+            {
+                if(!RenDirectory(e.Label))
+                    e.CancelEdit = true;
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
         private void GetFileMenuItem_Click(object sender, EventArgs e)
         {
             if (listView1.SelectedItems.Count > 0)
@@ -369,12 +379,19 @@ namespace DevConfig
 
         private void RenDirMenuItem_Click(object sender, EventArgs e)
         {
+            if (treeView1.SelectedNode != null && treeView1.SelectedNode.Parent != null)
+            {
+                treeView1.LabelEdit = true;
+                if (!treeView1.SelectedNode.IsEditing)
+                    treeView1.SelectedNode.BeginEdit();
+            }
+/*
             AddDirGetName addDirGetName = new AddDirGetName();
             addDirGetName.textBoxName.Text = treeView1.SelectedNode.Text;
             if (addDirGetName.ShowDialog() == DialogResult.OK)
             {
                 RenDirectory(addDirGetName.textBoxName.Text);
-            }
+            }*/
         }
 
         private void DelDirMenuItem_Click(object sender, EventArgs e)
@@ -1250,8 +1267,9 @@ namespace DevConfig
             }
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void RenDirectory(string text)
+        private bool RenDirectory(string text)
         {
+            bool bRet = false;
             if (treeView1.SelectedNode.Level > 0)
             {
                 string path = MakePath(treeView1.SelectedNode);
@@ -1308,14 +1326,15 @@ namespace DevConfig
 
                 if (MessageFlag == (byte)FxError.FX_SUCCESS)
                 {
+                    bRet = true;
                     MainForm.AppendToDebug("Rename Directory OK", true, false, Color.DarkGreen);
                     treeView1.SelectedNode.Text = Path.GetFileName(new_path);
                     ((DirInfo)treeView1.SelectedNode.Tag).Name = Path.GetFileName(new_path);
                 }
             }
+            return bRet;
         }
         #endregion
-
     }
 
     class DirInfo
