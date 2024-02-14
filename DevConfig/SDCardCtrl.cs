@@ -630,19 +630,30 @@ namespace DevConfig
 
             lock (messages)
                 messages.Clear();
-            sync_obj.Reset();
 
+            sync_obj.Reset();
             DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
-            while (sync_obj.WaitOne(1000) && bContinue)
+            while (bContinue)
             {
-                lock (messages)
+                if (sync_obj.WaitOne(1000))
                 {
-                    if (messages.Count == files_to_read)
-                        break;
+                    lock (messages)
+                    {
+                        if (messages.Count == files_to_read)
+                            break;
+                    }
+                    sync_obj.Reset();
                 }
-                sync_obj.Reset();
+                else
+                {
+                    bContinue = false;
+                    MainForm.AppendToDebug($"GetFileList TIMEOUT", true, false, Color.Red);
+                    Cursor = Cursors.Default;
+                    return fileinfolist;
+                }
             }
+
 
             if (bContinue)
             {
