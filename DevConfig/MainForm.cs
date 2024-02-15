@@ -45,6 +45,8 @@ namespace DevConfig
         public delegate void CancelEventDelegate();
         public event CancelEventDelegate? AbortEvent;
 
+        MruList? ConnectMruList;
+
         ///////////////////////////////////////////////////////////////////////////////////////////
         public MainForm()
         {
@@ -55,6 +57,8 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void MainForm_Load(object sender, EventArgs e)
         {
+            ConnectMruList = new MruList(Assembly.GetExecutingAssembly().GetName().Name??"DevConfig", connectionToolStripMenuItem, closeToolStripMenuItem, 6);
+            ConnectMruList.FileSelected += OpenFile;
             /*var enc = CodePagesEncodingProvider.Instance.GetEncoding(852);
             CultureInfo ci = new CultureInfo("cs-CZ");
             foreach (EncodingInfo ei in Encoding.GetEncodings())
@@ -141,17 +145,14 @@ namespace DevConfig
         {
             ConnectForm connectForm = new ConnectForm();
 
-            if (connectForm.ShowDialog() == DialogResult.Continue && connectForm.InputPeriph != null)
+            if (connectForm.ShowDialog() == DialogResult.Continue)
             {
-                if (DevConfigService.Instance.InputPeriph != null)
-                    DevConfigService.Instance.InputPeriph.Close();
+                Text = $"DevConfig - {DevConfigService.Instance.ConnectString}";
+                ConnectMruList?.AddFile(DevConfigService.Instance.ConnectString);
 
-                DevConfigService.Instance.InputPeriph = connectForm.InputPeriph;
-                //DevConfigService.Instance.InputPeriph!.MessageReceived += InputPeriph_MessageReceived;
                 //TreeWnd?.NewInputPeriph();
                 //DebugWnd?.NewInputPeriph();
                 //DeviceWnd?.NewInputPeriph();
-
                 DevConfigService.Instance.RefreshDeviceList();
             }
 
@@ -164,6 +165,21 @@ namespace DevConfig
             {
                 DevConfigService.Instance.InputPeriph.Close();
                 DevConfigService.Instance.InputPeriph = null;
+                Text = "DevConfig";
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void OpenFile(string file_name)
+        {
+            if(DevConfigService.Instance.Open(file_name))
+            {
+                Text = $"DevConfig - {DevConfigService.Instance.ConnectString}";
+                DevConfigService.Instance.RefreshDeviceList();
+            }
+            else
+            {
+                ConnectMruList?.RemoveFile(file_name);
             }
         }
 

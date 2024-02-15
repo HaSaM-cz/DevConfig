@@ -1,7 +1,11 @@
 ﻿
 using CanDiagSupport;
+using SshCANns;
 using System.Diagnostics;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using TcpTunelNs;
+using ToolStickNs;
+using UsbSerialNs;
+
 using Message = CanDiagSupport.Message;
 
 namespace DevConfig.Service
@@ -45,6 +49,8 @@ namespace DevConfig.Service
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private static DevConfigService? instance = null;
+        internal string ConnectString = string.Empty;
+
         public static DevConfigService Instance
         {
             get
@@ -218,6 +224,50 @@ namespace DevConfig.Service
                     });
                 });
             });
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        internal bool Open(string connect_str)
+        {
+            IInputPeriph? input_periph = null;
+            string[] connect_str_parts = connect_str.Split(new char[] {  ';', ':', '@', '/', ',' });
+
+            if(connect_str_parts.Length < 2)
+                return false;
+
+            switch (connect_str_parts[0])
+            {
+                case "USB Serial":
+                    input_periph = new UsbSerial();
+                    input_periph.Open(new { PortName = connect_str_parts[1], BaudRate = (connect_str_parts.Length > 2 ? connect_str_parts[2] : "115200") });
+                    break;
+                case "USB ToolStick":
+                    input_periph = new ToolStick();
+                    input_periph.Open(new { PortName = connect_str_parts[1], BaudRate = (connect_str_parts.Length > 2 ? connect_str_parts[2] : "115200") });
+                    break;
+                case "TCP Tunel":
+                    input_periph = new TcpTunel();
+                    input_periph.Open(new { HostName = connect_str_parts[1], Port = (connect_str_parts.Length > 2 ? connect_str_parts[2] : "10000") });
+                    break;
+                case "SSH Karo CAN":
+                    input_periph = new SshCan();
+                    input_periph.Open(new { HostName = connect_str_parts[1], Login = "root", Password = "ds-1564", LoginPort = (connect_str_parts.Length > 2 ? connect_str_parts[2] : "22") });
+                    break;
+            }
+
+            if (input_periph != null)
+            {
+                ConnectString = connect_str;
+                if (InputPeriph != null)
+                    InputPeriph.Close();
+
+                input_periph.Run();
+
+                InputPeriph = input_periph;
+                return true;
+            }
+
+            return false;
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////

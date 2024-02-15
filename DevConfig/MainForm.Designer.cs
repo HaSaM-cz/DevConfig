@@ -37,6 +37,7 @@ namespace DevConfig
             connectionToolStripMenuItem = new ToolStripMenuItem();
             openToolStripMenuItem = new ToolStripMenuItem();
             closeToolStripMenuItem = new ToolStripMenuItem();
+            exitToolStripMenuItem = new ToolStripMenuItem();
             viewToolStripMenuItem = new ToolStripMenuItem();
             deviceTreeToolStripMenuItem = new ToolStripMenuItem();
             debugToolStripMenuItem = new ToolStripMenuItem();
@@ -54,6 +55,7 @@ namespace DevConfig
             tb_version = new ToolStripStatusLabel();
             btnAbort = new ToolStripButton();
             tsProgressBar = new ToolStripProgressBar();
+            toolStripSeparator1 = new ToolStripSeparator();
             menuStrip1.SuspendLayout();
             toolStrip1.SuspendLayout();
             SuspendLayout();
@@ -83,7 +85,7 @@ namespace DevConfig
             // 
             // connectionToolStripMenuItem
             // 
-            connectionToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openToolStripMenuItem, closeToolStripMenuItem });
+            connectionToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openToolStripMenuItem, closeToolStripMenuItem, toolStripSeparator1, exitToolStripMenuItem });
             connectionToolStripMenuItem.Name = "connectionToolStripMenuItem";
             connectionToolStripMenuItem.Size = new Size(98, 24);
             connectionToolStripMenuItem.Text = "Connection";
@@ -101,6 +103,12 @@ namespace DevConfig
             closeToolStripMenuItem.Size = new Size(128, 26);
             closeToolStripMenuItem.Text = "Close";
             closeToolStripMenuItem.Click += Close_Click;
+            // 
+            // exitToolStripMenuItem
+            // 
+            exitToolStripMenuItem.Name = "exitToolStripMenuItem";
+            exitToolStripMenuItem.Size = new Size(128, 26);
+            exitToolStripMenuItem.Text = "Exit";
             // 
             // viewToolStripMenuItem
             // 
@@ -230,6 +238,11 @@ namespace DevConfig
             tsProgressBar.Name = "tsProgressBar";
             tsProgressBar.Size = new Size(300, 17);
             // 
+            // toolStripSeparator1
+            // 
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new Size(125, 6);
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -282,5 +295,7 @@ namespace DevConfig
         private ToolStripMenuItem deviceToolStripMenuItem;
         private ToolStripButton btnAbort;
         private ToolStripProgressBar tsProgressBar;
+        private ToolStripMenuItem exitToolStripMenuItem;
+        private ToolStripSeparator toolStripSeparator1;
     }
 }

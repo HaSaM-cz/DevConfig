@@ -29,6 +29,7 @@
     <ProjectReference Include="..\..\CanDiag\CanDiag\CanDiagSupport\CanDiagSupport.csproj" />
     <ProjectReference Include="..\..\CanDiag\CanDiag\SshCan\SshCan.csproj" />
     <ProjectReference Include="..\..\CanDiag\CanDiag\TcpTunel\TcpTunel.csproj" />
+    <ProjectReference Include="..\..\CanDiag\CanDiag\ToolStick\ToolStick.csproj" />
     <ProjectReference Include="..\..\CanDiag\CanDiag\UsbSerial\UsbSerial.csproj" />
     <ProjectReference Include="..\DevConfigSupp\DevConfigSupp.csproj" />
   </ItemGroup>

@@ -494,7 +494,7 @@ namespace DevConfig
                             }
                             sync_obj.Set();
                             break;
-                        case SD_SubCmd_GetFilePart: // response čtení další čísti souboru
+                        case SD_SubCmd_GetFilePart: // response čtení další části souboru
                             if (MessageFlag == 0)
                             {
                                 uint file_pos = BitConverter.ToUInt32(msg.Data.Skip(2).Take(4).Reverse().ToArray());
@@ -540,7 +540,7 @@ namespace DevConfig
 
             if (!treeView1.Nodes.ContainsKey("SDCard"))
             {
-                DirInfo file_info = new DirInfo("/");
+                DirInfo file_info = new DirInfo(/*"/"*/);
 
                 TreeNode node = new TreeNode("SD Card");
                 node.Name = "SDCard";
@@ -574,7 +574,7 @@ namespace DevConfig
                 {
                     if (file.IsDirectory)
                     {
-                        DirInfo dirInfo1 = new DirInfo(file.Name);
+                        DirInfo dirInfo1 = new DirInfo(/*file.Name*/);
                         TreeNode new_node = new TreeNode(Path.GetFileName(file.Name));
                         new_node.ImageKey = "FolderClosed.bmp";
                         new_node.SelectedImageKey = "FolderClosed.bmp";
@@ -596,16 +596,18 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private string MakePath(TreeNode node)
+        private string MakePath(TreeNode? node)
         {
             List<string> list = new List<string>();
-            do
+
+            while (node != null)
             {
-                DirInfo dirInfo = ((DirInfo)node.Tag);
-                list.Add(dirInfo.Name);
+                if(node.Parent != null)
+                    list.Add(node.Text);
+                else
+                    list.Add("/");
                 node = node.Parent;
             }
-            while (node != null);
 
             list.Reverse();
 
@@ -690,7 +692,6 @@ namespace DevConfig
                                 Debug.WriteLine($"File {idx}, attr = {attr:X2}, size = {fileinfo.Size}, time = {time}, {filename}");
                                 fileinfolist.Add(fileinfo);
                             }
-
                         }
                     }
                     else
@@ -941,7 +942,7 @@ namespace DevConfig
 
                 if (AddFile(fileInfo))
                 {
-                    FileInfo fi = new FileInfo(fileNames[i])
+                    FileInfo fi = new FileInfo(Path.GetFileName(fileNames[i]))
                     {
                         IsDirectory = false,
                         ModifyTime = fileInfo.LastWriteTime,
@@ -1219,7 +1220,7 @@ namespace DevConfig
                 {
                     MainForm.AppendToDebug("Create Directory OK", true, false, Color.DarkGreen);
                     // OK vytvorime polozku ve stromu
-                    DirInfo dirInfo1 = new DirInfo(path);
+                    DirInfo dirInfo1 = new DirInfo(/*path*/);
                     dirInfo1.FileInfoList = new List<FileInfo>();
                     TreeNode new_node = new TreeNode(Path.GetFileName(path));
                     new_node.ImageKey = "FolderClosed.bmp";
@@ -1340,7 +1341,7 @@ namespace DevConfig
                     bRet = true;
                     MainForm.AppendToDebug("Rename Directory OK", true, false, Color.DarkGreen);
                     treeView1.SelectedNode.Text = Path.GetFileName(new_path);
-                    ((DirInfo)treeView1.SelectedNode.Tag).Name = Path.GetFileName(new_path);
+                    //((DirInfo)treeView1.SelectedNode.Tag).Name = Path.GetFileName(new_path);
                 }
             }
             return bRet;
@@ -1350,13 +1351,7 @@ namespace DevConfig
 
     class DirInfo
     {
-        public string Name;
         public List<FileInfo>? FileInfoList = null;
-
-        public DirInfo(string name)
-        {
-            Name = name;
-        }
 
         internal void RemoveFileInfo(string name)
         {

@@ -1,9 +1,7 @@
 ﻿using CanDiagSupport;
 using DevConfig.Properties;
-using SshCANns;
+using DevConfig.Service;
 using System.IO.Ports;
-using TcpTunelNs;
-using UsbSerialNs;
 
 namespace DevConfig
 {
@@ -23,34 +21,37 @@ namespace DevConfig
             try
             {
                 Cursor = Cursors.WaitCursor;
+                String? connect_str = null;
                 if (rbUsbCom.Checked)
                 {
-                    InputPeriph = new UsbSerial();
-                    InputPeriph.Open(new { PortName = cbbPortName.Text, BaudRate = cbbPortSpeed.Text });
-                    InputPeriph.Run();
+                    connect_str = $"USB Serial/{cbbPortName.Text}:{cbbPortSpeed.Text}";
                 }
                 else if (rbToolstick.Checked)
                 {
-                    throw new NotImplementedException();
+                    connect_str = $"USB ToolStick/{cbbPortName.Text}:{cbbPortSpeed.Text}"; 
                 }
                 else if (rbTcpSocket.Checked)
                 {
-                    InputPeriph = new TcpTunel();
-                    InputPeriph.Open(new { HostName = txtHost.Text, Port = txtPort.Text });
-                    InputPeriph.Run();
+                    connect_str = $"TCP Tunel/{txtHost.Text}:{txtPort.Text}";
                 }
                 else if (rbSshKaro.Checked)
                 {
-                    InputPeriph = new SshCan();
-                    InputPeriph.Open(new { HostName = txtHost.Text, Login = "root", Password = "ds-1564", LoginPort = txtPort.Text });
-                    InputPeriph.Run();
+                    connect_str = $"SSH Karo CAN/{txtHost.Text}:{txtPort.Text}";
                 }
-                DialogResult = DialogResult.Continue;
+
+                if (!string.IsNullOrWhiteSpace(connect_str))
+                {
+                    if(DevConfigService.Instance.Open(connect_str))
+                        DialogResult = DialogResult.Continue;
+                }
             }
             catch (Exception ex)
             {
-                Cursor = Cursors.Default;
                 MessageBox.Show(ex.Message);
+            }
+            finally 
+            {
+                Cursor = Cursors.Default; 
             }
         }
 
