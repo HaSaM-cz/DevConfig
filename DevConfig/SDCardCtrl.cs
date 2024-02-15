@@ -3,6 +3,8 @@ using DevConfig.Service;
 using DevConfig.Utils;
 using System.Data;
 using System.Diagnostics;
+using System.Drawing;
+using System.Security.Policy;
 using System.Text;
 using WeifenLuo.WinFormsUI.Docking;
 using static System.Windows.Forms.ListView;
@@ -85,6 +87,7 @@ namespace DevConfig
             FX_CRC_ERROR = 0xF1,
         }
         #endregion
+        int timeout = 3000;
         bool bSendBreak = false;
         bool bContinue = true;
         byte DeviceAddress;
@@ -350,12 +353,12 @@ namespace DevConfig
 
         private void BackupSdCardMenuItem_Click(object sender, EventArgs e)
         {
-
+            SDBackup();
         }
 
         private void RestoreSdCardMenuItem_Click(object sender, EventArgs e)
         {
-
+            SDRestore();
         }
 
         private void ReloadSdCardMenuItem_Click(object sender, EventArgs e)
@@ -638,7 +641,7 @@ namespace DevConfig
 
             while (bContinue)
             {
-                if (sync_obj.WaitOne(1000))
+                if (sync_obj.WaitOne(timeout))
                 {
                     lock (messages)
                     {
@@ -712,6 +715,10 @@ namespace DevConfig
 
         }
 
+        #endregion
+
+        
+        #region BACKUP/RESTORE
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void SDFormat()
         {
@@ -731,7 +738,7 @@ namespace DevConfig
                     sync_obj.Reset();
                     DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
-                    if (sync_obj.WaitOne(2000))
+                    if (sync_obj.WaitOne(timeout))
                     {
                         if (MessageFlag == (byte)FxError.FX_SUCCESS)
                             MainForm.AppendToDebug("Format SD card OK", true, false, Color.DarkGreen);
@@ -744,6 +751,109 @@ namespace DevConfig
                     }
                 });
             }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        struct Backup_t
+        {
+            public uint dir_cnt = 0;
+            public uint file_cnt = 0;
+            public ulong size = 0;
+            public List<FileInfo> files = new();
+
+            public string[] exclude_ext = new string[] { ".xml", ".bin" };
+
+            public Backup_t()
+            {
+            }
+        };
+
+        Backup_t BackupObj = new ();
+
+        private void SDBackup()
+        {
+            BackupObj = new();
+            // refresneme kartu
+            int level = 0;
+            Backup(treeView1.TopNode, level);
+
+            foreach(var fi in BackupObj.files)
+            {
+                string src_path = fi.Name;
+                string dst_path = Path.Combine(@"D:\Vymaz\tt", $"{src_path.TrimStart('/')}");
+
+                Debug.WriteLine($"{fi.IsDirectory} - {src_path} - {dst_path}");
+
+                if (fi.IsDirectory)
+                {
+                    //Directory.CreateDirectory(dst_path);
+                }
+                else
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(dst_path)!);
+                    CopyToLocal(src_path, dst_path);
+                }
+
+                if (!bContinue)
+                    break;
+            }
+
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void Backup(TreeNode node, int level)
+        {
+            // projdeme rekurzivne soubory
+            var di = ((DirInfo)node.Tag);
+
+            if(di.FileInfoList == null)
+                ExpandNode(node, false);
+
+            Debug.Assert(di.FileInfoList != null);
+
+            foreach (var fi in di.FileInfoList)
+            {
+                FileInfo new_fi = new(fi);
+                new_fi.Name = $"{MakePath(node).TrimEnd('/')}/{fi.Name}";
+
+                if (fi.IsDirectory)
+                {
+                    BackupObj.dir_cnt++;
+                    BackupObj.files.Add(new_fi);
+                }
+                else
+                {
+                    string ext = Path.GetExtension(fi.Name).ToLower();
+                    var exclude = (from xx in BackupObj.exclude_ext where xx.CompareTo(ext) == 0 select xx).Count() != 0;
+                    //Debug.WriteLine($"{exclude} {fi.Name}");
+                    if (!exclude)
+                    {
+                        BackupObj.file_cnt++;
+                        BackupObj.size += fi.Size;
+                        BackupObj.files.Add(new_fi);
+                    }
+                }
+
+                
+
+                //string src_path = $"{MakePath(node).TrimEnd('/')}/{fi.Name}";
+                //string dst_path = Path.Combine(@"D:\Vymaz\tt", $"{src_path.TrimStart('/')}");
+
+                //Debug.WriteLine($"{level} - {fi.IsDirectory} - {src_path} - {dst_path}");
+
+                //if (fi.IsDirectory)
+                //    Directory.CreateDirectory(dst_path);
+            }
+
+            // projdeme adresare
+            foreach (var child_node in node.Nodes)
+                Backup((TreeNode)child_node, level + 1);
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void SDRestore()
+        {
+
         }
 
         #endregion
@@ -859,7 +969,7 @@ namespace DevConfig
 
             while (bContinue)
             {
-                if (sync_obj.WaitOne(1000))
+                if (sync_obj.WaitOne(timeout))
                 {
                     if (MessageFlag != 0)
                     {
@@ -1023,7 +1133,7 @@ namespace DevConfig
 
             while (bContinue)
             {
-                if (sync_obj.WaitOne(1000))
+                if (sync_obj.WaitOne(timeout))
                 {
                     if (MessageFlag == 0)
                     {
@@ -1101,7 +1211,7 @@ namespace DevConfig
             sync_obj.Reset();
             DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
-            if (sync_obj.WaitOne(1000))
+            if (sync_obj.WaitOne(timeout))
             {
                 if (MessageFlag == (byte)FxError.FX_SUCCESS)
                 {
@@ -1160,7 +1270,7 @@ namespace DevConfig
                 sync_obj.Reset();
                 DevConfigService.Instance.InputPeriph?.SendMsg(msg_arr[i]);
 
-                if (sync_obj.WaitOne(1000))
+                if (sync_obj.WaitOne(timeout))
                 {
                     if (MessageFlag != (byte)FxError.FX_SUCCESS)
                     {
@@ -1214,7 +1324,7 @@ namespace DevConfig
             sync_obj.Reset();
             bContinue = true;
             DevConfigService.Instance.InputPeriph?.SendMsg(message);
-            if (sync_obj.WaitOne(1000))
+            if (sync_obj.WaitOne(timeout))
             {
                 if (MessageFlag == (byte)FxError.FX_SUCCESS)
                 {
@@ -1258,7 +1368,7 @@ namespace DevConfig
                 sync_obj.Reset();
                 bContinue = true;
                 DevConfigService.Instance.InputPeriph?.SendMsg(message);
-                if (sync_obj.WaitOne(1000))
+                if (sync_obj.WaitOne(timeout))
                 {
                     if (MessageFlag == (byte)FxError.FX_SUCCESS)
                     {
@@ -1316,7 +1426,7 @@ namespace DevConfig
                     sync_obj.Reset();
                     DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
-                    if (sync_obj.WaitOne(1000))
+                    if (sync_obj.WaitOne(timeout))
                     {
                         if (MessageFlag != (byte)FxError.FX_SUCCESS)
                         {
@@ -1378,6 +1488,14 @@ namespace DevConfig
         public FileInfo(string name)
         {
             Name = name;
+        }
+
+        public FileInfo(FileInfo fi)
+        {
+            Name = fi.Name;
+            ModifyTime = fi.ModifyTime;
+            IsDirectory = fi.IsDirectory;
+            Size = fi.Size;
         }
     }
 }
