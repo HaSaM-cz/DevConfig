@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CanDiag
 {
-    public class MruList
+    public class MruList<T>
     {
         // The application's name.
         private string ApplicationName;
@@ -25,7 +25,7 @@ namespace CanDiag
 
         // Raised when the user selects a file from the MRU list.
         public delegate void FileSelectedEventHandler(string file_name);
-        public event FileSelectedEventHandler FileSelected;
+        public event FileSelectedEventHandler? FileSelected;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         // Constructor.
@@ -34,7 +34,7 @@ namespace CanDiag
             ApplicationName = application_name;
             MyMenu = menu;
             NumFiles = num_files;
-            FileInfos = new List<object>();
+            FileInfos = new ();
 
             // Make a separator.
             Separator = new ToolStripSeparator();
@@ -92,7 +92,10 @@ namespace CanDiag
                     ApplicationName, "FilePath" + i.ToString(), "");
                 if (file_name != "")
                 {
-                    FileInfos.Add($"{file_name}");// TODO FileInfos.Add(new FileInfo(file_name));
+                    if(typeof(T) == typeof(FileInfo))
+                        FileInfos.Add(new FileInfo(file_name));
+                    else
+                        FileInfos.Add($"{file_name}");
                 }
             }
         }
@@ -147,8 +150,10 @@ namespace CanDiag
             RemoveFileInfo(file_name);
 
             // Add the file to the beginning of the list.
-            
-            FileInfos.Insert(0, file_name); // TODO FileInfos.Insert(0, new FileInfo(file_name));
+            if (typeof(T) == typeof(FileInfo))
+                FileInfos.Insert(0, new FileInfo(file_name));
+            else
+                FileInfos.Insert(0, file_name);
 
             // If we have too many items, remove the last one.
             if (FileInfos.Count > NumFiles) FileInfos.RemoveAt(NumFiles);

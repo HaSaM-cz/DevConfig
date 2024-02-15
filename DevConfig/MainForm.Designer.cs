@@ -37,6 +37,7 @@ namespace DevConfig
             connectionToolStripMenuItem = new ToolStripMenuItem();
             openToolStripMenuItem = new ToolStripMenuItem();
             closeToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator1 = new ToolStripSeparator();
             exitToolStripMenuItem = new ToolStripMenuItem();
             viewToolStripMenuItem = new ToolStripMenuItem();
             deviceTreeToolStripMenuItem = new ToolStripMenuItem();
@@ -55,7 +56,6 @@ namespace DevConfig
             tb_version = new ToolStripStatusLabel();
             btnAbort = new ToolStripButton();
             tsProgressBar = new ToolStripProgressBar();
-            toolStripSeparator1 = new ToolStripSeparator();
             menuStrip1.SuspendLayout();
             toolStrip1.SuspendLayout();
             SuspendLayout();
@@ -93,22 +93,28 @@ namespace DevConfig
             // openToolStripMenuItem
             // 
             openToolStripMenuItem.Name = "openToolStripMenuItem";
-            openToolStripMenuItem.Size = new Size(128, 26);
+            openToolStripMenuItem.Size = new Size(224, 26);
             openToolStripMenuItem.Text = "Open";
             openToolStripMenuItem.Click += Open_Click;
             // 
             // closeToolStripMenuItem
             // 
             closeToolStripMenuItem.Name = "closeToolStripMenuItem";
-            closeToolStripMenuItem.Size = new Size(128, 26);
+            closeToolStripMenuItem.Size = new Size(224, 26);
             closeToolStripMenuItem.Text = "Close";
             closeToolStripMenuItem.Click += Close_Click;
+            // 
+            // toolStripSeparator1
+            // 
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new Size(221, 6);
             // 
             // exitToolStripMenuItem
             // 
             exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            exitToolStripMenuItem.Size = new Size(128, 26);
+            exitToolStripMenuItem.Size = new Size(224, 26);
             exitToolStripMenuItem.Text = "Exit";
+            exitToolStripMenuItem.Click += Exit_Click;
             // 
             // viewToolStripMenuItem
             // 
@@ -237,11 +243,6 @@ namespace DevConfig
             tsProgressBar.Margin = new Padding(1, 10, 3, 5);
             tsProgressBar.Name = "tsProgressBar";
             tsProgressBar.Size = new Size(300, 17);
-            // 
-            // toolStripSeparator1
-            // 
-            toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new Size(125, 6);
             // 
             // MainForm
             // 

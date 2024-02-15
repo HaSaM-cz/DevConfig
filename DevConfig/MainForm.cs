@@ -45,7 +45,7 @@ namespace DevConfig
         public delegate void CancelEventDelegate();
         public event CancelEventDelegate? AbortEvent;
 
-        MruList? ConnectMruList;
+        MruList<string>? ConnectMruList;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         public MainForm()
@@ -57,7 +57,7 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void MainForm_Load(object sender, EventArgs e)
         {
-            ConnectMruList = new MruList(Assembly.GetExecutingAssembly().GetName().Name??"DevConfig", connectionToolStripMenuItem, closeToolStripMenuItem, 6);
+            ConnectMruList = new MruList<string>(Assembly.GetExecutingAssembly().GetName().Name ?? "DevConfig", connectionToolStripMenuItem, closeToolStripMenuItem, 6);
             ConnectMruList.FileSelected += OpenFile;
             /*var enc = CodePagesEncodingProvider.Instance.GetEncoding(852);
             CultureInfo ci = new CultureInfo("cs-CZ");
@@ -170,9 +170,15 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
+        private void Exit_Click(object sender, EventArgs e)
+        {
+            Close();
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
         private void OpenFile(string file_name)
         {
-            if(DevConfigService.Instance.Open(file_name))
+            if (DevConfigService.Instance.Open(file_name))
             {
                 Text = $"DevConfig - {DevConfigService.Instance.ConnectString}";
                 DevConfigService.Instance.RefreshDeviceList();
@@ -410,26 +416,26 @@ namespace DevConfig
         #region PROGRESS
         ///////////////////////////////////////////////////////////////////////////////////////////
         public int ProgressBar_Minimum
-        { 
-            set 
+        {
+            set
             {
                 tsProgressBar.Minimum = value;
-            } 
+            }
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
         public int ProgressBar_Maximum
         {
-            set 
+            set
             {
                 if (tsProgressBar.Minimum >= value)
                     tsProgressBar.Minimum = tsProgressBar.Maximum - 1;
                 tsProgressBar.Maximum = value;
-            } 
+            }
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
         public int ProgressBar_Value
         {
-            set 
+            set
             {
                 if (tsProgressBar.Maximum < value)
                     tsProgressBar.Value = tsProgressBar.Maximum;
@@ -437,7 +443,7 @@ namespace DevConfig
                     tsProgressBar.Value = tsProgressBar.Minimum;
                 else
                     tsProgressBar.Value = value;
-            } 
+            }
         }
 
         public void ProgressBar_Step(int value)
