@@ -3,8 +3,6 @@ using DevConfig.Service;
 using DevConfig.Utils;
 using System.Data;
 using System.Diagnostics;
-using System.Drawing;
-using System.Security.Policy;
 using System.Text;
 using WeifenLuo.WinFormsUI.Docking;
 using static System.Windows.Forms.ListView;
@@ -26,7 +24,7 @@ namespace DevConfig
         const byte ECmd_SD_Command = 0x65;
 
         const byte SD_SubCmd_ListFiles = 0x01;
-        const byte SD_SubCmd_FileItemName = 0x02;
+        const byte SD_SubCmd_ListFilesPart = 0x02;
         const byte SD_SubCmd_GetFile = 0x10;
         const byte SD_SubCmd_GetFilePart = 0x11;
         const byte SD_SubCmd_PutFile = 0x20;
@@ -87,8 +85,7 @@ namespace DevConfig
             FX_CRC_ERROR = 0xF1,
         }
         #endregion
-        int timeout = 3000;
-        bool bSendBreak = false;
+        int timeout = 1000;
         bool bContinue = true;
         byte DeviceAddress;
         MainForm MainForm;
@@ -407,16 +404,6 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void MainForm_CancelEvent()
         {
-            if (bSendBreak)
-            {
-                bSendBreak = false;
-                Message message = new Message();
-                message.DEST = DeviceAddress;
-                message.CMD = ECmd_SD_Command;
-                message.Data = new List<byte>() { SD_SubCmd_Abort };
-                DevConfigService.Instance.InputPeriph?.SendMsg(message);
-            }
-
             bContinue = false;
             sync_obj.Set();
         }
@@ -467,16 +454,11 @@ namespace DevConfig
                             }
                             sync_obj.Set();
                             break;
-                        case SD_SubCmd_FileItemName: // FileInfo file
+                        case SD_SubCmd_ListFilesPart: // FileInfo file
                             if (MessageFlag == 0)
-                            {
-                                lock (messages)
-                                    messages.Add(msg);
-                            }
+                                messages.Add(msg);
                             else
-                            {
                                 bContinue = false;
-                            }
                             sync_obj.Set();
                             break;
                         case SD_SubCmd_GetFile: // response zahájení čtení souboru
@@ -620,6 +602,7 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private List<FileInfo> GetFileList(string directory)
         {
+            uint err_cnt = 0;
             Cursor = Cursors.WaitCursor;
             MainForm.AppendToDebug($"GetFileList ({directory})");
 
@@ -633,32 +616,73 @@ namespace DevConfig
             message.Data.Add(SD_SubCmd_ListFiles);
             message.Data.AddRange(name_encoding.GetBytes(directory + "\0"));
 
-            lock (messages)
-                messages.Clear();
-
-            sync_obj.Reset();
-            DevConfigService.Instance.InputPeriph?.SendMsg(message);
+            messages.Clear();
 
             while (bContinue)
             {
+                sync_obj.Reset();
+                DevConfigService.Instance.InputPeriph?.SendMsg(message);
+
+                // Počkame na response požadavku na soubor.
                 if (sync_obj.WaitOne(timeout))
                 {
-                    lock (messages)
+                    if (MessageFlag != 0)
+                        bContinue = false;
+                    break;
+                }
+                else
+                {
+                    if (++err_cnt == 3)
+                    {
+                        bContinue = false;
+                        MainForm.AppendToDebug($"GetFileList TIMEOUT", true, false, Color.Red);
+                        break;
+                    }
+                    else
+                    {
+                        MainForm.AppendToDebug($"GetFileList REPEAT", true, false, Color.Orange);
+                    }
+                }
+            }
+
+            err_cnt = 0;
+            while (bContinue)
+            {
+                // Odešlšme požadavek na další soubor
+                message.Data = new List<byte>() { SD_SubCmd_ListFilesPart };
+                message.Data.AddRange(((ushort)messages.Count).GetBytes().Reverse());    // offset
+
+                sync_obj.Reset();
+                DevConfigService.Instance.InputPeriph?.SendMsg(message);
+
+                if (sync_obj.WaitOne(timeout))
+                {
+                    err_cnt = 0;
+                    if (MessageFlag == 0)
                     {
                         if (messages.Count == files_to_read)
                             break;
                     }
-                    sync_obj.Reset();
+                    else
+                    {
+                        bContinue = false;
+                        break;
+                    }
                 }
                 else
                 {
-                    bContinue = false;
-                    MainForm.AppendToDebug($"GetFileList TIMEOUT", true, false, Color.Red);
-                    Cursor = Cursors.Default;
-                    return fileinfolist;
+                    if (++err_cnt >= 3)
+                    {
+                        bContinue = false;
+                        MainForm.AppendToDebug($"GetFileList TIMEOUT", true, false, Color.Red);
+                        break;
+                    }
+                    else
+                    {
+                        MainForm.AppendToDebug($"GetFileList REPEAT", true, false, Color.Orange);
+                    }
                 }
             }
-
 
             if (bContinue)
             {
@@ -715,9 +739,8 @@ namespace DevConfig
 
         }
 
-        #endregion
-
-        
+#endregion
+                
         #region BACKUP/RESTORE
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void SDFormat()
@@ -761,7 +784,7 @@ namespace DevConfig
             public ulong size = 0;
             public List<FileInfo> files = new();
 
-            public string[] exclude_ext = new string[] { ".xml", ".bin" };
+            public string[] exclude_ext = new string[] { ".bin" };
 
             public Backup_t()
             {
@@ -951,24 +974,27 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void CopyToLocal(string file_path, string local_file_path)
         {
-            bool bInit = true;
+            uint err_cnt = 0;
+            bool b_init_progress_bar = true;
+
+            //ERROR = true;
 
             MainForm.AppendToDebug($"Get File ({file_path})");
 
+            // Odešleme požadavek na soubor.
             Message message = new Message();
             message.DEST = DeviceAddress;
             message.CMD = ECmd_SD_Command;
 
-            message.Data = new List<byte>();
-            message.Data.Add(SD_SubCmd_GetFile);
+            message.Data = new List<byte>() { SD_SubCmd_GetFile };
             message.Data.AddRange(name_encoding.GetBytes(file_path + "\0"));
-
-            sync_obj.Reset();
-            bSendBreak = true;
-            DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
             while (bContinue)
             {
+                sync_obj.Reset();
+                DevConfigService.Instance.InputPeriph?.SendMsg(message);
+
+                // Počkame na response požadavku na soubor.
                 if (sync_obj.WaitOne(timeout))
                 {
                     if (MessageFlag != 0)
@@ -976,48 +1002,73 @@ namespace DevConfig
                         bContinue = false;
                         MainForm.AppendToDebug($"Get File ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
                     }
-
-                    if (!bContinue)
+                    break;
+                }
+                else
+                {
+                    if (++err_cnt == 3)
+                    {
+                        bContinue = false;
+                        MainForm.AppendToDebug($"Get File TIMEOUT", true, false, Color.Red);
                         break;
+                    }
+                    else
+                    {
+                        MainForm.AppendToDebug($"Get File REPEAT", true, false, Color.Orange);
+                    }
+                }
+            }
 
-                    sync_obj.Reset();
+            // Přečteme data souboru
+            while (bContinue)
+            {
+                // Odešlšme požadavek na další soubor
+                message.Data = new List<byte>() { SD_SubCmd_GetFilePart };
+                message.Data.AddRange(((uint)file_len_act).GetBytes().Reverse());    // offset
+
+                sync_obj.Reset();
+                DevConfigService.Instance.InputPeriph?.SendMsg(message);
+
+                // Počkáme na přijaté data
+                if (sync_obj.WaitOne(timeout))
+                {
+                    if (MessageFlag != 0)
+                    {
+                        bContinue = false;
+                        MainForm.AppendToDebug($"Get File ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
+                        break;
+                    }
+
+                    err_cnt = 0;
+
                     if (file_len_req == file_len_act)
                     {
-                        using FileStream file = File.OpenWrite(local_file_path);
+                        // Soubor je kompletní
+                        byte[] file_data = new byte[file_len_req];
 
                         foreach (uint pos in file_bytes_map.Keys)
-                        {
-                            file.Position = pos;
-                            file.Write(file_bytes_map[pos].ToArray());
-                        }
+                            file_bytes_map[pos].CopyTo(file_data, (int)pos);
 
-                        file.Close();
-                        file.Dispose();
-
-                        // file_timestamp
-                        DateTimeOffset dateTime = DateTimeOffset.FromUnixTimeSeconds(file_timestamp);
-                        File.SetLastWriteTime(local_file_path, dateTime.DateTime);
-
-                        // CRC32
-                        uint crc32 = CRC.CRC32WideFast(File.ReadAllBytes(local_file_path), 0, file_len_req);
-                        if (crc32 != file_crc32)
+                        uint _crc32 = CRC.CRC32WideFast(file_data, 0, file_len_req);
+                        if (_crc32 != file_crc32)
                         {
                             MainForm.AppendToDebug($"Get File CRC ERROR", true, false, Color.Red);
-                            File.Delete(local_file_path);
                         }
                         else
                         {
+                            File.WriteAllBytes(local_file_path, file_data);
                             MainForm.AppendToDebug($"Get File OK", true, false, Color.DarkGreen);
                         }
                         break;
                     }
                     else
                     {
+                        // Máme další část souboru
                         MainForm.Invoke(delegate
                         {
-                            if (bInit)
+                            if (b_init_progress_bar)
                             {
-                                bInit = false;
+                                b_init_progress_bar = false;
                                 MainForm.ProgressBar_Minimum = 0;
                                 MainForm.ProgressBar_Maximum = (int)file_len_req;
                             }
@@ -1027,15 +1078,20 @@ namespace DevConfig
                 }
                 else
                 {
-                    bContinue = false;
-                    MainForm.AppendToDebug($"Get File TIMEOUT", true, false, Color.Red);
-                    break;
+                    if(++err_cnt >= 3)
+                    {
+                        bContinue = false;
+                        MainForm.AppendToDebug($"Get File TIMEOUT", true, false, Color.Red);
+                        break;
+                    }
+                    else
+                    {
+                        MainForm.AppendToDebug($"Get File REPEAT", true, false, Color.Orange);
+                    }
                 }
             }
             lock (file_bytes_map)
                 file_bytes_map.Clear();
-            bSendBreak = false;
-
         }
         #endregion
 
