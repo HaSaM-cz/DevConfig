@@ -405,7 +405,7 @@
 
         #endregion
 
-        private TreeView treeView1;
+        public TreeView treeView1;
         private ListViewEx listView1;
         private SplitContainer splitContainer1;
         private ColumnHeader columnHeader1;

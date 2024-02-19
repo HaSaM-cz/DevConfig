@@ -14,6 +14,7 @@ namespace DevConfig.Service
     {
         MainForm mainForm;
         bool bContinue = true;
+        bool bActive = false;
         byte MessageFlag = 0;
         readonly ManualResetEvent sync_obj = new(false);
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -82,7 +83,14 @@ namespace DevConfig.Service
                 //Debug.WriteLine(message);
                 byte state = message.Data[0];
                 uint deviceID = (uint)(message.Data[1] << 24 | message.Data[2] << 16 | message.Data[3] << 8 | message.Data[4]);
+
                 byte address = DevConfigService.Instance.InputPeriph!.GetType() == typeof(UsbSerialNs.UsbSerial) ? message.Data[5] : address = message.SRC;
+                //byte address = message.Data[5]; Usb Serial 
+                //byte address = message.SRC; // Toolstick
+                //byte address = message.SRC; // Karo SSH
+                //byte address = message.Data[5]; // TS TCP tunel \
+                //byte address = message.SRC; // Karo TCP tunel /
+
                 string fwVer = $"{message.Data[6]}.{message.Data[7]}";
                 string cpuId = $"{BitConverter.ToString(message.Data.Skip(8).Take(12).ToArray()).Replace("-", " ")}";
 

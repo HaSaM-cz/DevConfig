@@ -435,6 +435,7 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         public int ProgressBar_Value
         {
+            get { return tsProgressBar.Value; }
             set
             {
                 if (tsProgressBar.Maximum < value)

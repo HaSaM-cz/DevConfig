@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using CanDiag;
 
-namespace CanDiag
+namespace DevConfig.Utils
 {
     public class MruList<T>
     {
@@ -34,7 +29,7 @@ namespace CanDiag
             ApplicationName = application_name;
             MyMenu = menu;
             NumFiles = num_files;
-            FileInfos = new ();
+            FileInfos = new();
 
             // Make a separator.
             Separator = new ToolStripSeparator();
@@ -72,8 +67,8 @@ namespace CanDiag
         {
             if (FileInfos != null && FileInfos.Count > 0)
             {
-                if (FileInfos[0].GetType() == typeof(FileInfo))
-                    return ((FileInfo)FileInfos[0]).FullName;
+                if (FileInfos[0].GetType() == typeof(System.IO.FileInfo))
+                    return ((System.IO.FileInfo)FileInfos[0]).FullName;
                 else
                     return $"{FileInfos[0]}";
             }
@@ -92,8 +87,8 @@ namespace CanDiag
                     ApplicationName, "FilePath" + i.ToString(), "");
                 if (file_name != "")
                 {
-                    if(typeof(T) == typeof(FileInfo))
-                        FileInfos.Add(new FileInfo(file_name));
+                    if (typeof(T) == typeof(System.IO.FileInfo))
+                        FileInfos.Add(new System.IO.FileInfo(file_name));
                     else
                         FileInfos.Add($"{file_name}");
                 }
@@ -114,8 +109,8 @@ namespace CanDiag
             int index = 0;
             foreach (var file_info in FileInfos)
             {
-                if(file_info.GetType() == typeof(FileInfo))
-                    RegistryTools.SaveSetting(ApplicationName, "FilePath" + index.ToString(), ((FileInfo)file_info).FullName);
+                if (file_info.GetType() == typeof(System.IO.FileInfo))
+                    RegistryTools.SaveSetting(ApplicationName, "FilePath" + index.ToString(), ((System.IO.FileInfo)file_info).FullName);
                 else
                     RegistryTools.SaveSetting(ApplicationName, "FilePath" + index.ToString(), $"{file_info}");
                 index++;
@@ -129,14 +124,14 @@ namespace CanDiag
             // Remove occurrences of the file's information from the list.
             for (int i = FileInfos.Count - 1; i >= 0; i--)
             {
-                if (FileInfos[i].GetType() == typeof(FileInfo))
+                if (FileInfos[i].GetType() == typeof(System.IO.FileInfo))
                 {
-                    if (((FileInfo)FileInfos[i]).FullName == file_name) 
+                    if (((System.IO.FileInfo)FileInfos[i]).FullName == file_name)
                         FileInfos.RemoveAt(i);
                 }
                 else
                 {
-                    if($"{FileInfos[i]}" == file_name)
+                    if ($"{FileInfos[i]}" == file_name)
                         FileInfos.RemoveAt(i);
                 }
             }
@@ -150,8 +145,8 @@ namespace CanDiag
             RemoveFileInfo(file_name);
 
             // Add the file to the beginning of the list.
-            if (typeof(T) == typeof(FileInfo))
-                FileInfos.Insert(0, new FileInfo(file_name));
+            if (typeof(T) == typeof(System.IO.FileInfo))
+                FileInfos.Insert(0, new System.IO.FileInfo(file_name));
             else
                 FileInfos.Insert(0, file_name);
 
@@ -183,11 +178,11 @@ namespace CanDiag
         // Display the files in the menu items.
         private void ShowFiles()
         {
-            Separator.Visible = (FileInfos.Count > 0);
+            Separator.Visible = FileInfos.Count > 0;
             for (int i = 0; i < FileInfos.Count; i++)
             {
-                if (FileInfos[i].GetType() == typeof(FileInfo))
-                    MenuItems[i].Text = string.Format("&{0} {1}", i + 1, ((FileInfo)FileInfos[i]).Name);
+                if (FileInfos[i].GetType() == typeof(System.IO.FileInfo))
+                    MenuItems[i].Text = string.Format("&{0} {1}", i + 1, ((System.IO.FileInfo)FileInfos[i]).Name);
                 else
                     MenuItems[i].Text = $"{FileInfos[i]}";
                 MenuItems[i].Visible = true;
@@ -212,9 +207,9 @@ namespace CanDiag
                 // Get the corresponding FileInfo object.
                 ToolStripMenuItem menu_item = (ToolStripMenuItem)sender;
 
-                if (menu_item.Tag.GetType() == typeof(FileInfo))
+                if (menu_item.Tag.GetType() == typeof(System.IO.FileInfo))
                 {
-                    FileInfo file_info = (FileInfo)menu_item.Tag;
+                    System.IO.FileInfo file_info = (System.IO.FileInfo)menu_item.Tag;
                     // Raise the event.
                     FileSelected(file_info.FullName);
                 }

@@ -3,8 +3,12 @@ using DevConfig.Service;
 using DevConfig.Utils;
 using System.Data;
 using System.Diagnostics;
+using System.Drawing.Drawing2D;
+using System.IO;
 using System.Text;
+using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
+using static System.Net.Mime.MediaTypeNames;
 using static System.Windows.Forms.ListView;
 using Message = CanDiagSupport.Message;
 
@@ -36,8 +40,7 @@ namespace DevConfig
         const byte SD_SubCmd_RenDirOld = 0x41;
         const byte SD_SubCmd_RenDirNew = 0x42;
         const byte SD_SubCmd_CreateDir = 0x43;
-        const byte SD_SubCmd_Abort = 0xF0;
-        const byte SD_SubCmd_Format = 0xF1;
+        const byte SD_SubCmd_Format = 0x50;
 
         enum FxError
         {
@@ -365,7 +368,8 @@ namespace DevConfig
 
         private void FormatSdCardMenuItem_Click(object sender, EventArgs e)
         {
-            SDFormat();
+            if (MessageBox.Show("Do you want to format the SD card on your device?", "DevConfig - FORMAT", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
+                Task.Run(() => SDFormat(true) );
         }
 
         private void AddDirMenuItem_Click(object sender, EventArgs e)
@@ -373,7 +377,23 @@ namespace DevConfig
             AddDirGetName addDirGetName = new AddDirGetName();
             if (addDirGetName.ShowDialog() == DialogResult.OK)
             {
-                AddDirectory(addDirGetName.textBoxName.Text);
+                string path = MakePath(treeView1.SelectedNode);
+                if (!path.EndsWith('/'))
+                    path += "/";
+                path += addDirGetName.textBoxName.Text;
+
+                if (AddDirectory(path))
+                {
+                    // OK vytvorime polozku ve stromu
+                    DirInfo dirInfo1 = new DirInfo();
+                    dirInfo1.FileInfoList = new List<FileInfo>();
+                    TreeNode new_node = new TreeNode(Path.GetFileName(path));
+                    new_node.ImageKey = "FolderClosed.bmp";
+                    new_node.SelectedImageKey = "FolderClosed.bmp";
+                    new_node.Tag = dirInfo1;
+                    treeView1.SelectedNode.Nodes.Add(new_node);
+                    ExpandNode(treeView1.SelectedNode, true);
+                }
             }
         }
 
@@ -483,8 +503,9 @@ namespace DevConfig
                             if (MessageFlag == 0)
                             {
                                 uint file_pos = BitConverter.ToUInt32(msg.Data.Skip(2).Take(4).Reverse().ToArray());
-                                lock (file_bytes_map)
-                                    file_bytes_map[file_pos] = msg.Data.Skip(6).ToList();
+                                if (file_bytes_map.ContainsKey(file_pos))
+                                    file_len_act -= (uint)file_bytes_map[file_pos].Count;
+                                file_bytes_map[file_pos] = msg.Data.Skip(6).ToList();
                                 file_len_act += (uint)(msg.Data.Count - 6);
                             }
                             else
@@ -494,7 +515,6 @@ namespace DevConfig
                             }
                             sync_obj.Set();
                             break;
-                        case SD_SubCmd_Abort:
                         case SD_SubCmd_Format:
                         case SD_SubCmd_RenDirNew:
                         case SD_SubCmd_RenDirOld:
@@ -519,26 +539,32 @@ namespace DevConfig
 
         #region LIST FILES
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void PopulateTreeView()
+        private void ClearTree()
         {
             treeView1.Nodes.Clear();
 
-            if (!treeView1.Nodes.ContainsKey("SDCard"))
-            {
-                DirInfo file_info = new DirInfo(/*"/"*/);
+            DirInfo file_info = new DirInfo(/*"/"*/);
+            file_info.FileInfoList = new List<FileInfo>();
 
-                TreeNode node = new TreeNode("SD Card");
-                node.Name = "SDCard";
-                node.ImageKey = "SDCard.png";
-                node.SelectedImageKey = "SDCard.png";
-                node.Tag = file_info;
+            TreeNode node = new TreeNode("SD Card");
+            node.Name = "SDCard";
+            node.ImageKey = "SDCard.png";
+            node.SelectedImageKey = "SDCard.png";
+            node.Tag = file_info;
 
-                treeView1.Nodes.Add(node);
-            }
+            treeView1.Nodes.Add(node);
 
+            treeView1.SelectedNode = node;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void PopulateTreeView()
+        {
+            ClearTree();
             int node_ix = treeView1.Nodes.IndexOfKey("SDCard");
             TreeNode rootNode = treeView1.Nodes[node_ix];
             bContinue = true;
+            ((DirInfo)rootNode.Tag).FileInfoList = null;
             ExpandNode(rootNode, true);
             treeView1.SelectedNode = rootNode;
             treeView1.Focus();
@@ -743,89 +769,129 @@ namespace DevConfig
                 
         #region BACKUP/RESTORE
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void SDFormat()
+        private bool SDFormat(bool init_progress)
         {
-            if (MessageBox.Show("Do you want to format the SD card on your device?", "DevConfig - FORMAT", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
+            bool bRet = false;
+            const int progress_max = 60000;
+
+            if (init_progress)
             {
-                Task.Run(() =>
+                MainForm.Invoke(delegate
                 {
-                    MainForm.AppendToDebug("Format SD card");
+                    MainForm.ProgressBar_Minimum = 0;
+                    MainForm.ProgressBar_Maximum = progress_max;
+                    MainForm.ProgressBar_Value = 0;
+                });
+            }
 
-                    Debug.WriteLine("Format SD");
-                    Message message = new Message();
-                    message.DEST = DeviceAddress;
-                    message.CMD = ECmd_SD_Command;
-                    message.Data = new List<byte>();
-                    message.Data.Add(SD_SubCmd_Format);
-                    bContinue = true;
-                    sync_obj.Reset();
-                    DevConfigService.Instance.InputPeriph?.SendMsg(message);
+            MainForm.AppendToDebug("Format SD card");
+            Message message = new ();
+            message.DEST = DeviceAddress;
+            message.CMD = ECmd_SD_Command;
+            message.Data = new List<byte>{ SD_SubCmd_Format, 0x12, 0x34 };
+            bContinue = true;
+            sync_obj.Reset();
+            DevConfigService.Instance.InputPeriph?.SendMsg(message);
 
-                    if (sync_obj.WaitOne(timeout))
+            int tim_cnt = progress_max;
+            while (true)
+            {
+                if (sync_obj.WaitOne(1000))
+                {
+                    if (MessageFlag == (byte)FxError.FX_SUCCESS)
                     {
-                        if (MessageFlag == (byte)FxError.FX_SUCCESS)
-                            MainForm.AppendToDebug("Format SD card OK", true, false, Color.DarkGreen);
-                        else
-                            MainForm.AppendToDebug($"Format SD card ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
+                        MainForm.AppendToDebug("Format SD card OK", true, false, Color.DarkGreen);
+                        MainForm.Invoke(delegate { MainForm.ProgressBar_Value += tim_cnt; });
+                        bRet = true;
                     }
                     else
                     {
-                        MainForm.AppendToDebugIf(bContinue, "Format SD card TIMEOUT", true, false, Color.Red);
+                        MainForm.AppendToDebug($"Format SD card ERROR ({(FxError)MessageFlag})", true, false, Color.Red);
                     }
+                    break;
+                }
+                else
+                {
+                    if (tim_cnt <= 0)
+                    {
+                        MainForm.AppendToDebugIf(bContinue, "Format SD card TIMEOUT", true, false, Color.Red);
+                        break;
+                    }
+                    else
+                    {
+                        tim_cnt -= 1000;
+                        MainForm.Invoke(delegate { MainForm.ProgressBar_Value += 1000; });
+                    }
+                }
+            }
+
+            if (init_progress)
+                MainForm.Invoke(delegate { MainForm.ProgressBar_Value = 0; });
+
+            return bRet;
+        }
+
+        Backup_t? BackupObj = null;
+
+        private void SDBackup()
+        {
+            // Refrešneme data
+            PopulateTreeView();
+
+            // Vytvoříme backup object.
+            BackupObj = Backup_t.Load();
+            BackupPrepare(treeView1.TopNode);
+
+            BackupForm backupForm = new BackupForm(BackupObj) { Tag = this };
+            backupForm.BackupObj = BackupObj;
+            if (backupForm.ShowDialog() == DialogResult.OK)
+            {
+                BackupObj.Save();
+
+                // Backup spustime.
+                Task.Run(() =>
+                {
+                    bContinue = true;
+
+                    MainForm.AppendToDebug($"Backup", true, true);
+                    MainForm.Invoke(delegate
+                    {
+                        MainForm.ProgressBar_Value = 0;
+                        MainForm.ProgressBar_Minimum = 0;
+                        MainForm.ProgressBar_Maximum = (int)BackupObj.size;
+                    });
+
+                    for(int i = 0; bContinue && i < BackupObj.files.Count; i++)
+                    {
+                        string src_path = BackupObj.files[i].Name;
+                        string dst_path = Path.Combine(BackupObj.backup_destination, $"{src_path.TrimStart('/')}");
+
+                        if (BackupObj.files[i].IsDirectory)
+                        {
+                            Directory.CreateDirectory(dst_path);
+                        }
+                        else
+                        {
+                            Directory.CreateDirectory(Path.GetDirectoryName(dst_path)!);
+                            CopyToLocal(src_path, dst_path, false);
+                        }
+                    }
+
+                    if(bContinue)
+                        MainForm.AppendToDebug($"Backup OK", true, true, Color.DarkGreen);
+                    else
+                        MainForm.AppendToDebug($"Backup NOK", true, true, Color.Red);
+
+                    MainForm.Invoke(delegate { MainForm.ProgressBar_Value = 0; } );
                 });
             }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        struct Backup_t
+        public void BackupPrepare(TreeNode node)
         {
-            public uint dir_cnt = 0;
-            public uint file_cnt = 0;
-            public ulong size = 0;
-            public List<FileInfo> files = new();
+            Debug.Assert(BackupObj != null);
 
-            public string[] exclude_ext = new string[] { ".bin" };
-
-            public Backup_t()
-            {
-            }
-        };
-
-        Backup_t BackupObj = new ();
-
-        private void SDBackup()
-        {
-            BackupObj = new();
-            // refresneme kartu
-            int level = 0;
-            Backup(treeView1.TopNode, level);
-
-            foreach(var fi in BackupObj.files)
-            {
-                string src_path = fi.Name;
-                string dst_path = Path.Combine(@"D:\Vymaz\tt", $"{src_path.TrimStart('/')}");
-
-                Debug.WriteLine($"{fi.IsDirectory} - {src_path} - {dst_path}");
-
-                if (fi.IsDirectory)
-                {
-                    //Directory.CreateDirectory(dst_path);
-                }
-                else
-                {
-                    Directory.CreateDirectory(Path.GetDirectoryName(dst_path)!);
-                    CopyToLocal(src_path, dst_path);
-                }
-
-                if (!bContinue)
-                    break;
-            }
-
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void Backup(TreeNode node, int level)
-        {
             // projdeme rekurzivne soubory
             var di = ((DirInfo)node.Tag);
 
@@ -856,27 +922,88 @@ namespace DevConfig
                         BackupObj.files.Add(new_fi);
                     }
                 }
-
-                
-
-                //string src_path = $"{MakePath(node).TrimEnd('/')}/{fi.Name}";
-                //string dst_path = Path.Combine(@"D:\Vymaz\tt", $"{src_path.TrimStart('/')}");
-
-                //Debug.WriteLine($"{level} - {fi.IsDirectory} - {src_path} - {dst_path}");
-
-                //if (fi.IsDirectory)
-                //    Directory.CreateDirectory(dst_path);
             }
 
             // projdeme adresare
             foreach (var child_node in node.Nodes)
-                Backup((TreeNode)child_node, level + 1);
+                BackupPrepare((TreeNode)child_node);
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void SDRestore()
         {
+            BackupObj = new Backup_t();
+            string src_path = @"D:\Vymaz\tt";
 
+            RestorePrepare(src_path);
+
+
+            ////////////////////
+
+            MainForm.Invoke(delegate
+            {
+                MainForm.ProgressBar_Minimum = 0;
+                MainForm.ProgressBar_Maximum = ((int)BackupObj.size + 60000);
+                MainForm.ProgressBar_Value = 0;
+            });
+
+            bContinue = true;
+            if (SDFormat(false))
+            {
+                ClearTree();
+
+                for (int i = 0; bContinue && i < BackupObj.files.Count; i++)
+                {
+                    if (BackupObj.files[i].IsDirectory)
+                        AddDirectory(BackupObj.files[i].Name.Substring(src_path.Length));
+                    else
+                        AddFile(new System.IO.FileInfo(BackupObj.files[i].Name), src_path, false);
+                }
+
+                //PopulateTreeView();
+            }
+
+            MainForm.Invoke(delegate { MainForm.ProgressBar_Value = 0; });
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void RestorePrepare(string dir_name)
+        {
+            Debug.Assert(BackupObj != null);
+
+            DirectoryInfo di = new DirectoryInfo(dir_name);
+
+            Debug.WriteLine($"D {di.FullName}");
+            FileInfo fi = new FileInfo(dir_name);
+            fi.IsDirectory = true;
+            fi.ModifyTime = di.LastWriteTime;
+            BackupObj.dir_cnt++;
+            BackupObj.files.Add(fi);
+
+            foreach (var f in di.EnumerateFiles())
+            {
+                string ext = Path.GetExtension(f.Extension).ToLower();
+                var exclude = (from xx in BackupObj.exclude_ext where xx.CompareTo(ext) == 0 select xx).Count() != 0;
+                if (!exclude)
+                {
+                    Debug.WriteLine($"F {f.FullName}");
+                    fi = new FileInfo(f.FullName);
+                    fi.IsDirectory = false;
+                    fi.ModifyTime = f.LastWriteTime;
+                    fi.Size = (uint)f.Length;
+                    BackupObj.file_cnt++;
+                    BackupObj.size += (ulong)f.Length;
+                    BackupObj.files.Add(fi);
+                }
+                else
+                {
+                    Debug.WriteLine($"E {f.FullName}");
+                }
+            }
+
+            // Rekurze do podrizenych adresru.
+            foreach (var d in di.EnumerateDirectories())
+                RestorePrepare(d.FullName);
         }
 
         #endregion
@@ -962,7 +1089,7 @@ namespace DevConfig
 
                 string local_file_path = Path.Combine(dest_path, Path.GetFileName(file_path));
                 File.Delete(local_file_path);
-                CopyToLocal(file_path, local_file_path);
+                CopyToLocal(file_path, local_file_path, true);
                 Debug.WriteLine($"{file_path}\n   {local_file_path}");
             }
             this.Invoke(delegate
@@ -972,12 +1099,11 @@ namespace DevConfig
             });
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void CopyToLocal(string file_path, string local_file_path)
+        private void CopyToLocal(string file_path, string local_file_path, bool init_progress)
         {
             uint err_cnt = 0;
-            bool b_init_progress_bar = true;
-
-            //ERROR = true;
+            int last_progress_val = 0;
+            bool b_init_progress_bar = init_progress;
 
             MainForm.AppendToDebug($"Get File ({file_path})");
 
@@ -1058,6 +1184,16 @@ namespace DevConfig
                         {
                             File.WriteAllBytes(local_file_path, file_data);
                             MainForm.AppendToDebug($"Get File OK", true, false, Color.DarkGreen);
+                            if (init_progress)
+                            {
+                                MainForm.Invoke(delegate { MainForm.ProgressBar_Value = 0; });
+                            }
+                            else
+                            {
+                                int diff = (int)file_len_act - last_progress_val;
+                                last_progress_val += diff;
+                                MainForm.Invoke(delegate { MainForm.ProgressBar_Value += diff; });
+                            }
                         }
                         break;
                     }
@@ -1072,7 +1208,10 @@ namespace DevConfig
                                 MainForm.ProgressBar_Minimum = 0;
                                 MainForm.ProgressBar_Maximum = (int)file_len_req;
                             }
-                            MainForm.ProgressBar_Value = (int)file_len_act;
+
+                            int diff = (int)file_len_act - last_progress_val;
+                            MainForm.ProgressBar_Value += diff;
+                            last_progress_val += diff;
                         });
                     }
                 }
@@ -1144,7 +1283,7 @@ namespace DevConfig
             });
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private bool AddFile(System.IO.FileInfo fileInfo)
+        private bool AddFile(System.IO.FileInfo fileInfo, string? abs_dir = null, bool init_progress = true)
         {
             bool bRet = false;
             int progress_val = 0;
@@ -1152,11 +1291,20 @@ namespace DevConfig
 
             this.Invoke(delegate
             {
-                MainForm.ProgressBar_Minimum = 0;
-                MainForm.ProgressBar_Maximum = (int)fileInfo.Length;
-                MainForm.ProgressBar_Value = progress_val;
-                dest_file_name = Path.Combine(MakePath(treeView1.SelectedNode), Path.GetFileName(fileInfo.FullName)).Replace('\\', '/');
+                if (init_progress)
+                {
+                    MainForm.ProgressBar_Minimum = 0;
+                    MainForm.ProgressBar_Maximum = (int)fileInfo.Length;
+                    MainForm.ProgressBar_Value = progress_val;
+                }
+
+                if (abs_dir == null)
+                    dest_file_name = Path.Combine(MakePath(treeView1.SelectedNode), Path.GetFileName(fileInfo.FullName));
+                else
+                    dest_file_name = Path.Combine(fileInfo.FullName.Substring(abs_dir.Length));
             });
+
+            dest_file_name = dest_file_name.Replace("\\", "/");
 
             MainForm.AppendToDebug($"Copy file '{fileInfo.FullName}', to '{dest_file_name}', len = {fileInfo.Length:X}");
 
@@ -1195,7 +1343,7 @@ namespace DevConfig
                     {
                         message.Data = new List<byte>() { SD_SubCmd_PutFilePart };
                         int readed = fs.Read(data, 0, data.Length);
-                        MainForm.Invoke(delegate { MainForm.ProgressBar_Value = (progress_val += readed); });
+                        MainForm.Invoke(delegate { MainForm.ProgressBar_Value += readed; }); // MainForm.Invoke(delegate { MainForm.ProgressBar_Value = (progress_val += readed); });
                         Debug.WriteLine($"readed {readed}");
                         if (readed <= 0)
                         {
@@ -1223,7 +1371,9 @@ namespace DevConfig
                 }
             }
 
-            MainForm.Invoke(delegate { MainForm.ProgressBar_Value = 0; });
+            if (init_progress)
+                MainForm.Invoke(delegate { MainForm.ProgressBar_Value = 0; });
+
             return bRet;
         }
 
@@ -1356,12 +1506,14 @@ namespace DevConfig
 
         #region DIRECTORY
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void AddDirectory(string text)
+        private bool AddDirectory(string path)
         {
-            string path = MakePath(treeView1.SelectedNode);
-            if (!path.EndsWith('/'))
-                path += "/";
-            path += text;
+            bool bRet = false;
+
+            path.Replace("\\", "/").Replace("//", "/");
+
+            if (string.IsNullOrWhiteSpace(path) || path == "/")
+                return false;
 
             MainForm.AppendToDebug($"Create Directory ({path})");
 
@@ -1385,15 +1537,7 @@ namespace DevConfig
                 if (MessageFlag == (byte)FxError.FX_SUCCESS)
                 {
                     MainForm.AppendToDebug("Create Directory OK", true, false, Color.DarkGreen);
-                    // OK vytvorime polozku ve stromu
-                    DirInfo dirInfo1 = new DirInfo(/*path*/);
-                    dirInfo1.FileInfoList = new List<FileInfo>();
-                    TreeNode new_node = new TreeNode(Path.GetFileName(path));
-                    new_node.ImageKey = "FolderClosed.bmp";
-                    new_node.SelectedImageKey = "FolderClosed.bmp";
-                    new_node.Tag = dirInfo1;
-                    treeView1.SelectedNode.Nodes.Add(new_node);
-                    ExpandNode(treeView1.SelectedNode, true);
+                    bRet = true;
                 }
                 else
                 {
@@ -1405,6 +1549,7 @@ namespace DevConfig
                 if (bContinue)
                     MainForm.AppendToDebug("Create Directory TIMEOUT", true, false, Color.Red);
             }
+            return bRet;
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void DelDirectory()
@@ -1513,45 +1658,5 @@ namespace DevConfig
             return bRet;
         }
         #endregion
-    }
-
-    class DirInfo
-    {
-        public List<FileInfo>? FileInfoList = null;
-
-        internal void RemoveFileInfo(string name)
-        {
-            FileInfo? fi = (from xxx in FileInfoList where xxx.Name == name select xxx).FirstOrDefault();
-            if (fi != null)
-                FileInfoList?.Remove(fi);
-        }
-
-        internal void RenameFileInfo(string old_name, string new_name)
-        {
-            FileInfo? fi = (from xxx in FileInfoList where xxx.Name == old_name select xxx).FirstOrDefault();
-            if (fi != null)
-                fi.Name = new_name;
-        }
-    }
-
-    class FileInfo
-    {
-        public string Name;
-        public DateTime ModifyTime;
-        public bool IsDirectory;
-        public uint Size;
-
-        public FileInfo(string name)
-        {
-            Name = name;
-        }
-
-        public FileInfo(FileInfo fi)
-        {
-            Name = fi.Name;
-            ModifyTime = fi.ModifyTime;
-            IsDirectory = fi.IsDirectory;
-            Size = fi.Size;
-        }
     }
 }

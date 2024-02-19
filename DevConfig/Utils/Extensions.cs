@@ -71,6 +71,22 @@ namespace DevConfig.Utils
             return (T)settings[propertyName];
         }
 
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        public static string ToHumanSting(this ulong size) => ToHumanSting((double)size);
 
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        public static string ToHumanSting(this double size)
+        {
+            string[] suffix = new string[] { "", "k", "M", "G", "T" };
+
+            int si = 0;
+            while (size > 1024 && si < suffix.Length)
+            {
+                si++;
+                size = size / 1024;
+            }
+
+            return $"{size:0.##}{suffix[si]}";
+        }
     }
 }
