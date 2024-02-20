@@ -1,5 +1,4 @@
 using CanDiag;
-using CanDiagSupport;
 using DevConfig.Properties;
 using DevConfig.Service;
 using DevConfig.Utils;
@@ -8,11 +7,8 @@ using Microsoft.CodeAnalysis;
 using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
-using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Text;
 using WeifenLuo.WinFormsUI.Docking;
 using Message = CanDiagSupport.Message;
 
@@ -244,6 +240,10 @@ namespace DevConfig
                             label_name.ForeColor = tb_address.ForeColor = tb_dev_id.ForeColor = tb_version.ForeColor = Color.Green;
                             if (DeviceWnd != null)
                             {
+                                DeviceWnd.tb_address.Text = device.AddressStr;
+                                DeviceWnd.tb_dev_id.Text = device.DevIdStr;
+                                DeviceWnd.tb_version.Text = device.FwVer;
+
                                 DeviceWnd.label_name.ForeColor =
                                 DeviceWnd.tb_address.ForeColor = DeviceWnd.tb_dev_id.ForeColor = DeviceWnd.tb_version.ForeColor = DeviceWnd.tb_cpu_id.ForeColor = Color.Green;
                                 DeviceWnd.tb_address.Font = DeviceWnd.tb_dev_id.Font = DeviceWnd.tb_version.Font = DeviceWnd.tb_cpu_id.Font = new Font(DeviceWnd.tb_address.Font, FontStyle.Bold);

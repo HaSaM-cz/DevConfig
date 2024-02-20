@@ -1,17 +1,5 @@
-﻿using CanDiagSupport;
-using DevConfig.Service;
-using Renci.SshNet.Messages;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
+﻿using DevConfig.Service;
 using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Message = CanDiagSupport.Message;
 
 namespace DevConfig
