@@ -7,14 +7,14 @@ namespace DevConfig
     ///////////////////////////////////////////////////////////////////////////////////////////
     public class Backup_t
     {
-        [XmlIgnore] public uint dir_cnt = 0;
-        [XmlIgnore] public uint file_cnt = 0;
-        [XmlIgnore] public ulong size = 0;
-        [XmlIgnore] public List<FileInfo> files = new();
+        [XmlIgnore] internal uint dir_cnt = 0;
+        [XmlIgnore] internal uint file_cnt = 0;
+        [XmlIgnore] internal ulong size = 0;
+        [XmlIgnore] internal List<FileInfo> files = new();
+        [XmlIgnore] internal bool restore;
 
         public string[] exclude_ext = new string[] { ".bin" };
         public string backup_destination = string.Empty;
-
 
         public void Save()
         {
@@ -27,7 +27,7 @@ namespace DevConfig
             fs.Close(); fs.Dispose();
         }
 
-        public static Backup_t Load()
+        public static Backup_t Load(bool b_restore)
         {
             XmlSerializer ser = new (typeof(Backup_t));
             Backup_t? settings;
@@ -38,11 +38,11 @@ namespace DevConfig
                 settings = (Backup_t?)ser.Deserialize(s);
                 s.Close(); s.Dispose();
             }
-            catch// (Exception ex1)
+            catch
             {
-                //MessageBox.Show("Cannot read settings. " + ex1.Message, "error");
                 settings = new Backup_t();
             }
+            settings!.restore = b_restore;
             return settings!;
         }
     };

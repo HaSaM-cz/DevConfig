@@ -3,12 +3,8 @@ using DevConfig.Service;
 using DevConfig.Utils;
 using System.Data;
 using System.Diagnostics;
-using System.Drawing.Drawing2D;
-using System.IO;
 using System.Text;
-using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
-using static System.Net.Mime.MediaTypeNames;
 using static System.Windows.Forms.ListView;
 using Message = CanDiagSupport.Message;
 
@@ -839,11 +835,10 @@ namespace DevConfig
             PopulateTreeView();
 
             // Vytvoříme backup object.
-            BackupObj = Backup_t.Load();
+            BackupObj = Backup_t.Load(false);
             BackupPrepare(treeView1.TopNode);
 
-            BackupForm backupForm = new BackupForm(BackupObj) { Tag = this };
-            backupForm.BackupObj = BackupObj;
+            BackupForm backupForm = new BackupForm(BackupObj) { Tag = this, Text = "DevConfig - Backup" };
             if (backupForm.ShowDialog() == DialogResult.OK)
             {
                 BackupObj.Save();
@@ -932,42 +927,54 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void SDRestore()
         {
-            BackupObj = new Backup_t();
-            string src_path = @"D:\Vymaz\tt";
+            BackupObj = Backup_t.Load(true);
+            
+            if(!string.IsNullOrWhiteSpace(BackupObj.backup_destination))
+                RestorePrepare(BackupObj.backup_destination);
 
-            RestorePrepare(src_path);
-
-
-            ////////////////////
-
-            MainForm.Invoke(delegate
+            BackupForm backupForm = new BackupForm(BackupObj) { Tag = this };
+            if (backupForm.ShowDialog() == DialogResult.OK)
             {
-                MainForm.ProgressBar_Minimum = 0;
-                MainForm.ProgressBar_Maximum = ((int)BackupObj.size + 60000);
-                MainForm.ProgressBar_Value = 0;
-            });
+                BackupObj.Save();
 
-            bContinue = true;
-            if (SDFormat(false))
-            {
-                ClearTree();
-
-                for (int i = 0; bContinue && i < BackupObj.files.Count; i++)
+                Task.Run(() =>
                 {
-                    if (BackupObj.files[i].IsDirectory)
-                        AddDirectory(BackupObj.files[i].Name.Substring(src_path.Length));
+                    MainForm.AppendToDebug("Restore", true, true);
+                    bContinue = true;
+                    if (SDFormat(true))
+                    {
+                        MainForm.Invoke(delegate
+                        {
+                            MainForm.ProgressBar_Minimum = 0;
+                            MainForm.ProgressBar_Maximum = ((int)BackupObj.size);
+                            MainForm.ProgressBar_Value = 0;
+                            ClearTree();
+                        });
+
+                        for (int i = 0; bContinue && i < BackupObj.files.Count; i++)
+                        {
+                            if (BackupObj.files[i].IsDirectory)
+                                AddDirectory(BackupObj.files[i].Name.Substring(BackupObj.backup_destination.Length));
+                            else
+                                AddFile(new System.IO.FileInfo(BackupObj.files[i].Name), BackupObj.backup_destination, false);
+                        }
+
+                        MainForm.Invoke(delegate 
+                        {
+                            PopulateTreeView();
+                            MainForm.ProgressBar_Value = 0;
+                        });
+                    }
+                    if (bContinue)
+                        MainForm.AppendToDebug("Restore OK", true, true, Color.DarkGreen);
                     else
-                        AddFile(new System.IO.FileInfo(BackupObj.files[i].Name), src_path, false);
-                }
-
-                //PopulateTreeView();
+                        MainForm.AppendToDebug("Restore NOK", true, true, Color.Red);
+                });
             }
-
-            MainForm.Invoke(delegate { MainForm.ProgressBar_Value = 0; });
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void RestorePrepare(string dir_name)
+        internal void RestorePrepare(string dir_name)
         {
             Debug.Assert(BackupObj != null);
 
@@ -1306,7 +1313,7 @@ namespace DevConfig
 
             dest_file_name = dest_file_name.Replace("\\", "/");
 
-            MainForm.AppendToDebug($"Copy file '{fileInfo.FullName}', to '{dest_file_name}', len = {fileInfo.Length:X}");
+            MainForm.AppendToDebug($"Copy file '{fileInfo.FullName}', to '{dest_file_name}', len = {fileInfo.Length}");
 
             // fileInfo.LastWriteTime je localtime ale potrebujeme pro prevod utc time
             var dt = DateTime.SpecifyKind(fileInfo.LastWriteTime, DateTimeKind.Utc);

@@ -12,7 +12,7 @@ namespace DevConfig.Service
 {
     public class DevConfigService
     {
-        MainForm mainForm;
+        internal MainForm mainForm;
         bool bContinue = true;
         bool bActive = false;
         byte MessageFlag = 0;

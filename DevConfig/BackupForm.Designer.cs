@@ -28,15 +28,15 @@
         /// </summary>
         private void InitializeComponent()
         {
-            radioButton1 = new RadioButton();
-            radioButton2 = new RadioButton();
+            rbSelDirectory = new RadioButton();
+            rbSelZipFile = new RadioButton();
             BackupDestination = new TextBox();
             label1 = new Label();
             button1 = new Button();
             tbExclude = new TextBox();
             button_Start = new Button();
             button_Cancel = new Button();
-            label2 = new Label();
+            label_Location = new Label();
             groupBox1 = new GroupBox();
             label_Time = new Label();
             label_Bytes = new Label();
@@ -50,28 +50,30 @@
             groupBox1.SuspendLayout();
             SuspendLayout();
             // 
-            // radioButton1
+            // rbSelDirectory
             // 
-            radioButton1.AutoSize = true;
-            radioButton1.Checked = true;
-            radioButton1.Location = new Point(93, 7);
-            radioButton1.Name = "radioButton1";
-            radioButton1.Size = new Size(91, 24);
-            radioButton1.TabIndex = 0;
-            radioButton1.TabStop = true;
-            radioButton1.Text = "Directory";
-            radioButton1.UseVisualStyleBackColor = true;
+            rbSelDirectory.AutoSize = true;
+            rbSelDirectory.Checked = true;
+            rbSelDirectory.Location = new Point(107, 7);
+            rbSelDirectory.Name = "rbSelDirectory";
+            rbSelDirectory.Size = new Size(91, 24);
+            rbSelDirectory.TabIndex = 0;
+            rbSelDirectory.TabStop = true;
+            rbSelDirectory.Text = "Directory";
+            rbSelDirectory.UseVisualStyleBackColor = true;
+            rbSelDirectory.Visible = false;
             // 
-            // radioButton2
+            // rbSelZipFile
             // 
-            radioButton2.AutoSize = true;
-            radioButton2.Enabled = false;
-            radioButton2.Location = new Point(190, 7);
-            radioButton2.Name = "radioButton2";
-            radioButton2.Size = new Size(75, 24);
-            radioButton2.TabIndex = 1;
-            radioButton2.Text = "ZipFile";
-            radioButton2.UseVisualStyleBackColor = true;
+            rbSelZipFile.AutoSize = true;
+            rbSelZipFile.Enabled = false;
+            rbSelZipFile.Location = new Point(204, 7);
+            rbSelZipFile.Name = "rbSelZipFile";
+            rbSelZipFile.Size = new Size(75, 24);
+            rbSelZipFile.TabIndex = 1;
+            rbSelZipFile.Text = "ZipFile";
+            rbSelZipFile.UseVisualStyleBackColor = true;
+            rbSelZipFile.Visible = false;
             // 
             // BackupDestination
             // 
@@ -133,14 +135,14 @@
             button_Cancel.Text = "Cancel";
             button_Cancel.UseVisualStyleBackColor = true;
             // 
-            // label2
+            // label_Location
             // 
-            label2.AutoSize = true;
-            label2.Location = new Point(12, 9);
-            label2.Name = "label2";
-            label2.Size = new Size(75, 20);
-            label2.TabIndex = 8;
-            label2.Text = "Backup to";
+            label_Location.AutoSize = true;
+            label_Location.Location = new Point(12, 9);
+            label_Location.Name = "label_Location";
+            label_Location.Size = new Size(75, 20);
+            label_Location.TabIndex = 8;
+            label_Location.Text = "Backup to";
             // 
             // groupBox1
             // 
@@ -251,17 +253,17 @@
             ClientSize = new Size(600, 255);
             Controls.Add(btnRefresh);
             Controls.Add(groupBox1);
-            Controls.Add(label2);
+            Controls.Add(label_Location);
             Controls.Add(button_Cancel);
             Controls.Add(button1);
             Controls.Add(button_Start);
-            Controls.Add(radioButton1);
-            Controls.Add(radioButton2);
+            Controls.Add(rbSelDirectory);
+            Controls.Add(rbSelZipFile);
             Controls.Add(tbExclude);
             Controls.Add(BackupDestination);
             Controls.Add(label1);
             Name = "BackupForm";
-            Text = "BackupForm";
+            Text = "DevConfig - Backup";
             FormClosing += BackupForm_FormClosing;
             Load += BackupForm_Load;
             groupBox1.ResumeLayout(false);
@@ -272,15 +274,15 @@
 
         #endregion
 
-        private RadioButton radioButton1;
-        private RadioButton radioButton2;
+        private RadioButton rbSelDirectory;
+        private RadioButton rbSelZipFile;
         private TextBox BackupDestination;
         private Label label1;
         private Button button1;
         private TextBox tbExclude;
         private Button button_Start;
         private Button button_Cancel;
-        private Label label2;
+        private Label label_Location;
         private GroupBox groupBox1;
         private Label label_Directorys;
         private Label label6;
