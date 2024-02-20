@@ -226,39 +226,39 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void listView1_KeyDown(object sender, KeyEventArgs e)
         {
-            switch ((Keys)e.KeyValue)
+            if (DevConfigService.Instance.ProcessLock())
             {
-                case Keys.Insert:
-                    AddFileMenuItem_Click(sender, new EventArgs());
-                    break;
+                DevConfigService.Instance.FreeProcessLock();
+                switch ((Keys)e.KeyValue)
+                {
+                    case Keys.Insert:
+                        AddFileMenuItem_Click(sender, new EventArgs());
+                        break;
 
-                case Keys.Delete:
-                    DelFileMenuItem_Click(sender, new EventArgs());
-                    break;
+                    case Keys.Delete:
+                        DelFileMenuItem_Click(sender, new EventArgs());
+                        break;
 
-                case Keys.F2:
-                    if (listView1.SelectedItems.Count == 1)
-                        listView1.StartEditing(textBox1, listView1.SelectedItems[0], 0);
-                    break;
+                    case Keys.F2:
+                        if (listView1.SelectedItems.Count == 1)
+                            listView1.StartEditing(textBox1, listView1.SelectedItems[0], 0);
+                        break;
+                }
             }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void treeView1_KeyDown(object sender, KeyEventArgs e)
         {
-            switch ((Keys)e.KeyValue)
+            if (DevConfigService.Instance.ProcessLock())
             {
-                case Keys.Insert:
-                    AddDirMenuItem_Click(sender, new EventArgs());
-                    break;
-
-                case Keys.Delete:
-                    DelDirMenuItem_Click(sender, new EventArgs());
-                    break;
-
-                case Keys.F2:
-                    RenDirMenuItem_Click(sender, new EventArgs());
-                    break;
+                DevConfigService.Instance.FreeProcessLock();
+                switch ((Keys)e.KeyValue)
+                {
+                    case Keys.Insert: AddDirMenuItem_Click(sender, new EventArgs()); break;
+                    case Keys.Delete: DelDirMenuItem_Click(sender, new EventArgs()); break;
+                    case Keys.F2:     RenDirMenuItem_Click(sender, new EventArgs()); break;
+                }
             }
         }
 
@@ -275,91 +275,131 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void GetFileMenuItem_Click(object sender, EventArgs e)
         {
-            if (listView1.SelectedItems.Count > 0)
+            if (DevConfigService.Instance.ProcessLock())
             {
-                List<string> file_paths = new();
-
-                foreach (ListViewItem item in listView1.SelectedItems)
+                DevConfigService.Instance.FreeProcessLock();
+                if (listView1.SelectedItems.Count > 0)
                 {
-                    string path = MakePath((TreeNode)item.Tag);
-                    path = Path.Combine(path, item.Text).Replace('\\', '/');
-                    file_paths.Add(path);
-                }
+                    List<string> file_paths = new();
 
-                // Dotaz na adresar.
-                FolderBrowserDialog dialog = new FolderBrowserDialog();
-                if (dialog.ShowDialog() != DialogResult.OK)
-                    return;
-                string dest_path = dialog.SelectedPath;
+                    foreach (ListViewItem item in listView1.SelectedItems)
+                    {
+                        string path = MakePath((TreeNode)item.Tag);
+                        path = Path.Combine(path, item.Text).Replace('\\', '/');
+                        file_paths.Add(path);
+                    }
 
-                // Kontrola jmen.
-                List<string> exist_files = new List<string>();
-                foreach (string file_path in file_paths)
-                {
-                    string local_file_path = Path.Combine(dest_path, Path.GetFileName(file_path));
-                    if (File.Exists(local_file_path))
-                        exist_files.Add(local_file_path);
-                }
-
-                if (exist_files.Count > 0)
-                {
-                    if (MessageBox.Show("One or more files exist in the destination directory.\nDo you want to replace the files?", "DevConfig - File exists",
-                        MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                    // Dotaz na adresar.
+                    FolderBrowserDialog dialog = new FolderBrowserDialog();
+                    if (dialog.ShowDialog() != DialogResult.OK)
                         return;
+                    string dest_path = dialog.SelectedPath;
 
-                    exist_files.ForEach(file_path => { File.Delete(file_path); });
+                    // Kontrola jmen.
+                    List<string> exist_files = new List<string>();
+                    foreach (string file_path in file_paths)
+                    {
+                        string local_file_path = Path.Combine(dest_path, Path.GetFileName(file_path));
+                        if (File.Exists(local_file_path))
+                            exist_files.Add(local_file_path);
+                    }
+
+                    if (exist_files.Count > 0)
+                    {
+                        if (MessageBox.Show("One or more files exist in the destination directory.\nDo you want to replace the files?", "DevConfig - File exists",
+                            MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                            return;
+
+                        exist_files.ForEach(file_path => { File.Delete(file_path); });
+                    }
+
+                    Task.Run(() =>
+                    {
+                        if (DevConfigService.Instance.ProcessLock())
+                        {
+                            CopyToLocal(file_paths, dest_path);
+                            DevConfigService.Instance.FreeProcessLock();
+                        }
+                    });
                 }
-
-                Task.Run(() => { CopyToLocal(file_paths, dest_path); });
             }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void AddFileMenuItem_Click(object sender, EventArgs e)
         {
-            OpenFileDialog fileDialog = new OpenFileDialog()
+            if (DevConfigService.Instance.ProcessLock())
             {
-                Multiselect = true,
-                Filter = "All files (*.*)|*.*",
-            };
-            if (fileDialog.ShowDialog() == DialogResult.OK)
-                Task.Run(() => { AddFiles(fileDialog.FileNames); });
+                DevConfigService.Instance.FreeProcessLock();
+                OpenFileDialog fileDialog = new OpenFileDialog()
+                {
+                    Multiselect = true,
+                    Filter = "All files (*.*)|*.*",
+                };
+
+                if (fileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    Task.Run(() =>
+                    {
+                        if (DevConfigService.Instance.ProcessLock())
+                        {
+                            AddFiles(fileDialog.FileNames);
+                            DevConfigService.Instance.FreeProcessLock();
+                        }
+                    });
+                }
+            }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void RenFileMenuItem_Click(object sender, EventArgs e)
         {
-            if (listView1.SelectedItems.Count == 1)
-                listView1.StartEditing(textBox1, listView1.SelectedItems[0], 0);
+            if (DevConfigService.Instance.ProcessLock())
+            {
+                DevConfigService.Instance.FreeProcessLock();
+                if (listView1.SelectedItems.Count == 1)
+                    listView1.StartEditing(textBox1, listView1.SelectedItems[0], 0);
+            }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void DelFileMenuItem_Click(object sender, EventArgs e)
         {
-            if (listView1.SelectedItems.Count > 0)
-                DeleteFiles(listView1.SelectedItems);
+            if (DevConfigService.Instance.ProcessLock())
+            {
+                DevConfigService.Instance.FreeProcessLock();
+                if (listView1.SelectedItems.Count > 0)
+                    DeleteFiles(listView1.SelectedItems);
+            }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void treeView1_MouseClick(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Right)
-                contextMenuTree.Show(Cursor.Position);
+            if (DevConfigService.Instance.ProcessLock())
+            {
+                DevConfigService.Instance.FreeProcessLock();
+                if (e.Button == MouseButtons.Right)
+                    contextMenuTree.Show(Cursor.Position);
+            }
         }
 
         private void BackupSdCardMenuItem_Click(object sender, EventArgs e)
         {
-            SDBackup();
+            if (DevConfigService.Instance.ProcessLock())
+                SDBackup();
         }
 
         private void RestoreSdCardMenuItem_Click(object sender, EventArgs e)
         {
-            SDRestore();
+            if (DevConfigService.Instance.ProcessLock())
+                SDRestore();
         }
 
         private void ReloadSdCardMenuItem_Click(object sender, EventArgs e)
         {
-            PopulateTreeView();
+            if (DevConfigService.Instance.ProcessLock())
+                PopulateTreeView();
         }
 
         private void FormatSdCardMenuItem_Click(object sender, EventArgs e)
@@ -554,7 +594,7 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void PopulateTreeView()
+        private void PopulateTreeView(bool b_free_lock = true)
         {
             ClearTree();
             int node_ix = treeView1.Nodes.IndexOfKey("SDCard");
@@ -564,6 +604,8 @@ namespace DevConfig
             ExpandNode(rootNode, true);
             treeView1.SelectedNode = rootNode;
             treeView1.Focus();
+            if(b_free_lock)
+                DevConfigService.Instance.FreeProcessLock();
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -832,7 +874,7 @@ namespace DevConfig
         private void SDBackup()
         {
             // Refrešneme data
-            PopulateTreeView();
+            PopulateTreeView(false);
 
             // Vytvoříme backup object.
             BackupObj = Backup_t.Load(false);
@@ -856,7 +898,7 @@ namespace DevConfig
                         MainForm.ProgressBar_Maximum = (int)BackupObj.size;
                     });
 
-                    for(int i = 0; bContinue && i < BackupObj.files.Count; i++)
+                    for (int i = 0; bContinue && i < BackupObj.files.Count; i++)
                     {
                         string src_path = BackupObj.files[i].Name;
                         string dst_path = Path.Combine(BackupObj.backup_destination, $"{src_path.TrimStart('/')}");
@@ -872,14 +914,17 @@ namespace DevConfig
                         }
                     }
 
-                    if(bContinue)
+                    if (bContinue)
                         MainForm.AppendToDebug($"Backup OK", true, true, Color.DarkGreen);
                     else
                         MainForm.AppendToDebug($"Backup NOK", true, true, Color.Red);
 
-                    MainForm.Invoke(delegate { MainForm.ProgressBar_Value = 0; } );
+                    MainForm.Invoke(delegate { MainForm.ProgressBar_Value = 0; });
+                    DevConfigService.Instance.FreeProcessLock();
                 });
             }
+            else
+                DevConfigService.Instance.FreeProcessLock();
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -961,7 +1006,7 @@ namespace DevConfig
 
                         MainForm.Invoke(delegate 
                         {
-                            PopulateTreeView();
+                            PopulateTreeView(false);
                             MainForm.ProgressBar_Value = 0;
                         });
                     }
@@ -969,7 +1014,13 @@ namespace DevConfig
                         MainForm.AppendToDebug("Restore OK", true, true, Color.DarkGreen);
                     else
                         MainForm.AppendToDebug("Restore NOK", true, true, Color.Red);
+
+                    DevConfigService.Instance.FreeProcessLock();
                 });
+            }
+            else
+            {
+                DevConfigService.Instance.FreeProcessLock();
             }
         }
 
@@ -1013,72 +1064,6 @@ namespace DevConfig
                 RestorePrepare(d.FullName);
         }
 
-        #endregion
-
-        #region DRAG/DROP
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void listView1_DragEnter(object sender, DragEventArgs e)
-        {
-            //if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
-            //    e.Effect = DragDropEffects.Copy;
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void listView1_DragDrop(object sender, DragEventArgs e)
-        {
-            Debug.WriteLine("listView1_DragDrop");
-            // TODO DROP
-            if (e.Data != null)
-            {
-                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                AddFiles(files);
-            }
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void listView1_ItemDrag(object sender, ItemDragEventArgs e)
-        {
-            // TODO DRAG
-
-            List<string> file_paths = new();
-
-            //file_paths.Add(@"D:\Vymaz\tt\8.JPG");
-
-
-
-            foreach (ListViewItem item in listView1.SelectedItems)
-            {
-                string path = MakePath((TreeNode)item.Tag);
-                path = Path.Combine(path, item.Text).Replace('\\', '/');
-                file_paths.Add(path);
-            }
-
-            //var dob = new DataObject();
-            //dob.SetData(DataFormats.FileDrop, file_paths);
-
-            var dob = new DataObject(DataFormats.FileDrop, file_paths);
-
-            var x = DoDragDrop(dob, DragDropEffects.Copy | DragDropEffects.Move);
-
-
-            Debug.WriteLine($"XXX {dob}");
-        }
-
-
-        private void listView1_GiveFeedback(object sender, GiveFeedbackEventArgs e)
-        {
-            Debug.WriteLine($"GiveFeedback {sender}");
-        }
-
-        private void listView1_DragLeave(object sender, EventArgs e)
-        {
-            Debug.WriteLine($"DragLeave");
-        }
-
-        private void listView1_DragOver(object sender, DragEventArgs e)
-        {
-            Debug.WriteLine($"DragOver");
-        }
         #endregion
 
         #region GET FILE

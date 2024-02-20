@@ -13,12 +13,14 @@ namespace DevConfig.Service
     public class DevConfigService
     {
         internal MainForm mainForm;
+        internal Device? selectedDevice = null;
+        private int process_lock = 0; // Kontrola pracujícího procesu. Povolení pouze jedné úlohy.
+        ///////////////////////////////////////////////////////////////////////////////////////////
+
         bool bContinue = true;
-        bool bActive = false;
         byte MessageFlag = 0;
         readonly ManualResetEvent sync_obj = new(false);
         ///////////////////////////////////////////////////////////////////////////////////////////
-        public Device? selectedDevice = null;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         public enum UpdateEnumFlags
@@ -152,8 +154,11 @@ namespace DevConfig.Service
                             mainForm.ProgressBar_Value = SearchFrom;
                         });
                     });
+                    FreeProcessLock();
                 });
             }
+            else
+                FreeProcessLock();
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -161,76 +166,80 @@ namespace DevConfig.Service
         {
             Debug.Assert(selectedDevice != null);
 
-
             Task.Run(() =>
             {
-                bContinue = true;
-
-                mainForm.AppendToDebug("Uploading FW");
-
-                byte[] data = new byte[240];
-                FileStream file = File.OpenRead(file_name);
-
-                mainForm.Invoke(delegate
+                if (DevConfigService.Instance.ProcessLock())
                 {
-                    mainForm.Cursor = Cursors.WaitCursor;
-                    mainForm.ProgressBar_Minimum = 0;
-                    mainForm.ProgressBar_Maximum = (int)file.Length;
-                    mainForm.ProgressBar_Value = 0;
-                });
+                    bContinue = true;
 
-                Message message = new Message() { CMD = Command.StartUpdate, SRC = MainForm.SrcAddress, DEST = selectedDevice.Address };
-                sync_obj.Reset();
-                //Debug.WriteLine(message);
-                InputPeriph?.SendMsg(message);
-                mainForm.AppendToDebug("*", false);
+                    mainForm.AppendToDebug("Uploading FW");
 
-                message.CMD = Command.UpdateMsg;
+                    byte[] data = new byte[240];
+                    FileStream file = File.OpenRead(file_name);
 
-                while (bContinue)
-                {
-                    if (sync_obj.WaitOne(3000))
+                    mainForm.Invoke(delegate
                     {
-                        mainForm.Invoke(delegate { mainForm.ProgressBar_Step(data.Length); });
-                        if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
+                        mainForm.Cursor = Cursors.WaitCursor;
+                        mainForm.ProgressBar_Minimum = 0;
+                        mainForm.ProgressBar_Maximum = (int)file.Length;
+                        mainForm.ProgressBar_Value = 0;
+                    });
+
+                    Message message = new Message() { CMD = Command.StartUpdate, SRC = MainForm.SrcAddress, DEST = selectedDevice.Address };
+                    sync_obj.Reset();
+                    //Debug.WriteLine(message);
+                    InputPeriph?.SendMsg(message);
+                    mainForm.AppendToDebug("*", false);
+
+                    message.CMD = Command.UpdateMsg;
+
+                    while (bContinue)
+                    {
+                        if (sync_obj.WaitOne(3000))
                         {
-                            int readed = file.Read(data, 0, data.Length);
-                            if (readed == 0)
+                            mainForm.Invoke(delegate { mainForm.ProgressBar_Step(data.Length); });
+                            if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
                             {
-                                mainForm.AppendToDebug($"{Environment.NewLine}Uploading FW DONE");
+                                int readed = file.Read(data, 0, data.Length);
+                                if (readed == 0)
+                                {
+                                    mainForm.AppendToDebug($"{Environment.NewLine}Uploading FW DONE");
+                                    break;
+                                }
+                                message.Data = data.Take(readed).ToList();
+                                sync_obj.Reset();
+                                //Debug.WriteLine(message);
+                                InputPeriph?.SendMsg(message);
+                                mainForm.AppendToDebug("*", false);
+                            }
+                            else
+                            {
+                                mainForm.AppendToDebug($"{Environment.NewLine}Uploading FW ERROR {(UpdateEnumFlags)MessageFlag}");
                                 break;
                             }
-                            message.Data = data.Take(readed).ToList();
-                            sync_obj.Reset();
-                            //Debug.WriteLine(message);
-                            InputPeriph?.SendMsg(message);
-                            mainForm.AppendToDebug("*", false);
                         }
                         else
                         {
-                            mainForm.AppendToDebug($"{Environment.NewLine}Uploading FW ERROR {(UpdateEnumFlags)MessageFlag}");
+                            mainForm.AppendToDebug($"{Environment.NewLine}Uploading FW TIMEOUT");
                             break;
                         }
                     }
-                    else
-                    {
-                        mainForm.AppendToDebug($"{Environment.NewLine}Uploading FW TIMEOUT");
-                        break;
-                    }
-                }
 
-                if(!bContinue)
-                    mainForm.AppendToDebug($"{Environment.NewLine}Uploading FW ABORTED");
+                    if (!bContinue)
+                        mainForm.AppendToDebug($"{Environment.NewLine}Uploading FW ABORTED");
 
-                // Pockame na dobehnuti
-                Task.Delay(bContinue ? 1000 : 0).ContinueWith(t =>
-                {
-                    mainForm.Invoke(delegate
+                    // Pockame na dobehnuti
+                    Task.Delay(bContinue ? 1000 : 0).ContinueWith(t =>
                     {
-                        mainForm.Cursor = Cursors.Default;
-                        mainForm.ProgressBar_Value = 0;
+                        mainForm.Invoke(delegate
+                        {
+                            mainForm.Cursor = Cursors.Default;
+                            mainForm.ProgressBar_Value = 0;
+                        });
                     });
-                });
+
+                    DevConfigService.Instance.FreeProcessLock();
+                }
             });
         }
 
@@ -279,6 +288,19 @@ namespace DevConfig.Service
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-
+        internal bool ProcessLock()
+        {
+            if (Interlocked.Increment(ref process_lock) == 1)
+                return true;
+            
+            Interlocked.Decrement(ref process_lock);
+            MessageBox.Show("Wait for the running operation to complete.", "DevConfig - message", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            return false;    
+        }
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        internal void FreeProcessLock()
+        {
+            Interlocked.Exchange(ref process_lock, 0);
+        }
     }
 }

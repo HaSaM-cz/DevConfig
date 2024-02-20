@@ -128,12 +128,6 @@
             listView1.SubItemClicked += listView1_SubItemClicked;
             listView1.SubItemEndEditing += listView1_SubItemEndEditing;
             listView1.ColumnClick += listView1_ColumnClick;
-            listView1.ItemDrag += listView1_ItemDrag;
-            listView1.DragDrop += listView1_DragDrop;
-            listView1.DragEnter += listView1_DragEnter;
-            listView1.DragOver += listView1_DragOver;
-            listView1.DragLeave += listView1_DragLeave;
-            listView1.GiveFeedback += listView1_GiveFeedback;
             listView1.KeyDown += listView1_KeyDown;
             // 
             // columnHeader1

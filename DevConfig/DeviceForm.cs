@@ -48,14 +48,16 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void btnUpdate_Click(object sender, EventArgs e)
         {
-            if (File.Exists(tbFwFileName.Text) && DevConfigService.Instance.selectedDevice != null)
+            if (DevConfigService.Instance.ProcessLock())
             {
-                DevConfigService.Instance.UpdateFw(tbFwFileName.Text);
+                DevConfigService.Instance.FreeProcessLock();
+                if (File.Exists(tbFwFileName.Text) && DevConfigService.Instance.selectedDevice != null)
+                    DevConfigService.Instance.UpdateFw(tbFwFileName.Text);
             }
         }
 
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        private void btnReset_Click(object sender, EventArgs e)
+            ///////////////////////////////////////////////////////////////////////////////////////////
+            private void btnReset_Click(object sender, EventArgs e)
         {
             if (DevConfigService.Instance.selectedDevice != null)
             {

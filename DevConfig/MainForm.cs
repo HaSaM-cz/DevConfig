@@ -99,7 +99,10 @@ namespace DevConfig
         private void sDCardForSelectedDeviceToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (DevConfigService.Instance.selectedDevice != null)
-                CreateChild<SDCardCtrl>($"SD Card (0x{DevConfigService.Instance.selectedDevice.Address:X2})");
+            {
+                if (DevConfigService.Instance.ProcessLock())
+                    CreateChild<SDCardCtrl>($"SD Card (0x{DevConfigService.Instance.selectedDevice.Address:X2})");
+            }
             else
                 MessageBox.Show("First you need to select device.", "DevConfig - info", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
@@ -143,29 +146,39 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void Open_Click(object sender, EventArgs e)
         {
-            ConnectForm connectForm = new ConnectForm();
-
-            if (connectForm.ShowDialog() == DialogResult.Continue)
+            if (DevConfigService.Instance.ProcessLock())
             {
-                Text = $"DevConfig - {DevConfigService.Instance.ConnectString}";
-                ConnectMruList?.AddFile(DevConfigService.Instance.ConnectString);
+                ConnectForm connectForm = new ConnectForm();
 
-                //TreeWnd?.NewInputPeriph();
-                //DebugWnd?.NewInputPeriph();
-                //DeviceWnd?.NewInputPeriph();
-                DevConfigService.Instance.RefreshDeviceList();
+                if (connectForm.ShowDialog() == DialogResult.Continue)
+                {
+                    Text = $"DevConfig - {DevConfigService.Instance.ConnectString}";
+                    ConnectMruList?.AddFile(DevConfigService.Instance.ConnectString);
+
+                    //TreeWnd?.NewInputPeriph();
+                    //DebugWnd?.NewInputPeriph();
+                    //DeviceWnd?.NewInputPeriph();
+                    DevConfigService.Instance.RefreshDeviceList();
+                }
+                else
+                {
+                    DevConfigService.Instance.FreeProcessLock();
+                }
             }
-
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void Close_Click(object sender, EventArgs e)
         {
-            if (DevConfigService.Instance.InputPeriph != null)
+            if (DevConfigService.Instance.ProcessLock())
             {
-                DevConfigService.Instance.InputPeriph.Close();
-                DevConfigService.Instance.InputPeriph = null;
-                Text = "DevConfig";
+                if (DevConfigService.Instance.InputPeriph != null)
+                {
+                    DevConfigService.Instance.InputPeriph.Close();
+                    DevConfigService.Instance.InputPeriph = null;
+                    Text = "DevConfig";
+                }
+                DevConfigService.Instance.FreeProcessLock();
             }
         }
 
@@ -178,14 +191,18 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void OpenFile(string file_name)
         {
-            if (DevConfigService.Instance.Open(file_name))
+            if (DevConfigService.Instance.ProcessLock())
             {
-                Text = $"DevConfig - {DevConfigService.Instance.ConnectString}";
-                DevConfigService.Instance.RefreshDeviceList();
-            }
-            else
-            {
-                ConnectMruList?.RemoveFile(file_name);
+                if (DevConfigService.Instance.Open(file_name))
+                {
+                    Text = $"DevConfig - {DevConfigService.Instance.ConnectString}";
+                    DevConfigService.Instance.RefreshDeviceList();
+                }
+                else
+                {
+                    ConnectMruList?.RemoveFile(file_name);
+                    DevConfigService.Instance.FreeProcessLock();
+                }
             }
         }
 
@@ -312,7 +329,8 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void RefreshList_Click(object sender, EventArgs e)
         {
-            DevConfigService.Instance.RefreshDeviceList();
+            if(DevConfigService.Instance.ProcessLock())
+                DevConfigService.Instance.RefreshDeviceList();
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
