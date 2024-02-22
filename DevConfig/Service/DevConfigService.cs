@@ -1,13 +1,8 @@
-﻿
-using CanDiagSupport;
-using Newtonsoft.Json;
+﻿using CanDiagSupport;
 using SshCANns;
-using System.Data.Common;
 using System.Diagnostics;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Text.Json.Nodes;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using TcpTunelNs;
 using ToolStickNs;
 using UsbSerialNs;
@@ -373,7 +368,12 @@ namespace DevConfig.Service
 
                     if (File.Exists(file_name))
                     {
-                        var json = JsonConvert.DeserializeObject<List<ParamConfig>>(File.ReadAllText(file_name));
+                        JsonSerializerOptions options = new JsonSerializerOptions
+                        {
+                            Converters = { new JsonStringEnumConverter() }
+                        };
+
+                        var json = JsonSerializer.Deserialize<List<ParamConfig>>(File.ReadAllText(file_name), options);
                         var @params = (from xx in json where xx.DevId == selectedDevice.DevId select xx.Data).FirstOrDefault();
                         if (@params != null)
                         {

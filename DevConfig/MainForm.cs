@@ -4,11 +4,11 @@ using DevConfig.Service;
 using DevConfig.Utils;
 using DevConfigSupp;
 using Microsoft.CodeAnalysis;
-using Newtonsoft.Json;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using WeifenLuo.WinFormsUI.Docking;
 using Message = CanDiagSupport.Message;
 
@@ -70,7 +70,7 @@ namespace DevConfig
             //message.Data.AddRange(Encoding.UTF7.GetBytes(path + "\0"));            // dir name
             //var a = System.Text.Encoding.GetEncoding("cp852");
             */
-            DevicesTypeList = JsonConvert.DeserializeObject<List<DeviceType>>(File.ReadAllText(@"Resources\Devices.json"));
+            DevicesTypeList = JsonSerializer.Deserialize<List<DeviceType>>(File.ReadAllText(@"Resources\Devices.json"));
             string[] BLPaths = Settings.Default.BLPath.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             for (int i = 0; i < BLPaths.Length; i += 2)
             {

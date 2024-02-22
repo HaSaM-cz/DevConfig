@@ -1,5 +1,5 @@
 ﻿using DevConfig.Utils;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace DevConfig.Service
 {
@@ -24,18 +24,18 @@ namespace DevConfig.Service
 
     public class Parameter : ICloneable
     {
-        public byte ParameterID;
-        public type Type;
-        public bool ReadOnly;
-        [JsonConverter(typeof(HexStringJsonConverter))]
-        public object? MinVal;
-        [JsonConverter(typeof(HexStringJsonConverter))]
-        public object? MaxVal;
-        public byte? Index;
-        public string? Name;
-        public string? Format;
+        [JsonConverter(typeof(HexByteJsonConverter))] public byte ParameterID { get; set; }
+        public type Type { get; set; }
+        public bool ReadOnly { get; set; }
+        [JsonConverter(typeof(HexObjectJsonConverter))] public object? MinVal { get; set; }
+        [JsonConverter(typeof(HexObjectJsonConverter))] public object? MaxVal { get; set; }
+        public byte? Index { get; set; }
+        public string? Name { get; set; }
+        public string? Format { get; set; }
+        public ByteOrder ByteOrder { get; set; } = ByteOrder.LSB;
+
+        //////////////////////////////////////////////////////////////////////////
         internal object? Value;
-        public ByteOrder ByteOrder = ByteOrder.LSB;
 
         //////////////////////////////////////////////////////////////////////////
         internal string StrMin
@@ -72,8 +72,7 @@ namespace DevConfig.Service
 
     public class ParamConfig
     {
-        [JsonConverter(typeof(HexStringJsonConverter))]
-        public uint DevId;
-        public List<Parameter>? Data;
+        [JsonConverter(typeof(HexUInt32JsonConverter))] public uint DevId { get; set; }
+        public List<Parameter>? Data { get; set; }
     }
 }

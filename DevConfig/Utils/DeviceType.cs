@@ -1,5 +1,5 @@
 ﻿using DevConfig.Utils;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 using WeifenLuo.WinFormsUI.Docking;
 
 namespace DevConfig
@@ -9,10 +9,9 @@ namespace DevConfig
         [JsonIgnore] public string? FirmwarePath;
         [JsonIgnore] public List<DockContent> UserControlsList = new();
 
-        [JsonConverter(typeof(HexStringJsonConverter))]
-        public uint DevId;
-        public string Name = string.Empty;
-        public string? UserControl;
-        public string? Parameters;
+        [JsonConverter(typeof(HexUInt32JsonConverter))] public uint DevId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? UserControl { get; set; }
+        public string? Parameters { get; set; }
     }
 }
