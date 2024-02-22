@@ -5,7 +5,7 @@ namespace DevConfig
     public partial class DebugForm : WeifenLuo.WinFormsUI.Docking.DockContent
     {
         ///////////////////////////////////////////////////////////////////////////////////////////
-        public DebugForm(MainForm mainForm)
+        public DebugForm()
         {
             InitializeComponent();
         }

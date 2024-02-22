@@ -21,22 +21,18 @@ namespace DevConfig
         public DeviceForm? DeviceWnd = null;
         public DeviceTreeForm? TreeWnd = null;
         public DebugForm? DebugWnd = null;
-
-        public DeviceType? selectedDeviceType = null;
+        public RegisterForm? RegisterWnd = null;
 
         enum DeviceSubItem { Address, DevID, Name, Version, CpuID };
         enum ParmaterSubItem { ParamID, Type, RO, Min, Max, Index, Name, Value };
 
         public bool btn_update_active = false;
-        ManualResetEvent MessageReceived = new(false);
-        byte MessageFlag = 0xFF;
 
-        List<DeviceType>? DevicesTypeList;
+        internal List<DeviceType>? DevicesTypeList;
+        internal List<Device> DevicesList = new();
 
-        public List<Device> DevicesList = new();
         IMainApp MainApp;
 
-        public BindingList<Device>? DeviceList = new();
 
         public delegate void CancelEventDelegate();
         public event CancelEventDelegate? AbortEvent;
@@ -82,6 +78,7 @@ namespace DevConfig
                 DeviceType t = GetDeviceType(devid);
                 t.FirmwarePath = BLPaths[i + 1];
             }
+
             TreeWnd = CreateChild<DeviceTreeForm>("Device tree");
             TreeWnd!.DockState = DockState.DockLeft;
 
@@ -89,6 +86,11 @@ namespace DevConfig
             DebugWnd!.DockState = DockState.DockLeft;
 
             DeviceWnd = CreateChild<DeviceForm>("Device");
+
+            RegisterWnd = CreateChild<RegisterForm>("Registers");
+
+            DeviceWnd!.BringToFront();
+
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -108,7 +110,7 @@ namespace DevConfig
         {
             Cursor = Cursors.WaitCursor;
             Type t = typeof(T);
-            var obj = Activator.CreateInstance(t, new object[] { this });
+            var obj = Activator.CreateInstance(t);
             if (obj != null)
             {
                 DockContent content = (DockContent)obj;
@@ -342,11 +344,11 @@ namespace DevConfig
             foreach (var item in ucs)
                 item.UserControlsList.ForEach(x => { x.Enabled = false; });
 
-            if (selectedDeviceType != null && File.Exists(selectedDeviceType.UserControl))
+            if (DevConfigService.Instance.selectedDeviceType != null && File.Exists(DevConfigService.Instance.selectedDeviceType.UserControl))
             {
-                if (selectedDeviceType.UserControlsList.Count != 0)
+                if (DevConfigService.Instance.selectedDeviceType.UserControlsList.Count != 0)
                 {
-                    selectedDeviceType.UserControlsList.ForEach(x =>
+                    DevConfigService.Instance.selectedDeviceType.UserControlsList.ForEach(x =>
                     {
                         x.Enabled = true;
                         x.BringToFront();
@@ -354,7 +356,7 @@ namespace DevConfig
                 }
                 else
                 {
-                    string assembly_name = Path.GetFullPath(selectedDeviceType.UserControl);
+                    string assembly_name = Path.GetFullPath(DevConfigService.Instance.selectedDeviceType.UserControl);
                     Assembly assembly = Assembly.LoadFile(Path.Combine("", assembly_name));
                     var types = assembly.GetTypes();
                     foreach (Type type in types)
@@ -376,7 +378,7 @@ namespace DevConfig
                                 });
                                 control.MdiParent = this;
                                 control.Show(this.dockPanel, DockState.Document);
-                                selectedDeviceType.UserControlsList.Add(control);
+                                DevConfigService.Instance.selectedDeviceType.UserControlsList.Add(control);
                             }
                         }
                     }
@@ -401,7 +403,7 @@ namespace DevConfig
         internal void SelectItem(Device tag)
         {
             DevConfigService.Instance.selectedDevice = tag;
-            selectedDeviceType = GetDeviceType(DevConfigService.Instance.selectedDevice.DevId);
+            DevConfigService.Instance.selectedDeviceType = GetDeviceType(DevConfigService.Instance.selectedDevice.DevId);
             Debug.WriteLine($"Selected DevID = {DevConfigService.Instance.selectedDevice.DevId:X}");
             tb_address.Text = DevConfigService.Instance.selectedDevice.AddressStr;
             tb_dev_id.Text = DevConfigService.Instance.selectedDevice.DevIdStr;
@@ -414,13 +416,20 @@ namespace DevConfig
             if (DeviceWnd != null)
             {
                 DeviceWnd.label_name.Text = DevConfigService.Instance.selectedDevice.Name;
-                DeviceWnd.tbFwFileName.Text = selectedDeviceType.FirmwarePath;
+                DeviceWnd.tbFwFileName.Text = DevConfigService.Instance.selectedDeviceType.FirmwarePath;
                 DeviceWnd.tb_address.Text = DevConfigService.Instance.selectedDevice.AddressStr;
                 DeviceWnd.tb_cpu_id.Text = DevConfigService.Instance.selectedDevice.CpuId;
                 DeviceWnd.tb_dev_id.Text = DevConfigService.Instance.selectedDevice.DevIdStr;
                 DeviceWnd.tb_version.Text = DevConfigService.Instance.selectedDevice.FwVer;
                 DeviceWnd.label_name.ForeColor = DeviceWnd.tb_address.ForeColor = DeviceWnd.tb_dev_id.ForeColor = DeviceWnd.tb_version.ForeColor = DeviceWnd.tb_cpu_id.ForeColor = SystemColors.WindowText;
                 DeviceWnd.tb_address.Font = DeviceWnd.tb_dev_id.Font = DeviceWnd.tb_version.Font = DeviceWnd.tb_cpu_id.Font = new Font(DeviceWnd.tb_address.Font, FontStyle.Regular);
+            }
+
+            if(RegisterWnd != null)
+            {
+                if(DevConfigService.Instance.selectedDevice.Parameters == null)
+                    DevConfigService.Instance.GetRegisterFromDevice();
+                RegisterWnd.UpdateList();
             }
         }
 

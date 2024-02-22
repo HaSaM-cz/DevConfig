@@ -1,4 +1,5 @@
 ﻿using DevConfig.Service;
+using DevConfigSupp;
 using System.Diagnostics;
 using Message = CanDiagSupport.Message;
 
@@ -9,10 +10,10 @@ namespace DevConfig
         MainForm MainForm;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        public DeviceForm(MainForm mainForm)
+        public DeviceForm()
         {
             InitializeComponent();
-            MainForm = mainForm;
+            MainForm = DevConfigService.Instance.MainForm;
             tb_address.BackColor = tb_dev_id.BackColor = tb_version.BackColor = tb_cpu_id.BackColor = tb_address.BackColor;
         }
 
@@ -62,8 +63,8 @@ namespace DevConfig
             if (ofd.ShowDialog() == DialogResult.OK)
             {
                 tbFwFileName.Text = ofd.FileName;
-                if (MainForm.selectedDeviceType != null)
-                    MainForm.selectedDeviceType.FirmwarePath = ofd.FileName;
+                if (DevConfigService.Instance.selectedDeviceType != null)
+                    DevConfigService.Instance.selectedDeviceType.FirmwarePath = ofd.FileName;
             }
         }
 

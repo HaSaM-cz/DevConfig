@@ -1,0 +1,25 @@
+[
+  {
+    "_Comment": [
+      "ParameterID - mandatory",
+      "Type - [UInt8, UInt16, UInt32, String, IpAddr, SInt8, SInt16, SInt32, MacAddr] mandatory",
+      "Name - mandatory",
+
+      "ReadOnly - optional, defauly = false",
+      "MinVal - optional, default = min value for type",
+      "MaxVal - optional, default = max value for type",
+      "Index - optional, default = 0",
+      "Description - optional",
+      "ByteOrder - [LSB, MSB] optional, default = LSB",
+      "Format - optional (string.format function will be used)"
+    ],
+    "DevId": "0x0000117A",
+    "Data":[
+    {"ParameterID":0,"Type":"UInt8","ReadOnly1":true,  "MinVal":0, "MaxVal":"0x0F","Index1":0,"Name":"DipSwitch", "Format": "0x{0:X1}"},
+    {"ParameterID":1,"Type":"UInt16","ReadOnly":false,"MinVal1":60,"MaxVal1":2000,  "Index":1,"Name":"LD303-Sensitivity", "Description": "Citlivost radaru"},
+    {"ParameterID":2,"Type":"UInt16","ReadOnly":false,"MinVal":50,"MaxVal":350,   "Index":1,"Name":"LD303-MaxDetDist"}
+    ]
+  }
+]
+
+

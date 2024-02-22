@@ -1,7 +1,13 @@
 ﻿
 using CanDiagSupport;
+using Newtonsoft.Json;
 using SshCANns;
+using System.Data.Common;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection.Metadata;
+using System.Text;
+using System.Text.Json.Nodes;
 using TcpTunelNs;
 using ToolStickNs;
 using UsbSerialNs;
@@ -12,14 +18,16 @@ namespace DevConfig.Service
 {
     public class DevConfigService
     {
-        internal MainForm mainForm;
+        internal MainForm MainForm;
         internal Device? selectedDevice = null;
+        internal DeviceType? selectedDeviceType = null;
         private int process_lock = 0; // Kontrola pracujícího procesu. Povolení pouze jedné úlohy.
         ///////////////////////////////////////////////////////////////////////////////////////////
 
-        bool bContinue = true;
-        byte MessageFlag = 0;
-        readonly ManualResetEvent sync_obj = new(false);
+        private bool bContinue = true;
+        private byte MessageFlag = 0;
+        private Message? message = null;
+        private readonly ManualResetEvent sync_obj = new(false);
         ///////////////////////////////////////////////////////////////////////////////////////////
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -67,8 +75,8 @@ namespace DevConfig.Service
         ///////////////////////////////////////////////////////////////////////////////////////////
         DevConfigService()
         {
-            mainForm = (MainForm)Application.OpenForms["MainForm"];
-            mainForm.AbortEvent += MainForm_AbortEvent;
+            MainForm = (MainForm)Application.OpenForms["MainForm"];
+            MainForm.AbortEvent += MainForm_AbortEvent;
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -78,31 +86,41 @@ namespace DevConfig.Service
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void _InputPeriph_MessageReceived(Message message)
+        private void _InputPeriph_MessageReceived(Message msg)
         {
-            if (message.CMD == Command.Ident && message.Data.Count >= 14) // TODO && msg.RF)
+            if (msg.CMD == Command.Ident && msg.Data.Count >= 14) // TODO && msg.RF)
             {
                 //Debug.WriteLine(message);
-                byte state = message.Data[0];
-                uint deviceID = (uint)(message.Data[1] << 24 | message.Data[2] << 16 | message.Data[3] << 8 | message.Data[4]);
+                byte state = msg.Data[0];
+                uint deviceID = (uint)(msg.Data[1] << 24 | msg.Data[2] << 16 | msg.Data[3] << 8 | msg.Data[4]);
 
-                byte address = DevConfigService.Instance.InputPeriph!.GetType() == typeof(UsbSerialNs.UsbSerial) ? message.Data[5] : address = message.SRC;
+                byte address = DevConfigService.Instance.InputPeriph!.GetType() == typeof(UsbSerialNs.UsbSerial) ? msg.Data[5] : address = msg.SRC;
                 //byte address = message.Data[5]; Usb Serial 
                 //byte address = message.SRC; // Toolstick
                 //byte address = message.SRC; // Karo SSH
                 //byte address = message.Data[5]; // TS TCP tunel \
                 //byte address = message.SRC; // Karo TCP tunel /
 
-                string fwVer = $"{message.Data[6]}.{message.Data[7]}";
-                string cpuId = $"{BitConverter.ToString(message.Data.Skip(8).Take(12).ToArray()).Replace("-", " ")}";
+                string fwVer = $"{msg.Data[6]}.{msg.Data[7]}";
+                string cpuId = $"{BitConverter.ToString(msg.Data.Skip(8).Take(12).ToArray()).Replace("-", " ")}";
 
-                mainForm.NewIdent(deviceID, address, fwVer, cpuId, state);
+                MainForm.NewIdent(deviceID, address, fwVer, cpuId, state);
             }
-            else if ((message.CMD == Command.StartUpdate || message.CMD == Command.UpdateMsg) && message.Data.Count == 1)
+            else if ((msg.CMD == Command.StartUpdate || msg.CMD == Command.UpdateMsg) && msg.Data.Count == 1)
             {
                 //Debug.WriteLine(message);
-                MessageFlag = message.Data[0];
+                MessageFlag = msg.Data[0];
                 sync_obj.Set();
+            }
+            else if (msg.CMD == Command.GetListParam || 
+                     msg.CMD == Command.ParamRead)
+            {
+                if (msg.Data.Count >= 1)
+                {
+                    message = msg;
+                    MessageFlag = msg.Data[0];
+                    sync_obj.Set();
+                }
             }
         }
 
@@ -111,9 +129,10 @@ namespace DevConfig.Service
         {
             if (InputPeriph != null)
             {
+                bool usb_serial = false;
                 selectedDevice = null;
-                mainForm.DevicesList.Clear();
-                mainForm.TreeWnd?.listViewDevices.Items.Clear();
+                MainForm.DevicesList.Clear();
+                MainForm.TreeWnd?.listViewDevices.Items.Clear();
 
                 Task.Run(() =>
                 {
@@ -126,34 +145,43 @@ namespace DevConfig.Service
                     byte SearchTo = 0xFE - 1;
 
                     if (InputPeriph!.GetType() == typeof(UsbSerialNs.UsbSerial))
-                        SearchFrom = SearchTo = 0xFE;
-
-                    mainForm.Invoke(delegate
                     {
-                        mainForm.Cursor = Cursors.WaitCursor;
-                        mainForm.ProgressBar_Minimum = SearchFrom;
-                        mainForm.ProgressBar_Maximum = SearchTo;
-                        mainForm.ProgressBar_Value = SearchFrom;
-                    });
+                        usb_serial = true;
+                        SearchFrom = SearchTo = 0xFE;
+                    }
+                    else
+                    {
+                        MainForm.Invoke(delegate
+                        {
+                            MainForm.Cursor = Cursors.WaitCursor;
+                            MainForm.ProgressBar_Minimum = SearchFrom;
+                            MainForm.ProgressBar_Maximum = SearchTo;
+                            MainForm.ProgressBar_Value = SearchFrom;
+                        });
+                    }
 
                     // pošleme ident do všech zažízení
                     for (byte dest = SearchFrom; dest <= SearchTo && bContinue; dest++)
                     {
-                        mainForm.Invoke(delegate { mainForm.ProgressBar_Value = dest; });
+                        if (!usb_serial)
+                            MainForm.Invoke(delegate { MainForm.ProgressBar_Value = dest; });
                         message.DEST = dest;
                         InputPeriph.SendMsg(message);
                         Task.Delay(3).Wait();
                     }
 
                     // Pockame na dobehnuti
-                    Task.Delay(bContinue ? 1500 : 0).ContinueWith(t =>
+                    if (!usb_serial)
                     {
-                        mainForm.Invoke(delegate
+                        Task.Delay(bContinue ? 1500 : 0).ContinueWith(t =>
                         {
-                            mainForm.Cursor = Cursors.Default;
-                            mainForm.ProgressBar_Value = SearchFrom;
+                            MainForm.Invoke(delegate
+                            {
+                                MainForm.Cursor = Cursors.Default;
+                                MainForm.ProgressBar_Value = SearchFrom;
+                            });
                         });
-                    });
+                    }
                     FreeProcessLock();
                 });
             }
@@ -172,24 +200,24 @@ namespace DevConfig.Service
                 {
                     bContinue = true;
 
-                    mainForm.AppendToDebug("Uploading FW");
+                    MainForm.AppendToDebug("Uploading FW");
 
                     byte[] data = new byte[240];
                     FileStream file = File.OpenRead(file_name);
 
-                    mainForm.Invoke(delegate
+                    MainForm.Invoke(delegate
                     {
-                        mainForm.Cursor = Cursors.WaitCursor;
-                        mainForm.ProgressBar_Minimum = 0;
-                        mainForm.ProgressBar_Maximum = (int)file.Length;
-                        mainForm.ProgressBar_Value = 0;
+                        MainForm.Cursor = Cursors.WaitCursor;
+                        MainForm.ProgressBar_Minimum = 0;
+                        MainForm.ProgressBar_Maximum = (int)file.Length;
+                        MainForm.ProgressBar_Value = 0;
                     });
 
                     Message message = new Message() { CMD = Command.StartUpdate, SRC = MainForm.SrcAddress, DEST = selectedDevice.Address };
                     sync_obj.Reset();
                     //Debug.WriteLine(message);
                     InputPeriph?.SendMsg(message);
-                    mainForm.AppendToDebug("*", false);
+                    MainForm.AppendToDebug("*", false);
 
                     message.CMD = Command.UpdateMsg;
 
@@ -197,44 +225,44 @@ namespace DevConfig.Service
                     {
                         if (sync_obj.WaitOne(3000))
                         {
-                            mainForm.Invoke(delegate { mainForm.ProgressBar_Step(data.Length); });
+                            MainForm.Invoke(delegate { MainForm.ProgressBar_Step(data.Length); });
                             if (MessageFlag == (byte)UpdateEnumFlags.RespOK)
                             {
                                 int readed = file.Read(data, 0, data.Length);
                                 if (readed == 0)
                                 {
-                                    mainForm.AppendToDebug($"{Environment.NewLine}Uploading FW DONE");
+                                    MainForm.AppendToDebug($"{Environment.NewLine}Uploading FW DONE");
                                     break;
                                 }
                                 message.Data = data.Take(readed).ToList();
                                 sync_obj.Reset();
                                 //Debug.WriteLine(message);
                                 InputPeriph?.SendMsg(message);
-                                mainForm.AppendToDebug("*", false);
+                                MainForm.AppendToDebug("*", false);
                             }
                             else
                             {
-                                mainForm.AppendToDebug($"{Environment.NewLine}Uploading FW ERROR {(UpdateEnumFlags)MessageFlag}");
+                                MainForm.AppendToDebug($"{Environment.NewLine}Uploading FW ERROR {(UpdateEnumFlags)MessageFlag}");
                                 break;
                             }
                         }
                         else
                         {
-                            mainForm.AppendToDebug($"{Environment.NewLine}Uploading FW TIMEOUT");
+                            MainForm.AppendToDebug($"{Environment.NewLine}Uploading FW TIMEOUT");
                             break;
                         }
                     }
 
                     if (!bContinue)
-                        mainForm.AppendToDebug($"{Environment.NewLine}Uploading FW ABORTED");
+                        MainForm.AppendToDebug($"{Environment.NewLine}Uploading FW ABORTED");
 
                     // Pockame na dobehnuti
                     Task.Delay(bContinue ? 1000 : 0).ContinueWith(t =>
                     {
-                        mainForm.Invoke(delegate
+                        MainForm.Invoke(delegate
                         {
-                            mainForm.Cursor = Cursors.Default;
-                            mainForm.ProgressBar_Value = 0;
+                            MainForm.Cursor = Cursors.Default;
+                            MainForm.ProgressBar_Value = 0;
                         });
                     });
 
@@ -302,5 +330,227 @@ namespace DevConfig.Service
         {
             Interlocked.Exchange(ref process_lock, 0);
         }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        #region REGISTERS
+        internal void GetRegisterFromDevice()
+        {
+            if (selectedDevice != null)
+            {
+                // vycteme seznam patramatru
+                selectedDevice.Parameters = new List<Parameter>();
+
+                Message msg = new Message();
+                msg.CMD = Command.GetListParam;
+                msg.SRC = MainForm.SrcAddress;
+                msg.DEST = selectedDevice.Address;
+                msg.Data.Add(0);
+
+                sync_obj.Reset();
+                InputPeriph?.SendMsg(msg);
+
+                msg.Data[0] = 1;
+
+                while (true)
+                {
+                    if (!sync_obj.WaitOne(1000))
+                        break;
+                    if (MessageFlag == 0 && message != null)
+                    {
+                        selectedDevice.Parameters.AddRange( NewParamItem(message.Data.ToArray()) );
+                        message = null;
+                        MessageFlag = 0xFF;
+                    }
+                    else
+                        break;
+                    sync_obj.Reset();
+                    InputPeriph?.SendMsg(msg);
+                }
+
+                if (selectedDevice.Parameters.Count == 0 && selectedDeviceType?.Parameters != null)
+                {
+                    string file_name = Path.GetFullPath(@"Resources\" + selectedDeviceType.Parameters);
+
+                    if (File.Exists(file_name))
+                    {
+                        var json = JsonConvert.DeserializeObject<List<ParamConfig>>(File.ReadAllText(file_name));
+                        var @params = (from xx in json where xx.DevId == selectedDevice.DevId select xx.Data).FirstOrDefault();
+                        if (@params != null)
+                        {
+                            selectedDevice.Parameters.Clear();
+                            foreach(Parameter parameter in @params)
+                            {
+                                if(parameter.Index == null || parameter.Index < 1)
+                                {
+                                    parameter.Index = null;
+                                    selectedDevice.Parameters.Add(parameter);
+                                }
+                                else
+                                {
+                                    for(byte i = 0; i <= parameter.Index; i++)
+                                    {
+                                        Parameter par_idx = (Parameter)parameter.Clone();
+                                        par_idx.Index = i;
+                                        par_idx.Name += $"({i})";
+                                        selectedDevice.Parameters.Add(par_idx);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // vycteme hodnoty patramatru
+                msg.CMD = Command.ParamRead;
+                for(int i = 0; i < selectedDevice.Parameters.Count; i++)
+                {
+                    //msg.Data[0] = selectedDevice.Parameters[i].ParameterID;
+                    msg.Data = new() { selectedDevice.Parameters[i].ParameterID };
+                    if(selectedDevice.Parameters[i].Index != null)
+                        msg.Data.Add((byte)selectedDevice.Parameters[i].Index!);
+                    sync_obj.Reset();
+                    InputPeriph?.SendMsg(msg);
+
+                    if (sync_obj.WaitOne(1000))
+                    {
+                        if (MessageFlag == 0 && message != null)
+                        {
+                            NewParamData(selectedDevice.Parameters[i], message.Data.ToArray());
+                            message = null;
+                            MessageFlag = 0xFF;
+                        }
+                    }
+                        //continue;
+                }
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private object? MinMaxVal(type t, byte[] d, int i)
+        {
+            switch (t)
+            {
+                case type.UInt8: 
+                case type.UInt16:
+                case type.UInt32:
+                case type.String:
+                    return BitConverter.ToUInt32(d, i); // TODO dodelat MSB
+
+                case type.SInt8: 
+                case type.SInt16:
+                case type.SInt32:
+                    return BitConverter.ToInt32(d, i); // TODO dodelat MSB
+
+                default:
+                    return null;
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private Parameter[] NewParamItem(byte[] data)
+        {
+            Parameter[] parameters = new Parameter[data[11]+1];
+
+            string param_name = System.Text.Encoding.ASCII.GetString(data.Skip(12).TakeWhile((x) => x != 0).ToArray());
+            byte[] data2 = data.Skip(12 + param_name.Length).ToArray();
+
+            parameters[0] = new Parameter();
+            parameters[0].ParameterID = data[1];                             // Param ID
+            parameters[0].Type = (type)(data[2] & 0x7F);                     // Param Type
+            parameters[0].ReadOnly = (data[2] & 0x80) == 0x80;               // Flags
+            parameters[0].MinVal = MinMaxVal(parameters[0].Type, data, 3);   // Param MinVal
+            parameters[0].MaxVal = MinMaxVal(parameters[0].Type, data, 7);   // Param MaxVal
+            parameters[0].Name = param_name;                                 // Param Name
+            if (data2.Length > 1)
+            {
+                parameters[0].ByteOrder = (ByteOrder)data2[1];               // Poradi bajtu ve zprave.
+                parameters[0].Format = System.Text.Encoding.ASCII.GetString(data2.Skip(2).TakeWhile((x) => x != 0).ToArray());
+                byte[] data3 = data2.Skip(2 + parameters[0].Format!.Length).ToArray();
+            }
+            parameters[0].Index = null;                                      // Param Index
+
+            for (byte i = 1; i <= data[11]; i++)
+            {
+                parameters[i] = (Parameter)parameters[0].Clone();
+                parameters[i].Index = i;                                     // Param Index
+                parameters[i].Name += $"({i})";                              // Param Name
+            }
+
+            if(data[11] > 0)
+            {
+                parameters[0].Index = 0;                                     // Param Index
+                parameters[0].Name += "(0)";                                 // Param Name
+            }
+
+            return parameters;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void NewParamData(Parameter parameter, byte[] bytes)
+        {
+            try
+            {
+                int skip = 0;
+                switch (parameter.Type)
+                {
+                    //case type.IpAddr:  break;
+                    //case type.MacAddr: break;
+                    case type.String: 
+                        parameter.Value = System.Text.Encoding.ASCII.GetString(
+                            bytes.SkipWhile((x) => x < 20).TakeWhile((x) => x != 0).ToArray() ); 
+                        break;
+
+                    case type.UInt8:
+                        skip = bytes.Length - 1;
+                        parameter.Value = (byte)bytes[skip];  
+                        break;
+
+                    case type.SInt8:
+                        skip = bytes.Length - 1; 
+                        parameter.Value = (sbyte)bytes[skip]; 
+                        break;
+
+                    case type.UInt16:
+                        skip = bytes.Length - 2;
+                        if (parameter.ByteOrder == ByteOrder.LSB)
+                            parameter.Value = BitConverter.ToUInt16(bytes, skip);
+                        else
+                            parameter.Value = BitConverter.ToUInt16(bytes.Skip(skip).Take(2).Reverse().ToArray());
+                        break;
+
+                    case type.SInt16:
+                        skip = bytes.Length - 2;
+                        if (parameter.ByteOrder == ByteOrder.LSB)
+                            parameter.Value = BitConverter.ToInt16(bytes, skip);
+                        else
+                            parameter.Value = BitConverter.ToInt16(bytes.Skip(skip).Take(2).Reverse().ToArray());
+                        break;
+
+                    case type.UInt32:
+                        skip = bytes.Length - 4;
+                        if (parameter.ByteOrder == ByteOrder.LSB)
+                            parameter.Value = BitConverter.ToUInt32(bytes, skip); 
+                        else
+                            parameter.Value = BitConverter.ToUInt32(bytes.Skip(skip).Take(4).Reverse().ToArray());
+                        break;
+
+                    case type.SInt32:
+                        skip = bytes.Length - 4;
+                        if (parameter.ByteOrder == ByteOrder.LSB)
+                            parameter.Value = BitConverter.ToInt32(bytes, skip);
+                        else
+                            parameter.Value = BitConverter.ToInt32(bytes.Skip(skip).Take(4).Reverse().ToArray());
+                        break;
+
+                    default: throw new NotImplementedException();
+                }
+                Debug.WriteLine($"{parameter.Name} - {parameter.Type} - {parameter.Value:X} - {bytes.Length - 1}");
+            }
+            catch
+            {
+
+            }
+        }
+        #endregion
     }
 }

@@ -5,8 +5,8 @@ namespace DevConfigSupp
 {
     public class DockContentEx : WeifenLuo.WinFormsUI.Docking.DockContent
     {
-        protected IMainApp? MainApp;
-        protected IInputPeriph? InputPeriph;
+        protected IMainApp? MainApp = null;
+        protected IInputPeriph? InputPeriph = null;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         public DockContentEx()
@@ -17,11 +17,6 @@ namespace DevConfigSupp
         public void SetMainApp(IMainApp main_app)
         {
             MainApp = main_app;
-            if (MainApp.inputPeriph != null)
-            {
-                InputPeriph = MainApp.inputPeriph;
-                InputPeriph.MessageReceived += InputPeriph_MessageReceived;
-            }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -33,12 +28,15 @@ namespace DevConfigSupp
         ///////////////////////////////////////////////////////////////////////////////////////////
         protected void SendMessage(Message message)
         {
-            if (MainApp != null && MainApp.inputPeriph != null && !MainApp.inputPeriph.Equals(InputPeriph))
+            if(MainApp != null && MainApp.inputPeriph != null)
             {
-                InputPeriph = MainApp.inputPeriph;
-                InputPeriph.MessageReceived += InputPeriph_MessageReceived;
+                if(InputPeriph != MainApp.inputPeriph)
+                {
+                    InputPeriph = MainApp.inputPeriph;
+                    InputPeriph.MessageReceived += InputPeriph_MessageReceived;
+                }
+                MainApp.inputPeriph.SendMsg(message);
             }
-            MainApp?.inputPeriph?.SendMsg(message);
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////

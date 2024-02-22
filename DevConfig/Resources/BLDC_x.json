@@ -1,0 +1,16 @@
+[
+  { 
+    "DevId": "0x00044540",
+    "Data":[
+    {"ParameterID":3, "Type":"UInt32","ReadOnly":false,"MinVal":0,"MaxVal":"0xFFFFFFFF","Index":0,"Name":"CycleCountersLeft", "ByteOrder":"MSB"},
+    {"ParameterID":4, "Type":"UInt32","ReadOnly":false,"MinVal":0,"MaxVal":"0xFFFFFFFF","Index":0,"Name":"CycleCountersRight", "ByteOrder":"MSB"},
+    {"ParameterID":14,"Type":"UInt32","ReadOnly":false,"MinVal":0,"MaxVal":"0xFFFFFFFF","Index":0,"Name":"CycleCountersPanic", "ByteOrder":"MSB"}
+    ]
+  },
+  { "DevId": "0x00144540"},
+  { "DevId": "0x00014540"},
+  { "DevId": "0x00114540"},
+  { "DevId": "0x00024540"},
+  { "DevId": "0x00034540"},
+  { "DevId": "0x00244540" }
+]

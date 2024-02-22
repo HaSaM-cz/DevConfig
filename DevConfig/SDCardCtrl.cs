@@ -21,8 +21,6 @@ namespace DevConfig
         const byte FX_DIRECTORY = 0x10;
         const byte FX_ARCHIVE = 0x20;
 
-        const byte ECmd_SD_Command = 0x65;
-
         const byte SD_SubCmd_ListFiles = 0x01;
         const byte SD_SubCmd_ListFilesPart = 0x02;
         const byte SD_SubCmd_GetFile = 0x10;
@@ -95,9 +93,9 @@ namespace DevConfig
         //Encoding name_encoding = CodePagesEncodingProvider.Instance.GetEncoding(1250);
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        public SDCardCtrl(MainForm mainForm)
+        public SDCardCtrl()
         {
-            MainForm = mainForm;
+            MainForm = DevConfigService.Instance.MainForm;
             Debug.Assert(DevConfigService.Instance.InputPeriph != null);
             DevConfigService.Instance.InputPeriph.MessageReceived += InputPeriph_MessageReceived;
             InitializeComponent();
@@ -480,7 +478,7 @@ namespace DevConfig
         {
             if (msg.SRC == DeviceAddress)
             {
-                if (msg.CMD == ECmd_SD_Command)
+                if (msg.CMD == Command.ECmd_SD_Command)
                 {
                     if (msg.Data.Count == 1 && msg.Data[0] == 0x0F)
                     {
@@ -674,7 +672,7 @@ namespace DevConfig
 
             Message message = new Message();
             message.DEST = DeviceAddress;
-            message.CMD = ECmd_SD_Command;
+            message.CMD = Command.ECmd_SD_Command;
 
             message.Data = new List<byte>();
             message.Data.Add(SD_SubCmd_ListFiles);
@@ -825,7 +823,7 @@ namespace DevConfig
             MainForm.AppendToDebug("Format SD card");
             Message message = new ();
             message.DEST = DeviceAddress;
-            message.CMD = ECmd_SD_Command;
+            message.CMD = Command.ECmd_SD_Command;
             message.Data = new List<byte>{ SD_SubCmd_Format, 0x12, 0x34 };
             bContinue = true;
             sync_obj.Reset();
@@ -1102,7 +1100,7 @@ namespace DevConfig
             // Odešleme požadavek na soubor.
             Message message = new Message();
             message.DEST = DeviceAddress;
-            message.CMD = ECmd_SD_Command;
+            message.CMD = Command.ECmd_SD_Command;
 
             message.Data = new List<byte>() { SD_SubCmd_GetFile };
             message.Data.AddRange(name_encoding.GetBytes(file_path + "\0"));
@@ -1309,7 +1307,7 @@ namespace DevConfig
 
             Message message = new Message();
             message.DEST = DeviceAddress;
-            message.CMD = ECmd_SD_Command;
+            message.CMD = Command.ECmd_SD_Command;
 
             message.Data = new List<byte> { SD_SubCmd_PutFile };
             message.Data.AddRange(((uint)fileInfo.Length).GetBytes().Reverse());    // size
@@ -1400,7 +1398,7 @@ namespace DevConfig
 
             Message message = new Message();
             message.DEST = DeviceAddress;
-            message.CMD = ECmd_SD_Command;
+            message.CMD = Command.ECmd_SD_Command;
 
             message.Data = new List<byte>();
             message.Data.Add(SD_SubCmd_DelFile);
@@ -1453,13 +1451,13 @@ namespace DevConfig
 
             msg_arr[0] = new Message();
             msg_arr[0].DEST = DeviceAddress;
-            msg_arr[0].CMD = ECmd_SD_Command;
+            msg_arr[0].CMD = Command.ECmd_SD_Command;
             msg_arr[0].Data = new List<byte>() { SD_SubCmd_RenFileOld };
             msg_arr[0].Data.AddRange(name_encoding.GetBytes(old_file_name + "\0"));
 
             msg_arr[1] = new Message();
             msg_arr[1].DEST = DeviceAddress;
-            msg_arr[1].CMD = ECmd_SD_Command;
+            msg_arr[1].CMD = Command.ECmd_SD_Command;
             msg_arr[1].Data = new List<byte> { SD_SubCmd_RenFileNew };
             msg_arr[1].Data.AddRange(name_encoding.GetBytes(new_file_name + "\0"));
 
@@ -1515,7 +1513,7 @@ namespace DevConfig
 
             Message message = new Message();
             message.DEST = DeviceAddress;
-            message.CMD = ECmd_SD_Command;
+            message.CMD = Command.ECmd_SD_Command;
             message.Data = new List<byte>();
             message.Data.Add(SD_SubCmd_CreateDir);                                  // sub cmd
             message.Data.AddRange(((uint)timestamp).GetBytes().Reverse());          // timestamp
@@ -1554,7 +1552,7 @@ namespace DevConfig
 
                 Message message = new Message();
                 message.DEST = DeviceAddress;
-                message.CMD = ECmd_SD_Command;
+                message.CMD = Command.ECmd_SD_Command;
                 message.Data = new List<byte>();
                 message.Data.Add(SD_SubCmd_DelDir);
                 message.Data.AddRange(name_encoding.GetBytes(path + "\0"));
@@ -1600,13 +1598,13 @@ namespace DevConfig
 
                 msg_arr[0] = new Message();
                 msg_arr[0].DEST = DeviceAddress;
-                msg_arr[0].CMD = ECmd_SD_Command;
+                msg_arr[0].CMD = Command.ECmd_SD_Command;
                 msg_arr[0].Data = new List<byte>() { SD_SubCmd_RenDirOld };
                 msg_arr[0].Data.AddRange(name_encoding.GetBytes(path + "\0"));
 
                 msg_arr[1] = new Message();
                 msg_arr[1].DEST = DeviceAddress;
-                msg_arr[1].CMD = ECmd_SD_Command;
+                msg_arr[1].CMD = Command.ECmd_SD_Command;
                 msg_arr[1].Data = new List<byte> { SD_SubCmd_RenDirNew };
                 msg_arr[1].Data.AddRange(name_encoding.GetBytes(new_path + "\0"));
 

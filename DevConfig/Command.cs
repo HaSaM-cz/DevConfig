@@ -8,5 +8,6 @@
         internal const byte GetListParam = 0x49;
         internal const byte StartUpdate = 0x50;
         internal const byte UpdateMsg = 0x51;
+        internal const byte ECmd_SD_Command = 0x65;
     }
 }

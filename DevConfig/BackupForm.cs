@@ -69,7 +69,7 @@ namespace DevConfig
             }
             catch (Exception ex)
             {
-                DevConfigService.Instance.mainForm.AppendToDebug($"{ex.Message}", default, default, Color.Red);
+                DevConfigService.Instance.MainForm.AppendToDebug($"{ex.Message}", default, default, Color.Red);
             }
 
             label_Files.Text = BackupObj.file_cnt.ToString();

@@ -6,10 +6,10 @@ namespace DevConfig
     public partial class DeviceTreeForm : WeifenLuo.WinFormsUI.Docking.DockContent
     {
         MainForm MainForm;
-        public DeviceTreeForm(MainForm mainForm)
+        public DeviceTreeForm()
         {
             InitializeComponent();
-            MainForm = mainForm;
+            MainForm = DevConfigService.Instance.MainForm;
         }
 
         private void listViewDevices_SelectedIndexChanged(object sender, EventArgs e)

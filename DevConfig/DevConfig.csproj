@@ -32,6 +32,8 @@
     <ProjectReference Include="..\..\CanDiag\CanDiag\ToolStick\ToolStick.csproj" />
     <ProjectReference Include="..\..\CanDiag\CanDiag\UsbSerial\UsbSerial.csproj" />
     <ProjectReference Include="..\DevConfigSupp\DevConfigSupp.csproj" />
+    <ProjectReference Include="..\LedStripCtrl\LedStripCtrl.csproj" />
+    <ProjectReference Include="..\TSControl\TSControl.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -49,6 +51,12 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <None Update="Resources\Devices.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\BLDC_x.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\Sens_Inreg_I2C.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

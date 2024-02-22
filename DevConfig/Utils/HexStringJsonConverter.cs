@@ -30,6 +30,10 @@ namespace DevConfig.Utils
                             return Convert.ToUInt32(str);
                     }
                 }
+                else if (reader.ValueType.FullName == typeof(long).FullName)
+                {
+                    return reader.Value!;
+                }
             }
 
             throw new JsonSerializationException();
