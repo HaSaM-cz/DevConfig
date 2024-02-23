@@ -88,5 +88,33 @@ namespace DevConfig.Utils
 
             return $"{size:0.##}{suffix[si]}";
         }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        public static bool IsNumericType(this object o)
+        {
+            switch (Type.GetTypeCode(o.GetType()))
+            {
+                case TypeCode.Byte:
+                case TypeCode.SByte:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.Int64:
+                case TypeCode.Decimal:
+                case TypeCode.Double:
+                case TypeCode.Single:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        public static uint ToUInt32(this string str)
+        {
+            return str.StartsWith("0x") ? Convert.ToUInt32(str.Substring("0x".Length), 16) : Convert.ToUInt32(str);
+        }
     }
 }

@@ -1,16 +1,71 @@
 [
-  { 
-    "DevId": "0x00044540",
+  {
+    "DevId": [ "0x00044540", "0x00144540", "0x00014540", "0x00114540", "0x00024540", "0x00034540", "0x00244540", "0x00134540" ],
+    "ByteOrder":"LSB",
     "Data":[
-    {"ParameterID":3, "Type":"UInt32","ReadOnly":false,"MinVal":0,"MaxVal":"0xFFFFFFFF","Index":0,"Name":"CycleCountersLeft", "ByteOrder":"MSB"},
-    {"ParameterID":4, "Type":"UInt32","ReadOnly":false,"MinVal":0,"MaxVal":"0xFFFFFFFF","Index":0,"Name":"CycleCountersRight", "ByteOrder":"MSB"},
-    {"ParameterID":"0x0E","Type":"UInt32","ReadOnly":false,"MinVal":0,"MaxVal":"0xFFFFFFFF","Index":0,"Name":"CycleCountersPanic", "ByteOrder":"MSB"}
+       {"ParameterID":"0x01", "Type":"UInt8",  "Name":"Relay1"					         },
+       {"ParameterID":"0x02", "Type":"UInt8",  "Name":"Relay2"					         },
+       {"ParameterID":"0x03", "Type":"UInt32", "Name":"CycleCountersLeft"	  	   ,"ByteOrder":"MSB"},
+       {"ParameterID":"0x04", "Type":"UInt32", "Name":"CycleCountersRight"		   ,"ByteOrder":"MSB"},
+       {"ParameterID":"0x05", "Type":"UInt8",  "Name":"DSW1"						         ,"Format": "[cfg_DISABLE,cfg_ENABLE,cfg_NONE=0xFF]"},
+       {"ParameterID":"0x06", "Type":"UInt8",  "Name":"DSW2"						         },
+       {"ParameterID":"0x07", "Type":"UInt8",  "Name":"DSW3"						         },
+       {"ParameterID":"0x08", "Type":"UInt8",  "Name":"DSW4"						         },
+       {"ParameterID":"0x09", "Type":"UInt8",  "Name":"DSW5"						         },
+       {"ParameterID":"0x0A", "Type":"UInt8",  "Name":"DSW6"					           },
+       {"ParameterID":"0x0B", "Type":"UInt8",  "Name":"DSW7"					 	         },
+       {"ParameterID":"0x0C", "Type":"UInt8",  "Name":"DSW8"					 	         },
+       {"ParameterID":"0x0D", "Type":"UInt8",  "Name":"BrakeDutyCyclePWM"		     },
+       {"ParameterID":"0x0E", "Type":"UInt32", "Name":"CycleCountersPanic"		   ,"ByteOrder":"MSB"},
+       {"ParameterID":"0x0F", "Type":"UInt8",  "Name":"BlockDutyCyclePWM"		     },
+       {"ParameterID":"0x10", "Type":"UInt8",  "Name":"Idle_hysteresis"		 	     },
+       {"ParameterID":"0x11", "Type":"UInt16", "Name":"RegulatorPosition_P"	 	   },
+       {"ParameterID":"0x16", "Type":"UInt16", "Name":"MinSpeed"				 	       },
+       {"ParameterID":"0x17", "Type":"UInt16", "Name":"MaxSpeed"				 	       },
+       {"ParameterID":"0x18", "Type":"UInt16", "Name":"SpeedRampUp"			 	       },
+       {"ParameterID":"0x19", "Type":"UInt16", "Name":"Max_speed_DSW"			       },
+       {"ParameterID":"0x1A", "Type":"UInt16", "Name":"Max_Current"			 	       },
+       {"ParameterID":"0x1B", "Type":"UInt16", "Name":"Decreased_Current"		     },
+       {"ParameterID":"0x1C", "Type":"UInt16", "Name":"Reg_s_P" 					       },
+       {"ParameterID":"0x1D", "Type":"UInt16", "Name":"Reg_s_I"	  				       },
+       {"ParameterID":"0x1F", "Type":"UInt8",  "Name":"Save_break_position" 		 },
+       {"ParameterID":"0x20", "Type":"UInt8",  "Name":"UseSpeedFromEncoder" 		 },
+       {"ParameterID":"0x21", "Type":"UInt8",  "Name":"MeasHysteresisGet"        ,"ReadOnly":true},
+       {"ParameterID":"0x22", "Type":"UInt8",  "Name":"MeasHysteresisThreshold"  },
+       {"ParameterID":"0x23", "Type":"UInt32", "Name":"GearBox_ratio" 			     ,"Gain": 0.001, "Format": "1:{0:F}"},
+       {"ParameterID":"0xA0", "Type":"UInt8",  "Name":"MotorRegulator" 			     }
+
     ]
   },
-  { "DevId": "0x00144540"},
-  { "DevId": "0x00014540"},
-  { "DevId": "0x00114540"},
-  { "DevId": "0x00024540"},
-  { "DevId": "0x00034540"},
-  { "DevId": "0x00244540" }
+  { 
+    "Name": "APP_SPEED_GATE",
+    "ByteOrder":"LSB",
+    "DevId": [ "0x00044540", "0x00144540", "0x00244540" ], 
+    "Data":[
+       {"ParameterID":"0x80", "Type":"UInt16", "Name":"SGOpenAngleLeft" 		     },
+       {"ParameterID":"0x81", "Type":"UInt16", "Name":"SGOpenAngleRight" 		 	   },
+       {"ParameterID":"0x82", "Type":"UInt16", "Name":"SGOpenAngleLeftNotFully"  },
+       {"ParameterID":"0x83", "Type":"UInt16", "Name":"SGOpenAngleRightNotFully" },
+       {"ParameterID":"0x84", "Type":"UInt8",  "Name":"SGForcePushForFire" 		   }
+    ]
+  },
+  { 
+    "Name": "APP_TURNSTILE",
+    "ByteOrder":"LSB",
+    "DevId": [ "0x00014540", "0x00114540", "0x00024540" ],
+    "Data":[
+       {"ParameterID":"0x40", "Type":"UInt16", "Name":"TurntisleOpenTimeout" 	 	 }
+    ]
+  },
+  {
+    "Name": "APP_GATE",
+    "ByteOrder":"LSB",
+    "DevId": [ "0x00034540", "0x00134540" ], 
+    "Data":[
+       {"ParameterID":"0x60", "Type":"UInt16", "Name":"GateOpenTimeout" 		 	   },
+       {"ParameterID":"0x61", "Type":"UInt16", "Name":"GateOpenAngleLeft" 		   },
+       {"ParameterID":"0x62", "Type":"UInt16", "Name":"GateOpenAngleRight" 		   },
+       {"ParameterID":"0x84", "Type":"UInt8",  "Name":"SGForcePushForFire" 		   }
+    ]
+  }
 ]

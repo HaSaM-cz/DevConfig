@@ -11,9 +11,12 @@
       "Index - optional, default = 0",
       "Description - optional",
       "ByteOrder - [LSB, MSB] optional, default = LSB",
-      "Format - optional (string.format function will be used)"
+      "Format - optional (string.format function will be used)",
+      "Enabled - optional, default = true",
+      "Offset - optional, default = 0.0",
+      "Gain - optional, default = 1.0"
     ],
-    "DevId": "0x0000117A",
+    "DevId": ["0x0000117A"],
     "Data":[
     {"ParameterID":0,"Type":"UInt8","ReadOnly1":true,  "MinVal":0, "MaxVal":"0x0F","Index1":0,"Name":"DipSwitch", "Format": "0x{0:X1}"},
     {"ParameterID":1,"Type":"UInt16","ReadOnly":false,"MinVal1":60,"MaxVal1":2000,  "Index":1,"Name":"LD303-Sensitivity", "Description": "Citlivost radaru"},

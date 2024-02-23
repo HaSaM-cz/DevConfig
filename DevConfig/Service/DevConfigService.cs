@@ -368,35 +368,74 @@ namespace DevConfig.Service
 
                     if (File.Exists(file_name))
                     {
-                        JsonSerializerOptions options = new JsonSerializerOptions
-                        {
-                            Converters = { new JsonStringEnumConverter() }
-                        };
-
+                        JsonSerializerOptions options = new JsonSerializerOptions{ Converters = { new JsonStringEnumConverter() } };
                         var json = JsonSerializer.Deserialize<List<ParamConfig>>(File.ReadAllText(file_name), options);
-                        var @params = (from xx in json where xx.DevId == selectedDevice.DevId select xx.Data).FirstOrDefault();
-                        if (@params != null)
+                        var ParamConfigs = from xx in json where xx.DevId != null && xx.DevId.Contains(selectedDevice.DevId) select xx;
+                        selectedDevice.Parameters.Clear();
+                        foreach (var ParamConfig in ParamConfigs)
                         {
-                            selectedDevice.Parameters.Clear();
-                            foreach(Parameter parameter in @params)
+                            if (ParamConfig.Data != null)
                             {
-                                if(parameter.Index == null || parameter.Index < 1)
+                                var @params = ParamConfig.Data;
+                                foreach (Parameter parameter in @params)
                                 {
-                                    parameter.Index = null;
-                                    selectedDevice.Parameters.Add(parameter);
-                                }
-                                else
-                                {
-                                    for(byte i = 0; i <= parameter.Index; i++)
+                                    if (parameter.Enabled)
                                     {
-                                        Parameter par_idx = (Parameter)parameter.Clone();
-                                        par_idx.Index = i;
-                                        par_idx.Name += $"({i})";
-                                        selectedDevice.Parameters.Add(par_idx);
+                                        parameter.ByteOrder ??= ParamConfig.ByteOrder;
+                                        parameter.MinVal ??= parameter.DefaultMin();
+                                        parameter.MaxVal ??= parameter.DefaultMax();
+
+                                        if (parameter.Index == null || parameter.Index < 1)
+                                        {
+                                            parameter.Index = null;
+                                            selectedDevice.Parameters.Add(parameter);
+                                        }
+                                        else
+                                        {
+                                            for (byte i = 0; i <= parameter.Index; i++)
+                                            {
+                                                Parameter par_idx = (Parameter)parameter.Clone();
+                                                par_idx.Index = i;
+                                                par_idx.Name += $"({i})";
+                                                selectedDevice.Parameters.Add(par_idx);
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
+
+                        /*var ParamConfig = (from xx in json where xx.DevId == selectedDevice.DevId select xx).FirstOrDefault();
+                        if (ParamConfig != null && ParamConfig.Data != null)
+                        {
+                            var @params = ParamConfig.Data;
+                            selectedDevice.Parameters.Clear();
+                            foreach(Parameter parameter in @params)
+                            {
+                                if (parameter.Enabled)
+                                {
+                                    parameter.ByteOrder ??= ParamConfig.ByteOrder;
+                                    parameter.MinVal ??= parameter.DefaultMin();
+                                    parameter.MaxVal ??= parameter.DefaultMax();
+
+                                    if (parameter.Index == null || parameter.Index < 1)
+                                    {
+                                        parameter.Index = null;
+                                        selectedDevice.Parameters.Add(parameter);
+                                    }
+                                    else
+                                    {
+                                        for (byte i = 0; i <= parameter.Index; i++)
+                                        {
+                                            Parameter par_idx = (Parameter)parameter.Clone();
+                                            par_idx.Index = i;
+                                            par_idx.Name += $"({i})";
+                                            selectedDevice.Parameters.Add(par_idx);
+                                        }
+                                    }
+                                }
+                            }
+                        }*/
                     }
                 }
 
