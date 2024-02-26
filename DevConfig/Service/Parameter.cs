@@ -4,12 +4,12 @@ using System.Text.Json.Serialization;
 namespace DevConfig.Service
 {
     public enum ByteOrder { LSB, MSB };
-    public enum type { UInt8, UInt16, UInt32, String, IpAddr, SInt8, SInt16, SInt32, MacAddr, Bool };
+    public enum ParamType { UInt8, UInt16, UInt32, String, IpAddr, SInt8, SInt16, SInt32, Bool, MacAddr };
 
     public class Parameter : ICloneable
     {
         [JsonConverter(typeof(HexByteJsonConverter))] public byte ParameterID { get; set; }
-        public type Type { get; set; }
+        public ParamType Type { get; set; }
         public bool ReadOnly { get; set; }
         public bool Enabled { get; set; } = true;
         [JsonConverter(typeof(HexObjectJsonConverter))] public object? MinVal { get; set; }
@@ -28,13 +28,29 @@ namespace DevConfig.Service
         //////////////////////////////////////////////////////////////////////////
         internal string StrMin
         {
-            get{ return string.IsNullOrWhiteSpace(Format) ? $"{MinVal}" : string.Format(Format, MinVal); }
+            get
+            {
+                if (string.IsNullOrWhiteSpace(Format))
+                    return $"{MinVal}";
+                else if (DevConfigService.Instance.TryGetParamEnum(Format, out Dictionary<uint, string> di_enums))
+                    return di_enums.First().Value;
+                else
+                    return string.Format(Format, MinVal);
+            }
         }
 
         //////////////////////////////////////////////////////////////////////////
         internal string StrMax
         {
-            get{ return string.IsNullOrWhiteSpace(Format) ? $"{MaxVal}" : string.Format(Format, MaxVal); }
+            get
+            { 
+                if(string.IsNullOrWhiteSpace(Format))
+                    return $"{MaxVal}";
+                else if (DevConfigService.Instance.TryGetParamEnum(Format, out Dictionary<uint, string> di_enums))
+                    return di_enums.Last().Value;
+                else
+                    return string.Format(Format, MaxVal);
+            }
         }
 
         //////////////////////////////////////////////////////////////////////////
@@ -58,23 +74,13 @@ namespace DevConfig.Service
                 }
                 else
                 {
-                    if (Format.Contains('['))
+                    if(DevConfigService.Instance.TryGetParamEnum(Format, out Dictionary<uint, string> di_enums))
                     {
-                        var enum_data = Format.SkipWhile(x => x != '[').Skip(1).TakeWhile(x => x != ']');
-                        if (enum_data != null)
-                        {
-                            uint i = 0;
-                            Dictionary<uint, string> di_enums = new Dictionary<uint, string>();
-                            string[] str_enums = new string(enum_data.ToArray()).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                            foreach (string str_enum in str_enums)
-                            {
-                                string[] en_opar = str_enum.Split('=', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                                if (en_opar.Length >= 2)
-                                    i = en_opar[1].ToUInt32();
-                                di_enums[i++] = en_opar[0];
-                            }
-                            return di_enums[Convert.ToUInt32(value)];
-                        }
+                        uint e_idx = Convert.ToUInt32(value);
+                        if (di_enums.ContainsKey(e_idx))
+                            return di_enums[e_idx];
+                        else
+                            return $"{value}";
                     }
                     return string.Format(Format, value);
                 }
@@ -92,13 +98,13 @@ namespace DevConfig.Service
         {
             return Type switch
             {
-                type.UInt8 => byte.MinValue,
-                type.UInt16 => ushort.MinValue,
-                type.UInt32 => uint.MinValue,
-                type.SInt8 => sbyte.MinValue,
-                type.SInt16 => short.MinValue,
-                type.SInt32 => int.MinValue,
-                type.Bool => false,
+                ParamType.UInt8 => byte.MinValue,
+                ParamType.UInt16 => ushort.MinValue,
+                ParamType.UInt32 => uint.MinValue,
+                ParamType.SInt8 => sbyte.MinValue,
+                ParamType.SInt16 => short.MinValue,
+                ParamType.SInt32 => int.MinValue,
+                ParamType.Bool => false,
                 _ => null
             };
         }
@@ -108,13 +114,13 @@ namespace DevConfig.Service
         {
             return Type switch
             {
-                type.UInt8 => byte.MaxValue,
-                type.UInt16 => ushort.MaxValue,
-                type.UInt32 => uint.MaxValue,
-                type.SInt8 => sbyte.MaxValue,
-                type.SInt16 => short.MaxValue,
-                type.SInt32 => int.MaxValue,
-                type.Bool => true,
+                ParamType.UInt8 => byte.MaxValue,
+                ParamType.UInt16 => ushort.MaxValue,
+                ParamType.UInt32 => uint.MaxValue,
+                ParamType.SInt8 => sbyte.MaxValue,
+                ParamType.SInt16 => short.MaxValue,
+                ParamType.SInt32 => int.MaxValue,
+                ParamType.Bool => true,
                 _ => null
             };
         }

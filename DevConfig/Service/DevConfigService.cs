@@ -1,12 +1,14 @@
 ﻿using CanDiagSupport;
+using DevConfig.Utils;
 using SshCANns;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using TcpTunelNs;
 using ToolStickNs;
 using UsbSerialNs;
-
+using static System.Windows.Forms.DataFormats;
 using Message = CanDiagSupport.Message;
 
 namespace DevConfig.Service
@@ -16,9 +18,10 @@ namespace DevConfig.Service
         internal MainForm MainForm;
         internal Device? selectedDevice = null;
         internal DeviceType? selectedDeviceType = null;
-        private int process_lock = 0; // Kontrola pracujícího procesu. Povolení pouze jedné úlohy.
+
         ///////////////////////////////////////////////////////////////////////////////////////////
 
+        private int process_lock = 0; // Kontrola pracujícího procesu. Povolení pouze jedné úlohy.
         private bool bContinue = true;
         private byte MessageFlag = 0;
         private Message? message = null;
@@ -73,6 +76,55 @@ namespace DevConfig.Service
             MainForm = (MainForm)Application.OpenForms["MainForm"];
             MainForm.AbortEvent += MainForm_AbortEvent;
         }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        #region  ParamEnums
+        internal Dictionary<string, Dictionary<uint, string>> ParamEnums = new();
+        internal Dictionary<uint, string>? GetParamEnum(string s_format)
+        {
+            if(s_format.Contains('['))
+            {
+                var str_enums = new string(s_format.SkipWhile(x => x != '[').TakeWhile(x => x != ']').ToArray()) + ']';
+
+                if (ParamEnums.ContainsKey(str_enums))
+                {
+                    return ParamEnums[str_enums];
+                }
+                else
+                {
+                    string[] str_enums_arr = str_enums.Split(new char[] { ',', '[', ']' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                    uint i = 0;
+                    Dictionary<uint, string> di_enums = new();
+                    foreach (string str_enum in str_enums_arr)
+                    {
+                        string[] en_opar = str_enum.Split('=', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                        if (en_opar.Length >= 2)
+                            i = en_opar[1].ToUInt32();
+                        di_enums[i++] = en_opar[0];
+                    }
+                    ParamEnums.Add(str_enums, di_enums);
+                    return di_enums;
+                }
+            }
+            return null;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        internal bool TryGetParamEnum(string format, [NotNullWhen(true)] out Dictionary<uint, string> di_enums)
+        {
+            var x = GetParamEnum(format);
+            if (x != null)
+            {
+                di_enums = x;
+                return true;
+            }
+#pragma warning disable CS8625 // Literál null nejde převést na odkazový typ, který nemůže mít hodnotu null.
+            di_enums = default;
+#pragma warning restore CS8625
+            return false;
+        }
+        #endregion
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void MainForm_AbortEvent()
@@ -404,38 +456,6 @@ namespace DevConfig.Service
                                 }
                             }
                         }
-
-                        /*var ParamConfig = (from xx in json where xx.DevId == selectedDevice.DevId select xx).FirstOrDefault();
-                        if (ParamConfig != null && ParamConfig.Data != null)
-                        {
-                            var @params = ParamConfig.Data;
-                            selectedDevice.Parameters.Clear();
-                            foreach(Parameter parameter in @params)
-                            {
-                                if (parameter.Enabled)
-                                {
-                                    parameter.ByteOrder ??= ParamConfig.ByteOrder;
-                                    parameter.MinVal ??= parameter.DefaultMin();
-                                    parameter.MaxVal ??= parameter.DefaultMax();
-
-                                    if (parameter.Index == null || parameter.Index < 1)
-                                    {
-                                        parameter.Index = null;
-                                        selectedDevice.Parameters.Add(parameter);
-                                    }
-                                    else
-                                    {
-                                        for (byte i = 0; i <= parameter.Index; i++)
-                                        {
-                                            Parameter par_idx = (Parameter)parameter.Clone();
-                                            par_idx.Index = i;
-                                            par_idx.Name += $"({i})";
-                                            selectedDevice.Parameters.Add(par_idx);
-                                        }
-                                    }
-                                }
-                            }
-                        }*/
                     }
                 }
 
@@ -465,19 +485,19 @@ namespace DevConfig.Service
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private object? MinMaxVal(type t, byte[] d, int i)
+        private object? MinMaxVal(ParamType t, byte[] d, int i)
         {
             switch (t)
             {
-                case type.UInt8: 
-                case type.UInt16:
-                case type.UInt32:
-                case type.String:
+                case ParamType.UInt8: 
+                case ParamType.UInt16:
+                case ParamType.UInt32:
+                case ParamType.String:
                     return BitConverter.ToUInt32(d, i); // TODO dodelat MSB
 
-                case type.SInt8: 
-                case type.SInt16:
-                case type.SInt32:
+                case ParamType.SInt8: 
+                case ParamType.SInt16:
+                case ParamType.SInt32:
                     return BitConverter.ToInt32(d, i); // TODO dodelat MSB
 
                 default:
@@ -495,7 +515,7 @@ namespace DevConfig.Service
 
             parameters[0] = new Parameter();
             parameters[0].ParameterID = data[1];                             // Param ID
-            parameters[0].Type = (type)(data[2] & 0x7F);                     // Param Type
+            parameters[0].Type = (ParamType)(data[2] & 0x7F);                     // Param Type
             parameters[0].ReadOnly = (data[2] & 0x80) == 0x80;               // Flags
             parameters[0].MinVal = MinMaxVal(parameters[0].Type, data, 3);   // Param MinVal
             parameters[0].MaxVal = MinMaxVal(parameters[0].Type, data, 7);   // Param MaxVal
@@ -534,22 +554,22 @@ namespace DevConfig.Service
                 {
                     //case type.IpAddr:  break;
                     //case type.MacAddr: break;
-                    case type.String: 
+                    case ParamType.String: 
                         parameter.Value = System.Text.Encoding.ASCII.GetString(
                             bytes.SkipWhile((x) => x < 20).TakeWhile((x) => x != 0).ToArray() ); 
                         break;
 
-                    case type.UInt8:
+                    case ParamType.UInt8:
                         skip = bytes.Length - 1;
                         parameter.Value = (byte)bytes[skip];  
                         break;
 
-                    case type.SInt8:
+                    case ParamType.SInt8:
                         skip = bytes.Length - 1; 
                         parameter.Value = (sbyte)bytes[skip]; 
                         break;
 
-                    case type.UInt16:
+                    case ParamType.UInt16:
                         skip = bytes.Length - 2;
                         if (parameter.ByteOrder == ByteOrder.LSB)
                             parameter.Value = BitConverter.ToUInt16(bytes, skip);
@@ -557,7 +577,7 @@ namespace DevConfig.Service
                             parameter.Value = BitConverter.ToUInt16(bytes.Skip(skip).Take(2).Reverse().ToArray());
                         break;
 
-                    case type.SInt16:
+                    case ParamType.SInt16:
                         skip = bytes.Length - 2;
                         if (parameter.ByteOrder == ByteOrder.LSB)
                             parameter.Value = BitConverter.ToInt16(bytes, skip);
@@ -565,7 +585,7 @@ namespace DevConfig.Service
                             parameter.Value = BitConverter.ToInt16(bytes.Skip(skip).Take(2).Reverse().ToArray());
                         break;
 
-                    case type.UInt32:
+                    case ParamType.UInt32:
                         skip = bytes.Length - 4;
                         if (parameter.ByteOrder == ByteOrder.LSB)
                             parameter.Value = BitConverter.ToUInt32(bytes, skip); 
@@ -573,7 +593,7 @@ namespace DevConfig.Service
                             parameter.Value = BitConverter.ToUInt32(bytes.Skip(skip).Take(4).Reverse().ToArray());
                         break;
 
-                    case type.SInt32:
+                    case ParamType.SInt32:
                         skip = bytes.Length - 4;
                         if (parameter.ByteOrder == ByteOrder.LSB)
                             parameter.Value = BitConverter.ToInt32(bytes, skip);
@@ -590,6 +610,7 @@ namespace DevConfig.Service
 
             }
         }
+
         #endregion
     }
 }

@@ -9,6 +9,7 @@
       "MinVal - optional, default = min value for type",
       "MaxVal - optional, default = max value for type",
       "Index - optional, default = 0",
+
       "Description - optional",
       "ByteOrder - [LSB, MSB] optional, default = LSB",
       "Format - optional (string.format function will be used)",
