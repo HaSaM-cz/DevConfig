@@ -3,6 +3,7 @@ using DevConfig.Utils;
 using SshCANns;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using TcpTunelNs;
@@ -26,6 +27,7 @@ namespace DevConfig.Service
         private byte MessageFlag = 0;
         private Message? message = null;
         private readonly ManualResetEvent sync_obj = new(false);
+        private byte LastReqValue = 0; 
         ///////////////////////////////////////////////////////////////////////////////////////////
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -176,12 +178,25 @@ namespace DevConfig.Service
                 byte state = msg.Data[0];
                 uint deviceID = (uint)(msg.Data[1] << 24 | msg.Data[2] << 16 | msg.Data[3] << 8 | msg.Data[4]);
 
-                byte address = DevConfigService.Instance.InputPeriph!.GetType() == typeof(UsbSerialNs.UsbSerial) ? msg.Data[5] : address = msg.SRC;
-                //byte address = message.Data[5]; Usb Serial 
-                //byte address = message.SRC; // Toolstick
-                //byte address = message.SRC; // Karo SSH
-                //byte address = message.Data[5]; // TS TCP tunel \
-                //byte address = message.SRC; // Karo TCP tunel /
+                byte address;
+                var ip_type = DevConfigService.Instance.InputPeriph!.GetType();
+                if (ip_type == typeof(UsbSerialNs.UsbSerial))
+                {
+                    address = msg.Data[5];
+                }
+                else if (ip_type == typeof(TcpTunelNs.TcpTunel))
+                {
+                    if (LastReqValue == msg.Data[5])
+                        address = msg.Data[5];
+                    else if (LastReqValue == msg.SRC)
+                        address = msg.SRC;
+                    else
+                        return;
+                }
+                else
+                {
+                    address = msg.SRC;
+                }
 
                 string fwVer = $"{msg.Data[6]}.{msg.Data[7]}";
                 string cpuId = $"{BitConverter.ToString(msg.Data.Skip(8).Take(12).ToArray()).Replace("-", " ")}";
@@ -248,6 +263,7 @@ namespace DevConfig.Service
                         if (!usb_serial)
                             MainForm.Invoke(delegate { MainForm.ProgressBar_Value = dest; });
                         message.DEST = dest;
+                        LastReqValue = dest;
                         InputPeriph.SendMsg(message);
                         Task.Delay(3).Wait();
                     }
