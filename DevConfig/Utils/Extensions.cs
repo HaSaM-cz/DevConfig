@@ -90,6 +90,13 @@ namespace DevConfig.Utils
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
+        public static string ToRoundedString(this double d)
+        {
+            string s = $"{d}";
+            return s;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
         public static bool IsNumericType(this object o)
         {
             switch (Type.GetTypeCode(o.GetType()))

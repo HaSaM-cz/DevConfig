@@ -1,4 +1,6 @@
-﻿namespace DevConfig
+﻿using DevConfig.Controls.ListViewExCtrl;
+
+namespace DevConfig
 {
     partial class SDCardCtrl
     {

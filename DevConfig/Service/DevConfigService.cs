@@ -111,17 +111,52 @@ namespace DevConfig.Service
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        internal bool TryGetParamEnum(string format, [NotNullWhen(true)] out Dictionary<uint, string> di_enums)
+        internal bool TryParse(string? text, [NotNullWhen(true)] out double d_val)
         {
+            d_val = default;
+
+            if(text == null)
+                return false;
+
+            text = text.ToLower();
+
+            if (text.StartsWith("0b"))
+            {
+                d_val = Convert.ToDouble(Convert.ToUInt32(text[2..], 2));
+                return true;
+            }
+            else if (text.StartsWith("0o"))
+            {
+                d_val = Convert.ToDouble(Convert.ToUInt32(text[2..], 8));
+                return true;
+            }
+            else if (text.StartsWith("0x"))
+            {
+                d_val = Convert.ToDouble(Convert.ToUInt32(text[2..], 16));
+                return true;
+            }
+            else
+            {
+                return double.TryParse(text, out d_val);
+            }    
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        internal bool TryGetParamEnum(string? format, [NotNullWhen(true)] out Dictionary<uint, string> di_enums)
+        {
+#pragma warning disable CS8625 // Literál null nejde převést na odkazový typ, který nemůže mít hodnotu null.
+            di_enums = default;
+#pragma warning restore CS8625
+
+            if (format == null)
+                return false;
+
             var x = GetParamEnum(format);
             if (x != null)
             {
                 di_enums = x;
                 return true;
             }
-#pragma warning disable CS8625 // Literál null nejde převést na odkazový typ, který nemůže mít hodnotu null.
-            di_enums = default;
-#pragma warning restore CS8625
             return false;
         }
         #endregion
@@ -505,40 +540,74 @@ namespace DevConfig.Service
             }
         }
 
+
+        enum get_list_param_e { eDescription, eFormat, eByteOrder, eGain, eOffset };
+
         ///////////////////////////////////////////////////////////////////////////////////////////
         private Parameter[] NewParamItem(byte[] data)
         {
             Parameter[] parameters = new Parameter[data[11]+1];
 
             string param_name = System.Text.Encoding.ASCII.GetString(data.Skip(12).TakeWhile((x) => x != 0).ToArray());
-            byte[] data2 = data.Skip(12 + param_name.Length).ToArray();
 
             parameters[0] = new Parameter();
             parameters[0].ParameterID = data[1];                             // Param ID
-            parameters[0].Type = (ParamType)(data[2] & 0x7F);                     // Param Type
+            parameters[0].Type = (ParamType)(data[2] & 0x7F);                // Param Type
             parameters[0].ReadOnly = (data[2] & 0x80) == 0x80;               // Flags
             parameters[0].MinVal = MinMaxVal(parameters[0].Type, data, 3);   // Param MinVal
             parameters[0].MaxVal = MinMaxVal(parameters[0].Type, data, 7);   // Param MaxVal
             parameters[0].Name = param_name;                                 // Param Name
-            if (data2.Length > 1)
-            {
-                parameters[0].ByteOrder = (ByteOrder)data2[1];               // Poradi bajtu ve zprave.
-                parameters[0].Format = System.Text.Encoding.ASCII.GetString(data2.Skip(2).TakeWhile((x) => x != 0).ToArray());
-                byte[] data3 = data2.Skip(2 + parameters[0].Format!.Length).ToArray();
-            }
             parameters[0].Index = null;                                      // Param Index
+            parameters[0].ByteOrder = ByteOrder.LSB;                         // Byte Order
 
-            for (byte i = 1; i <= data[11]; i++)
+            // Volitelne parametry
+
+
+            byte str_len;
+            int opt_par_index = 12 + param_name.Length + 1;
+
+            while(opt_par_index < data.Length)
             {
-                parameters[i] = (Parameter)parameters[0].Clone();
-                parameters[i].Index = i;                                     // Param Index
-                parameters[i].Name += $"({i})";                              // Param Name
+                get_list_param_e par_type = (get_list_param_e)data[opt_par_index++];
+                switch(par_type)
+                {
+                    case get_list_param_e.eDescription:
+                        str_len = data[opt_par_index++];
+                        parameters[0].Description = System.Text.Encoding.ASCII.GetString(data.Skip(opt_par_index).Take(str_len).ToArray());
+                        opt_par_index += str_len;
+                        break;
+
+                    case get_list_param_e.eFormat:
+                        str_len = data[opt_par_index++];
+                        parameters[0].Format = System.Text.Encoding.ASCII.GetString(data.Skip(opt_par_index).Take(str_len).ToArray());
+                        opt_par_index += str_len;
+                        break;
+
+                    case get_list_param_e.eByteOrder:
+                        parameters[0].ByteOrder = (ByteOrder)data[opt_par_index++];
+                        break;
+
+                    case get_list_param_e.eGain:
+                        parameters[0].Gain = double.Parse(BitConverter.ToSingle(data, opt_par_index).ToString("E"));
+                        opt_par_index += 4;
+                        break;
+
+                    case get_list_param_e.eOffset:
+                        parameters[0].Offset = double.Parse(BitConverter.ToSingle(data, opt_par_index).ToString("E"));
+                        opt_par_index += 4;
+                        break;
+                }
             }
 
+            // Naklonujeme poku je to pole.
             if(data[11] > 0)
             {
-                parameters[0].Index = 0;                                     // Param Index
-                parameters[0].Name += "(0)";                                 // Param Name
+                parameters[0].Index = 0;
+                for (byte i = 1; i <= data[11]; i++)
+                {
+                    parameters[i] = (Parameter)parameters[0].Clone();
+                    parameters[i].Index = i;
+                }
             }
 
             return parameters;
@@ -557,6 +626,11 @@ namespace DevConfig.Service
                     case ParamType.String: 
                         parameter.Value = System.Text.Encoding.ASCII.GetString(
                             bytes.SkipWhile((x) => x < 20).TakeWhile((x) => x != 0).ToArray() ); 
+                        break;
+
+                    case ParamType.Bool:
+                        skip = bytes.Length - 1;
+                        parameter.Value = (bytes[skip] != 0);
                         break;
 
                     case ParamType.UInt8:
@@ -603,6 +677,7 @@ namespace DevConfig.Service
 
                     default: throw new NotImplementedException();
                 }
+                parameter.OldValue = parameter.Value;
                 Debug.WriteLine($"{parameter.Name} - {parameter.Type} - {parameter.Value:X} - {bytes.Length - 1}");
             }
             catch

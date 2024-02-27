@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DevConfig.Utils
+namespace DevConfig.Controls.ListViewExCtrl
 {
     public class ListViewColumnSorter : IComparer
     {
@@ -72,7 +72,7 @@ namespace DevConfig.Utils
             else if (OrderOfSort == SortOrder.Descending)
             {
                 // Descending sort is selected, return negative result of compare operation
-                return (-compareResult);
+                return -compareResult;
             }
             else
             {

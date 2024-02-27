@@ -5,8 +5,9 @@ using System.Drawing;
 using System.Data;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using Microsoft.CodeAnalysis.Operations;
 
-namespace DevConfig
+namespace DevConfig.Controls.ListViewExCtrl
 {
     /// <summary>
     /// Event Handler for SubItem events
@@ -70,7 +71,7 @@ namespace DevConfig
     ///	<summary>
     ///	Inherited ListView to allow in-place editing of subitems
     ///	</summary>
-    public class ListViewEx : System.Windows.Forms.ListView
+    public class ListViewEx : ListView
     {
         #region Interop structs, imports and constants
         /// <summary>
@@ -78,20 +79,20 @@ namespace DevConfig
         /// </summary>
         private struct NMHDR
         {
-            public IntPtr hwndFrom;
-            public Int32 idFrom;
-            public Int32 code;
+            public nint hwndFrom;
+            public int idFrom;
+            public int code;
         }
 
 
         [DllImport("user32.dll")]
-        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wPar, IntPtr lPar);
+        private static extern nint SendMessage(nint hWnd, int msg, nint wPar, nint lPar);
         [DllImport("user32.dll", CharSet = CharSet.Ansi)]
-        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, int len, ref int[] order);
+        private static extern nint SendMessage(nint hWnd, int msg, int len, ref int[] order);
 
         // ListView messages
         private const int LVM_FIRST = 0x1000;
-        private const int LVM_GETCOLUMNORDERARRAY = (LVM_FIRST + 59);
+        private const int LVM_GETCOLUMNORDERARRAY = LVM_FIRST + 59;
 
         // Windows Messages that will abort editing
         private const int WM_HSCROLL = 0x114;
@@ -100,15 +101,15 @@ namespace DevConfig
         private const int WM_NOTIFY = 0x4E;
 
         private const int HDN_FIRST = -300;
-        private const int HDN_BEGINDRAG = (HDN_FIRST - 10);
-        private const int HDN_ITEMCHANGINGA = (HDN_FIRST - 0);
-        private const int HDN_ITEMCHANGINGW = (HDN_FIRST - 20);
+        private const int HDN_BEGINDRAG = HDN_FIRST - 10;
+        private const int HDN_ITEMCHANGINGA = HDN_FIRST - 0;
+        private const int HDN_ITEMCHANGINGW = HDN_FIRST - 20;
         #endregion
 
         ///	<summary>
         ///	Required designer variable.
         ///	</summary>
-        private System.ComponentModel.Container components = null;
+        private Container components = null;
 
         public event SubItemEventHandler SubItemClicked;
         public event SubItemEventHandler SubItemBeginEditing;
@@ -119,9 +120,9 @@ namespace DevConfig
             // This	call is	required by	the	Windows.Forms Form Designer.
             InitializeComponent();
 
-            base.FullRowSelect = true;
-            base.View = View.Details;
-            base.AllowColumnReorder = true;
+            FullRowSelect = true;
+            View = View.Details;
+            AllowColumnReorder = true;
         }
 
         ///	<summary>
@@ -144,7 +145,7 @@ namespace DevConfig
         ///	</summary>
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
+            components = new Container();
         }
         #endregion
 
@@ -165,9 +166,9 @@ namespace DevConfig
         /// <returns>Current display order of column indices</returns>
         public int[] GetColumnOrder()
         {
-            IntPtr lPar = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(int)) * Columns.Count);
+            nint lPar = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(int)) * Columns.Count);
 
-            IntPtr res = SendMessage(Handle, LVM_GETCOLUMNORDERARRAY, new IntPtr(Columns.Count), lPar);
+            nint res = SendMessage(Handle, LVM_GETCOLUMNORDERARRAY, new nint(Columns.Count), lPar);
             if (res.ToInt32() == 0) // Something went wrong
             {
                 Marshal.FreeHGlobal(lPar);
@@ -192,7 +193,7 @@ namespace DevConfig
         /// <returns>SubItem index</returns>
         public int GetSubItemAt(int x, int y, out ListViewItem item)
         {
-            item = this.GetItemAt(x, y);
+            item = GetItemAt(x, y);
 
             if (item != null)
             {
@@ -204,7 +205,7 @@ namespace DevConfig
                 subItemX = lviBounds.Left;
                 for (int i = 0; i < order.Length; i++)
                 {
-                    ColumnHeader h = this.Columns[order[i]];
+                    ColumnHeader h = Columns[order[i]];
                     if (x < subItemX + h.Width)
                     {
                         return h.Index;
@@ -241,12 +242,12 @@ namespace DevConfig
             int i;
             for (i = 0; i < order.Length; i++)
             {
-                col = this.Columns[order[i]];
+                col = Columns[order[i]];
                 if (col.Index == SubItem)
                     break;
                 subItemX += col.Width;
             }
-            subItemRect = new Rectangle(subItemX, lviBounds.Top, this.Columns[order[i]].Width, lviBounds.Height);
+            subItemRect = new Rectangle(subItemX, lviBounds.Top, Columns[order[i]].Width, lviBounds.Height);
             return subItemRect;
         }
 
@@ -277,7 +278,7 @@ namespace DevConfig
 
 
         #region Initialize editing depending of DoubleClickActivation property
-        protected override void OnMouseUp(System.Windows.Forms.MouseEventArgs e)
+        protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
 
@@ -298,7 +299,7 @@ namespace DevConfig
                 return;
             }
 
-            Point pt = this.PointToClient(Cursor.Position);
+            Point pt = PointToClient(Cursor.Position);
 
             EditSubitemAt(pt);
         }
@@ -350,7 +351,7 @@ namespace DevConfig
         /// <param name="c">Control used as cell editor</param>
         /// <param name="Item">ListViewItem to edit</param>
         /// <param name="SubItem">SubItem index to edit</param>
-        public void StartEditing(Control c, ListViewItem Item, int SubItem)
+        public void StartEditing(Control c, ListViewItem Item, int SubItem, string? text = null)
         {
             OnSubItemBeginEditing(new SubItemEventArgs(Item, SubItem));
 
@@ -362,10 +363,10 @@ namespace DevConfig
                 rcSubItem.Width += rcSubItem.X;
                 rcSubItem.X = 0;
             }
-            if (rcSubItem.X + rcSubItem.Width > this.Width)
+            if (rcSubItem.X + rcSubItem.Width > Width)
             {
                 // Right edge of SubItem not visible - adjust rectangle width
-                rcSubItem.Width = this.Width - rcSubItem.Left;
+                rcSubItem.Width = Width - rcSubItem.Left;
             }
 
             // Subitem bounds are relative to the location of the ListView!
@@ -374,14 +375,14 @@ namespace DevConfig
             // In case the editing control and the listview are on different parents,
             // account for different origins
             Point origin = new Point(0, 0);
-            Point lvOrigin = this.Parent.PointToScreen(origin);
+            Point lvOrigin = Parent.PointToScreen(origin);
             Point ctlOrigin = c.Parent.PointToScreen(origin);
 
             rcSubItem.Offset(lvOrigin.X - ctlOrigin.X, lvOrigin.Y - ctlOrigin.Y);
 
             // Position and show editor
             c.Bounds = rcSubItem;
-            c.Text = Item.SubItems[SubItem].Text;
+            c.Text = text == null ? Item.SubItems[SubItem].Text : text;
             c.Visible = true;
             c.BringToFront();
             c.Focus();
@@ -401,7 +402,7 @@ namespace DevConfig
             EndEditing(true);
         }
 
-        private void _editControl_KeyPress(object sender, System.Windows.Forms.KeyPressEventArgs e)
+        private void _editControl_KeyPress(object sender, KeyPressEventArgs e)
         {
             switch (e.KeyChar)
             {
@@ -438,6 +439,9 @@ namespace DevConfig
             );
 
             OnSubItemEndEditing(e);
+
+            if (e.Cancel)
+                return;
 
             _editItem.SubItems[_editSubItem].Text = e.DisplayText;
 

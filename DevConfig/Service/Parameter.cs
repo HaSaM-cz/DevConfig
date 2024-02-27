@@ -20,10 +20,12 @@ namespace DevConfig.Service
         public ByteOrder? ByteOrder { get; set; }
         public double? Gain { get; set; }
         public double? Offset { get; set; }
+        public string? Description { get; internal set; }
 
 
         //////////////////////////////////////////////////////////////////////////
         internal object? Value;
+        internal object? OldValue;
 
         //////////////////////////////////////////////////////////////////////////
         internal string StrMin
@@ -34,6 +36,8 @@ namespace DevConfig.Service
                     return $"{MinVal}";
                 else if (DevConfigService.Instance.TryGetParamEnum(Format, out Dictionary<uint, string> di_enums))
                     return di_enums.First().Value;
+                else if (IsNumeric && (Gain != null || Offset != null))
+                    return string.Format(Format, Convert.ToDouble(MinVal) * (Gain ?? 1.0) + (Offset ?? 0.0)); 
                 else
                     return string.Format(Format, MinVal);
             }
@@ -48,6 +52,8 @@ namespace DevConfig.Service
                     return $"{MaxVal}";
                 else if (DevConfigService.Instance.TryGetParamEnum(Format, out Dictionary<uint, string> di_enums))
                     return di_enums.Last().Value;
+                else if (IsNumeric && (Gain != null || Offset != null))
+                    return string.Format(Format, Convert.ToDouble(MaxVal) * (Gain ?? 1.0) + (Offset ?? 0.0));
                 else
                     return string.Format(Format, MaxVal);
             }
@@ -87,6 +93,7 @@ namespace DevConfig.Service
             } 
         }
 
+
         //////////////////////////////////////////////////////////////////////////
         public object Clone()
         {
@@ -123,6 +130,26 @@ namespace DevConfig.Service
                 ParamType.Bool => true,
                 _ => null
             };
+        }
+
+        //////////////////////////////////////////////////////////////////////////
+        internal bool IsNumeric
+        {
+            get
+            {
+                switch(Type)
+                {
+                    case ParamType.UInt8:
+                    case ParamType.UInt16:
+                    case ParamType.UInt32:
+                    case ParamType.SInt8:
+                    case ParamType.SInt16:
+                    case ParamType.SInt32:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace DevConfig
+﻿using DevConfig.Controls.ListViewExCtrl;
+
+namespace DevConfig
 {
     partial class RegisterForm
     {
@@ -28,7 +30,8 @@
         /// </summary>
         private void InitializeComponent()
         {
-            listViewParameters = new ListView();
+            ListViewGroup listViewGroup2 = new ListViewGroup("Main", HorizontalAlignment.Left);
+            listViewParameters = new ListViewEx();
             columnHeader_ID = new ColumnHeader();
             columnHeader_Type = new ColumnHeader();
             columnHeader_RO = new ColumnHeader();
@@ -37,18 +40,30 @@
             columnHeader_Index = new ColumnHeader();
             columnHeader_Name = new ColumnHeader();
             columnHeader_Value = new ColumnHeader();
+            textBox = new TextBox();
+            comboBox = new ComboBox();
             SuspendLayout();
             // 
             // listViewParameters
             // 
+            listViewParameters.AllowColumnReorder = true;
             listViewParameters.Columns.AddRange(new ColumnHeader[] { columnHeader_ID, columnHeader_Type, columnHeader_RO, columnHeader_Min, columnHeader_Max, columnHeader_Index, columnHeader_Name, columnHeader_Value });
             listViewParameters.Dock = DockStyle.Fill;
+            listViewParameters.DoubleClickActivation = false;
+            listViewParameters.FullRowSelect = true;
+            listViewGroup2.CollapsedState = ListViewGroupCollapsedState.Expanded;
+            listViewGroup2.Header = "Main";
+            listViewGroup2.Name = "lvGroupMain";
+            listViewParameters.Groups.AddRange(new ListViewGroup[] { listViewGroup2 });
             listViewParameters.Location = new Point(0, 0);
+            listViewParameters.MultiSelect = false;
             listViewParameters.Name = "listViewParameters";
-            listViewParameters.Size = new Size(800, 450);
+            listViewParameters.Size = new Size(961, 607);
             listViewParameters.TabIndex = 0;
             listViewParameters.UseCompatibleStateImageBehavior = false;
             listViewParameters.View = View.Details;
+            listViewParameters.SubItemClicked += listViewParameters_SubItemClicked;
+            listViewParameters.SubItemEndEditing += listViewParameters_SubItemEndEditing;
             // 
             // columnHeader_ID
             // 
@@ -87,20 +102,40 @@
             columnHeader_Value.Text = "Value";
             columnHeader_Value.Width = 100;
             // 
+            // textBox
+            // 
+            textBox.Location = new Point(792, 35);
+            textBox.Name = "textBox";
+            textBox.Size = new Size(125, 27);
+            textBox.TabIndex = 2;
+            textBox.Visible = false;
+            // 
+            // comboBox
+            // 
+            comboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboBox.FormattingEnabled = true;
+            comboBox.Location = new Point(601, 60);
+            comboBox.Name = "comboBox";
+            comboBox.Size = new Size(151, 28);
+            comboBox.TabIndex = 3;
+            // 
             // RegisterForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(961, 607);
             Controls.Add(listViewParameters);
+            Controls.Add(textBox);
+            Controls.Add(comboBox);
             Name = "RegisterForm";
             Text = "RegisterForm";
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
 
-        private ListView listViewParameters;
+        private ListViewEx listViewParameters;
         private ColumnHeader columnHeader_ID;
         private ColumnHeader columnHeader_Type;
         private ColumnHeader columnHeader_RO;
@@ -109,5 +144,7 @@
         private ColumnHeader columnHeader_Index;
         private ColumnHeader columnHeader_Name;
         private ColumnHeader columnHeader_Value;
+        private TextBox textBox;
+        private ComboBox comboBox;
     }
 }

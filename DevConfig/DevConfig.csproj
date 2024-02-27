@@ -17,6 +17,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Images\CollapsedGroupSmall_png_1616.png" />
+    <None Remove="Images\EmptyGroupSmall_png_1616.png" />
+    <None Remove="Images\ExpandedGroupSmall_png_1616.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Images\CollapsedGroupSmall_png_1616.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Images\EmptyGroupSmall_png_1616.png" />
+    <EmbeddedResource Include="Images\ExpandedGroupSmall_png_1616.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="DockPanelSuite" Version="3.1.0" />
     <PackageReference Include="DockPanelSuite.ThemeVS2015" Version="3.1.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0" />
@@ -36,6 +51,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Compile Update="Properties\Settings.Designer.cs">
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <AutoGen>True</AutoGen>
@@ -62,6 +82,13 @@
 
   <ItemGroup>
     <Folder Include="Properties\DataSources\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>
