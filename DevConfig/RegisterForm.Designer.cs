@@ -30,7 +30,8 @@ namespace DevConfig
         /// </summary>
         private void InitializeComponent()
         {
-            ListViewGroup listViewGroup2 = new ListViewGroup("Main", HorizontalAlignment.Left);
+            components = new System.ComponentModel.Container();
+            ListViewGroup listViewGroup1 = new ListViewGroup("Main", HorizontalAlignment.Left);
             listViewParameters = new ListViewEx();
             columnHeader_ID = new ColumnHeader();
             columnHeader_Type = new ColumnHeader();
@@ -42,6 +43,8 @@ namespace DevConfig
             columnHeader_Value = new ColumnHeader();
             textBox = new TextBox();
             comboBox = new ComboBox();
+            timer = new System.Windows.Forms.Timer(components);
+            toolTip = new ToolTip(components);
             SuspendLayout();
             // 
             // listViewParameters
@@ -51,10 +54,10 @@ namespace DevConfig
             listViewParameters.Dock = DockStyle.Fill;
             listViewParameters.DoubleClickActivation = false;
             listViewParameters.FullRowSelect = true;
-            listViewGroup2.CollapsedState = ListViewGroupCollapsedState.Expanded;
-            listViewGroup2.Header = "Main";
-            listViewGroup2.Name = "lvGroupMain";
-            listViewParameters.Groups.AddRange(new ListViewGroup[] { listViewGroup2 });
+            listViewGroup1.CollapsedState = ListViewGroupCollapsedState.Expanded;
+            listViewGroup1.Header = "Main";
+            listViewGroup1.Name = "lvGroupMain";
+            listViewParameters.Groups.AddRange(new ListViewGroup[] { listViewGroup1 });
             listViewParameters.Location = new Point(0, 0);
             listViewParameters.MultiSelect = false;
             listViewParameters.Name = "listViewParameters";
@@ -64,6 +67,7 @@ namespace DevConfig
             listViewParameters.View = View.Details;
             listViewParameters.SubItemClicked += listViewParameters_SubItemClicked;
             listViewParameters.SubItemEndEditing += listViewParameters_SubItemEndEditing;
+            listViewParameters.MouseMove += listViewParameters_MouseMove;
             // 
             // columnHeader_ID
             // 
@@ -119,6 +123,11 @@ namespace DevConfig
             comboBox.Size = new Size(151, 28);
             comboBox.TabIndex = 3;
             // 
+            // timer
+            // 
+            timer.Interval = 250;
+            timer.Tick += timer_Tick;
+            // 
             // RegisterForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -146,5 +155,7 @@ namespace DevConfig
         private ColumnHeader columnHeader_Value;
         private TextBox textBox;
         private ComboBox comboBox;
+        private System.Windows.Forms.Timer timer;
+        private ToolTip toolTip;
     }
 }

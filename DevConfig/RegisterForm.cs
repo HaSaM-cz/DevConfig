@@ -1,22 +1,8 @@
 ﻿using DevConfig.Controls.ListViewExCtrl;
 using DevConfig.Service;
 using DevConfig.Utils;
-using DevConfigSupp;
-using GroupedListControl;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using static System.Windows.Forms.DataFormats;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using Message = CanDiagSupport.Message;
 using Parameter = DevConfig.Service.Parameter;
 
 namespace DevConfig
@@ -29,57 +15,7 @@ namespace DevConfig
         public RegisterForm()
         {
             InitializeComponent();
-            //MainForm = DevConfigService.Instance.MainForm;
-
-            //ListGroup lg = AddGroup("Main");
-
-            //for (int i = 1; i <= 5; i++)
-            //{
-            //    /*ListGroup lg = new ListGroup();
-            //    lg.Columns.Add("List Group " + i.ToString(), 120);
-            //    lg.Columns.Add("Group " + i + " SubItem 1", 150);
-            //    lg.Columns.Add("Group " + i + " Subitem 2", 150);
-            //    lg.Name = "Group " + i;*/
-
-            //    // Now add some sample items:
-            //    for (int j = 1; j <= 5; j++)
-            //    {
-            //        ListViewItem item = lg.Items.Add("Item " + j.ToString());
-            //        item.SubItems.Add(item.Text + " SubItem 1");
-            //        item.SubItems.Add(item.Text + " SubItem 2");
-            //    }
-
-            //    // Add handling for the columnRightClick Event:
-            //    //lg.ColumnRightClick += new ListGroup.ColumnRightClickHandler(lg_ColumnRightClick);
-            //    //lg.MouseClick += new MouseEventHandler(lg_MouseClick);
-
-            //    lg.SubItemClicked += new SubItemEventHandler(listViewEx1_SubItemClicked);
-            //    lg.SubItemEndEditing += new SubItemEndEditingEventHandler(listViewEx1_SubItemEndEditing);
-
-            //    groupListControl1.Controls.Add(lg);
-            //}
         }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        //ListGroup AddGroup(string gr_name)
-        //{
-        //    ListGroup lg = new ListGroup();
-        //    lg.Columns.Add("ID", 40);
-        //    lg.Columns.Add("Type", 60);
-        //    lg.Columns.Add("RO", 50);
-        //    lg.Columns.Add("Min", 60);
-        //    lg.Columns.Add("Max", 60);
-        //    lg.Columns.Add("Index", 50);
-        //    lg.Columns.Add("Name", 150);
-        //    lg.Columns.Add("Value", 100);
-        //    lg.Name = gr_name;
-
-        //    lg.SubItemClicked += new SubItemEventHandler(listViewEx1_SubItemClicked);
-        //    lg.SubItemEndEditing += new SubItemEndEditingEventHandler(listViewEx1_SubItemEndEditing);
-
-        //    groupListControl1.Controls.Add(lg);
-        //    return lg;
-        //}
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         internal void UpdateList()
@@ -102,7 +38,10 @@ namespace DevConfig
                         $"{parameter.Name}",
                         $"{parameter.StrValue}",
                     });
-                    listViewItem.ToolTipText = parameter.Description;
+                    //listViewItem.ToolTipText = parameter.Description;
+
+                    if ($"{parameter.Value}" != $"{parameter.OldValue}") // prime srivnani nefunguje !!!! if (par.Value != par.OldValue)
+                        listViewItem.ForeColor = Color.Red;
 
                     // najdeme grupu pro polozku
                     ListViewGroup? group = null;
@@ -203,7 +142,7 @@ namespace DevConfig
                 }
                 if (Convert.ToDouble(par.Value) < Convert.ToDouble(par.MinVal) || Convert.ToDouble(par.MaxVal) < Convert.ToDouble(par.Value))
                 {
-                    if (MessageBox.Show($"The value is outside the allowed range.{Environment.NewLine}Do you want to return the original value?", "DevConfig - error", 
+                    if (MessageBox.Show($"The value is outside the allowed range.{Environment.NewLine}Do you want to return the original value?", "DevConfig - error",
                         MessageBoxButtons.YesNo, MessageBoxIcon.Error, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
                         par.Value = par.OldValue;
                     else
@@ -241,5 +180,68 @@ namespace DevConfig
 
             e.DisplayText = par.StrValue;
         }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void listViewParameters_MouseMove(object sender, MouseEventArgs e)
+        {
+            ListViewHitTestInfo info = listViewParameters.HitTest(e.X, e.Y);
+            if (info.SubItem != null)
+            {
+                Point p = e.Location;
+                p.Y = info.SubItem.Bounds.Y;
+                p.Offset(20, 25);
+                if (timer.Tag == null || (Point)timer.Tag != p)
+                {
+                    timer.Tag = p;
+                    timer.Enabled = false;
+                    timer.Enabled = true;
+                    if (toolTip.Tag != info)
+                    {
+                        toolTip.Tag = info;
+                        toolTip.SetToolTip(listViewParameters, null);
+                    }
+                }
+            }
+            else
+            {
+                toolTip.Tag = null;
+                toolTip.SetToolTip(listViewParameters, null);
+                timer.Enabled = false;
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        private void timer_Tick(object sender, EventArgs e)
+        {
+            timer.Enabled = false;
+            if (toolTip.Tag != null)
+            {
+                ListViewHitTestInfo info = (ListViewHitTestInfo)toolTip.Tag;
+                Parameter pp = (Parameter)info.Item?.Tag!;
+                ParmaterSubItem ix = (ParmaterSubItem)info.Item!.SubItems.IndexOf(info.SubItem);
+
+                string? str_tip = ix switch
+                {
+                    ParmaterSubItem.ParamID => $"0x{pp.ParameterID:X2}",
+                    ParmaterSubItem.Name => pp.Description ?? pp.Name,
+                    ParmaterSubItem.Min => $"{pp.MinVal}",
+                    ParmaterSubItem.Max => $"{pp.MaxVal}",
+                    ParmaterSubItem.Value => pp.IsNumeric ? $"{pp.Value} (0x{pp.Value:X})" : $"{pp.Value}",
+                    //ParmaterSubItem.Index:
+                    //ParmaterSubItem.Type:
+                    //ParmaterSubItem.RO:
+                    _ => null,
+                };
+
+                if (!string.IsNullOrWhiteSpace(str_tip))
+                {
+                    Point point = (Point)timer.Tag!;
+                    toolTip.Show(str_tip, listViewParameters, point);
+                }
+                toolTip.Tag = null;
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
     }
 }
