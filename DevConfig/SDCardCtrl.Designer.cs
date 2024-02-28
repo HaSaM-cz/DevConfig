@@ -54,30 +54,12 @@ namespace DevConfig
             toolStripSeparator2 = new ToolStripSeparator();
             refreshToolStripMenuItem = new ToolStripMenuItem();
             formatSDCardToolStripMenuItem = new ToolStripMenuItem();
-            menuStrip1 = new MenuStrip();
-            SdCardMenuItem = new ToolStripMenuItem();
-            BackupSdCardMenuItem = new ToolStripMenuItem();
-            RestoreSdCardMenuItem = new ToolStripMenuItem();
-            toolStripSeparator4 = new ToolStripSeparator();
-            ReloadSdCardMenuItem = new ToolStripMenuItem();
-            FormatSdCardMenuItem = new ToolStripMenuItem();
-            directoryToolStripMenuItem = new ToolStripMenuItem();
-            AddDirMenuItem2 = new ToolStripMenuItem();
-            RenDirMenuItem2 = new ToolStripMenuItem();
-            DelDirMenuItem2 = new ToolStripMenuItem();
-            fileToolStripMenuItem = new ToolStripMenuItem();
-            GetFileMenuItem2 = new ToolStripMenuItem();
-            toolStripSeparator3 = new ToolStripSeparator();
-            AddFileMenuItem2 = new ToolStripMenuItem();
-            RenFileMenuItem2 = new ToolStripMenuItem();
-            DelFileMenuItem2 = new ToolStripMenuItem();
             contextMenuList.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
             contextMenuTree.SuspendLayout();
-            menuStrip1.SuspendLayout();
             SuspendLayout();
             // 
             // treeView1
@@ -94,7 +76,7 @@ namespace DevConfig
             treeNode1.Text = "SD Card";
             treeView1.Nodes.AddRange(new TreeNode[] { treeNode1 });
             treeView1.SelectedImageIndex = 0;
-            treeView1.Size = new Size(356, 680);
+            treeView1.Size = new Size(356, 708);
             treeView1.TabIndex = 0;
             treeView1.AfterLabelEdit += treeView1_AfterLabelEdit;
             treeView1.AfterCollapse += treeView1_AfterCollapse;
@@ -123,7 +105,7 @@ namespace DevConfig
             listView1.FullRowSelect = true;
             listView1.Location = new Point(0, 0);
             listView1.Name = "listView1";
-            listView1.Size = new Size(829, 680);
+            listView1.Size = new Size(829, 708);
             listView1.TabIndex = 2;
             listView1.UseCompatibleStateImageBehavior = false;
             listView1.View = View.Details;
@@ -187,7 +169,7 @@ namespace DevConfig
             // splitContainer1
             // 
             splitContainer1.Dock = DockStyle.Fill;
-            splitContainer1.Location = new Point(0, 28);
+            splitContainer1.Location = new Point(0, 0);
             splitContainer1.Name = "splitContainer1";
             // 
             // splitContainer1.Panel1
@@ -197,7 +179,7 @@ namespace DevConfig
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(listView1);
-            splitContainer1.Size = new Size(1189, 680);
+            splitContainer1.Size = new Size(1189, 708);
             splitContainer1.SplitterDistance = 356;
             splitContainer1.TabIndex = 3;
             // 
@@ -257,124 +239,6 @@ namespace DevConfig
             formatSDCardToolStripMenuItem.Text = "Format SD card";
             formatSDCardToolStripMenuItem.Click += FormatSdCardMenuItem_Click;
             // 
-            // menuStrip1
-            // 
-            menuStrip1.ImageScalingSize = new Size(20, 20);
-            menuStrip1.Items.AddRange(new ToolStripItem[] { SdCardMenuItem, directoryToolStripMenuItem, fileToolStripMenuItem });
-            menuStrip1.Location = new Point(0, 0);
-            menuStrip1.Name = "menuStrip1";
-            menuStrip1.Size = new Size(1189, 28);
-            menuStrip1.TabIndex = 11;
-            menuStrip1.Text = "menuStrip1";
-            // 
-            // SdCardMenuItem
-            // 
-            SdCardMenuItem.DropDownItems.AddRange(new ToolStripItem[] { BackupSdCardMenuItem, RestoreSdCardMenuItem, toolStripSeparator4, ReloadSdCardMenuItem, FormatSdCardMenuItem });
-            SdCardMenuItem.Name = "SdCardMenuItem";
-            SdCardMenuItem.Size = new Size(77, 24);
-            SdCardMenuItem.Text = "SD Card";
-            // 
-            // BackupSdCardMenuItem
-            // 
-            BackupSdCardMenuItem.Name = "BackupSdCardMenuItem";
-            BackupSdCardMenuItem.Size = new Size(142, 26);
-            BackupSdCardMenuItem.Text = "Backup";
-            BackupSdCardMenuItem.Click += BackupSdCardMenuItem_Click;
-            // 
-            // RestoreSdCardMenuItem
-            // 
-            RestoreSdCardMenuItem.Name = "RestoreSdCardMenuItem";
-            RestoreSdCardMenuItem.Size = new Size(142, 26);
-            RestoreSdCardMenuItem.Text = "Restore";
-            RestoreSdCardMenuItem.Click += RestoreSdCardMenuItem_Click;
-            // 
-            // toolStripSeparator4
-            // 
-            toolStripSeparator4.Name = "toolStripSeparator4";
-            toolStripSeparator4.Size = new Size(139, 6);
-            // 
-            // ReloadSdCardMenuItem
-            // 
-            ReloadSdCardMenuItem.Name = "ReloadSdCardMenuItem";
-            ReloadSdCardMenuItem.Size = new Size(142, 26);
-            ReloadSdCardMenuItem.Text = "Reload";
-            ReloadSdCardMenuItem.Click += ReloadSdCardMenuItem_Click;
-            // 
-            // FormatSdCardMenuItem
-            // 
-            FormatSdCardMenuItem.Name = "FormatSdCardMenuItem";
-            FormatSdCardMenuItem.Size = new Size(142, 26);
-            FormatSdCardMenuItem.Text = "Format";
-            FormatSdCardMenuItem.Click += FormatSdCardMenuItem_Click;
-            // 
-            // directoryToolStripMenuItem
-            // 
-            directoryToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { AddDirMenuItem2, RenDirMenuItem2, DelDirMenuItem2 });
-            directoryToolStripMenuItem.Name = "directoryToolStripMenuItem";
-            directoryToolStripMenuItem.Size = new Size(84, 24);
-            directoryToolStripMenuItem.Text = "Directory";
-            // 
-            // AddDirMenuItem2
-            // 
-            AddDirMenuItem2.Name = "AddDirMenuItem2";
-            AddDirMenuItem2.Size = new Size(146, 26);
-            AddDirMenuItem2.Text = "Insert";
-            AddDirMenuItem2.Click += AddDirMenuItem_Click;
-            // 
-            // RenDirMenuItem2
-            // 
-            RenDirMenuItem2.Name = "RenDirMenuItem2";
-            RenDirMenuItem2.Size = new Size(146, 26);
-            RenDirMenuItem2.Text = "Rename";
-            RenDirMenuItem2.Click += RenDirMenuItem_Click;
-            // 
-            // DelDirMenuItem2
-            // 
-            DelDirMenuItem2.Name = "DelDirMenuItem2";
-            DelDirMenuItem2.Size = new Size(146, 26);
-            DelDirMenuItem2.Text = "Delete";
-            DelDirMenuItem2.Click += DelDirMenuItem_Click;
-            // 
-            // fileToolStripMenuItem
-            // 
-            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { GetFileMenuItem2, toolStripSeparator3, AddFileMenuItem2, RenFileMenuItem2, DelFileMenuItem2 });
-            fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            fileToolStripMenuItem.Size = new Size(46, 24);
-            fileToolStripMenuItem.Text = "File";
-            // 
-            // GetFileMenuItem2
-            // 
-            GetFileMenuItem2.Name = "GetFileMenuItem2";
-            GetFileMenuItem2.Size = new Size(146, 26);
-            GetFileMenuItem2.Text = "Get";
-            GetFileMenuItem2.Click += GetFileMenuItem_Click;
-            // 
-            // toolStripSeparator3
-            // 
-            toolStripSeparator3.Name = "toolStripSeparator3";
-            toolStripSeparator3.Size = new Size(143, 6);
-            // 
-            // AddFileMenuItem2
-            // 
-            AddFileMenuItem2.Name = "AddFileMenuItem2";
-            AddFileMenuItem2.Size = new Size(146, 26);
-            AddFileMenuItem2.Text = "Insert";
-            AddFileMenuItem2.Click += AddFileMenuItem_Click;
-            // 
-            // RenFileMenuItem2
-            // 
-            RenFileMenuItem2.Name = "RenFileMenuItem2";
-            RenFileMenuItem2.Size = new Size(146, 26);
-            RenFileMenuItem2.Text = "Rename";
-            RenFileMenuItem2.Click += RenFileMenuItem_Click;
-            // 
-            // DelFileMenuItem2
-            // 
-            DelFileMenuItem2.Name = "DelFileMenuItem2";
-            DelFileMenuItem2.Size = new Size(146, 26);
-            DelFileMenuItem2.Text = "Delete";
-            DelFileMenuItem2.Click += DelFileMenuItem_Click;
-            // 
             // SDCardCtrl
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -382,8 +246,6 @@ namespace DevConfig
             ClientSize = new Size(1189, 708);
             Controls.Add(textBox1);
             Controls.Add(splitContainer1);
-            Controls.Add(menuStrip1);
-            MainMenuStrip = menuStrip1;
             Name = "SDCardCtrl";
             Text = "SDCardCtrl";
             Load += SDCardCtrl_Load;
@@ -393,8 +255,6 @@ namespace DevConfig
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
             contextMenuTree.ResumeLayout(false);
-            menuStrip1.ResumeLayout(false);
-            menuStrip1.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -422,22 +282,5 @@ namespace DevConfig
         private ToolStripSeparator toolStripSeparator2;
         private ToolStripMenuItem refreshToolStripMenuItem;
         private ToolStripMenuItem formatSDCardToolStripMenuItem;
-        private MenuStrip menuStrip1;
-        private ToolStripMenuItem SdCardMenuItem;
-        private ToolStripMenuItem directoryToolStripMenuItem;
-        private ToolStripMenuItem ReloadSdCardMenuItem;
-        private ToolStripMenuItem FormatSdCardMenuItem;
-        private ToolStripMenuItem AddDirMenuItem2;
-        private ToolStripMenuItem RenDirMenuItem2;
-        private ToolStripMenuItem DelDirMenuItem2;
-        private ToolStripMenuItem fileToolStripMenuItem;
-        private ToolStripMenuItem AddFileMenuItem2;
-        private ToolStripMenuItem RenFileMenuItem2;
-        private ToolStripMenuItem DelFileMenuItem2;
-        private ToolStripMenuItem GetFileMenuItem2;
-        private ToolStripMenuItem BackupSdCardMenuItem;
-        private ToolStripMenuItem RestoreSdCardMenuItem;
-        private ToolStripSeparator toolStripSeparator4;
-        private ToolStripSeparator toolStripSeparator3;
     }
 }

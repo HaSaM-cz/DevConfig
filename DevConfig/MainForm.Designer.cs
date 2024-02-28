@@ -42,10 +42,33 @@ namespace DevConfig
             viewToolStripMenuItem = new ToolStripMenuItem();
             deviceTreeToolStripMenuItem = new ToolStripMenuItem();
             debugToolStripMenuItem = new ToolStripMenuItem();
-            sDCardForSelectedDeviceToolStripMenuItem = new ToolStripMenuItem();
             deviceToolStripMenuItem = new ToolStripMenuItem();
             controlToolStripMenuItem = new ToolStripMenuItem();
             refreshListToolStripMenuItem = new ToolStripMenuItem();
+            SDCard = new ToolStripMenuItem();
+            SDCardOpen = new ToolStripMenuItem();
+            SDCardOperation = new ToolStripMenuItem();
+            SDCardBackup = new ToolStripMenuItem();
+            SDCardRestore = new ToolStripMenuItem();
+            toolStripSeparator4 = new ToolStripSeparator();
+            SDCardReload = new ToolStripMenuItem();
+            SDCardFormat = new ToolStripMenuItem();
+            toolStripSeparator2 = new ToolStripSeparator();
+            SDCadrDirectory = new ToolStripMenuItem();
+            SDCardDirectoryInsert = new ToolStripMenuItem();
+            SDCardDirectoryRename = new ToolStripMenuItem();
+            SDCardDirectoryDelete = new ToolStripMenuItem();
+            toolStripMenuItem2 = new ToolStripMenuItem();
+            SDCardFileGet = new ToolStripMenuItem();
+            toolStripSeparator3 = new ToolStripSeparator();
+            SDCardFileInsert = new ToolStripMenuItem();
+            SDCardFileRename = new ToolStripMenuItem();
+            SDCardFileDelete = new ToolStripMenuItem();
+            Register = new ToolStripMenuItem();
+            RegisterReloadSelected = new ToolStripMenuItem();
+            toolStripSeparator5 = new ToolStripSeparator();
+            RegisterSaveSelected = new ToolStripMenuItem();
+            RegisterSaveAll = new ToolStripMenuItem();
             toolStrip1 = new ToolStrip();
             label_name = new ToolStripLabel();
             toolStripStatusLabel9 = new ToolStripStatusLabel();
@@ -76,7 +99,7 @@ namespace DevConfig
             // menuStrip1
             // 
             menuStrip1.ImageScalingSize = new Size(20, 20);
-            menuStrip1.Items.AddRange(new ToolStripItem[] { connectionToolStripMenuItem, viewToolStripMenuItem, controlToolStripMenuItem });
+            menuStrip1.Items.AddRange(new ToolStripItem[] { connectionToolStripMenuItem, viewToolStripMenuItem, controlToolStripMenuItem, SDCard, Register });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
             menuStrip1.Size = new Size(1119, 28);
@@ -93,32 +116,32 @@ namespace DevConfig
             // openToolStripMenuItem
             // 
             openToolStripMenuItem.Name = "openToolStripMenuItem";
-            openToolStripMenuItem.Size = new Size(224, 26);
+            openToolStripMenuItem.Size = new Size(128, 26);
             openToolStripMenuItem.Text = "Open";
             openToolStripMenuItem.Click += Open_Click;
             // 
             // closeToolStripMenuItem
             // 
             closeToolStripMenuItem.Name = "closeToolStripMenuItem";
-            closeToolStripMenuItem.Size = new Size(224, 26);
+            closeToolStripMenuItem.Size = new Size(128, 26);
             closeToolStripMenuItem.Text = "Close";
             closeToolStripMenuItem.Click += Close_Click;
             // 
             // toolStripSeparator1
             // 
             toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new Size(221, 6);
+            toolStripSeparator1.Size = new Size(125, 6);
             // 
             // exitToolStripMenuItem
             // 
             exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            exitToolStripMenuItem.Size = new Size(224, 26);
+            exitToolStripMenuItem.Size = new Size(128, 26);
             exitToolStripMenuItem.Text = "Exit";
             exitToolStripMenuItem.Click += Exit_Click;
             // 
             // viewToolStripMenuItem
             // 
-            viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { deviceTreeToolStripMenuItem, debugToolStripMenuItem, sDCardForSelectedDeviceToolStripMenuItem, deviceToolStripMenuItem });
+            viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { deviceTreeToolStripMenuItem, debugToolStripMenuItem, deviceToolStripMenuItem });
             viewToolStripMenuItem.Name = "viewToolStripMenuItem";
             viewToolStripMenuItem.Size = new Size(55, 24);
             viewToolStripMenuItem.Text = "View";
@@ -126,26 +149,19 @@ namespace DevConfig
             // deviceTreeToolStripMenuItem
             // 
             deviceTreeToolStripMenuItem.Name = "deviceTreeToolStripMenuItem";
-            deviceTreeToolStripMenuItem.Size = new Size(275, 26);
+            deviceTreeToolStripMenuItem.Size = new Size(169, 26);
             deviceTreeToolStripMenuItem.Text = "Device Tree";
             // 
             // debugToolStripMenuItem
             // 
             debugToolStripMenuItem.Name = "debugToolStripMenuItem";
-            debugToolStripMenuItem.Size = new Size(275, 26);
+            debugToolStripMenuItem.Size = new Size(169, 26);
             debugToolStripMenuItem.Text = "Debug";
-            // 
-            // sDCardForSelectedDeviceToolStripMenuItem
-            // 
-            sDCardForSelectedDeviceToolStripMenuItem.Name = "sDCardForSelectedDeviceToolStripMenuItem";
-            sDCardForSelectedDeviceToolStripMenuItem.Size = new Size(275, 26);
-            sDCardForSelectedDeviceToolStripMenuItem.Text = "SD Card for selected device";
-            sDCardForSelectedDeviceToolStripMenuItem.Click += sDCardForSelectedDeviceToolStripMenuItem_Click;
             // 
             // deviceToolStripMenuItem
             // 
             deviceToolStripMenuItem.Name = "deviceToolStripMenuItem";
-            deviceToolStripMenuItem.Size = new Size(275, 26);
+            deviceToolStripMenuItem.Size = new Size(169, 26);
             deviceToolStripMenuItem.Text = "Device";
             // 
             // controlToolStripMenuItem
@@ -162,6 +178,166 @@ namespace DevConfig
             refreshListToolStripMenuItem.Text = "Refresh list";
             refreshListToolStripMenuItem.Click += RefreshList_Click;
             // 
+            // SDCard
+            // 
+            SDCard.DropDownItems.AddRange(new ToolStripItem[] { SDCardOpen, SDCardOperation, toolStripSeparator2, SDCadrDirectory, toolStripMenuItem2 });
+            SDCard.Name = "SDCard";
+            SDCard.Size = new Size(77, 24);
+            SDCard.Text = "SD Card";
+            // 
+            // SDCardOpen
+            // 
+            SDCardOpen.Name = "SDCardOpen";
+            SDCardOpen.Size = new Size(257, 26);
+            SDCardOpen.Text = "Open for selected device";
+            SDCardOpen.Click += SDCardOpen_Click;
+            // 
+            // SDCardOperation
+            // 
+            SDCardOperation.DropDownItems.AddRange(new ToolStripItem[] { SDCardBackup, SDCardRestore, toolStripSeparator4, SDCardReload, SDCardFormat });
+            SDCardOperation.Name = "SDCardOperation";
+            SDCardOperation.Size = new Size(257, 26);
+            SDCardOperation.Text = "Card operations";
+            // 
+            // SDCardBackup
+            // 
+            SDCardBackup.Name = "SDCardBackup";
+            SDCardBackup.Size = new Size(142, 26);
+            SDCardBackup.Text = "Backup";
+            SDCardBackup.Click += SDCardBackup_Click;
+            // 
+            // SDCardRestore
+            // 
+            SDCardRestore.Name = "SDCardRestore";
+            SDCardRestore.Size = new Size(142, 26);
+            SDCardRestore.Text = "Restore";
+            SDCardRestore.Click += SDCardRestore_Click;
+            // 
+            // toolStripSeparator4
+            // 
+            toolStripSeparator4.Name = "toolStripSeparator4";
+            toolStripSeparator4.Size = new Size(139, 6);
+            // 
+            // SDCardReload
+            // 
+            SDCardReload.Name = "SDCardReload";
+            SDCardReload.Size = new Size(142, 26);
+            SDCardReload.Text = "Reload";
+            SDCardReload.Click += SDCardReload_Click;
+            // 
+            // SDCardFormat
+            // 
+            SDCardFormat.Name = "SDCardFormat";
+            SDCardFormat.Size = new Size(142, 26);
+            SDCardFormat.Text = "Format";
+            SDCardFormat.Click += SDCardFormat_Click;
+            // 
+            // toolStripSeparator2
+            // 
+            toolStripSeparator2.Name = "toolStripSeparator2";
+            toolStripSeparator2.Size = new Size(254, 6);
+            // 
+            // SDCadrDirectory
+            // 
+            SDCadrDirectory.DropDownItems.AddRange(new ToolStripItem[] { SDCardDirectoryInsert, SDCardDirectoryRename, SDCardDirectoryDelete });
+            SDCadrDirectory.Name = "SDCadrDirectory";
+            SDCadrDirectory.Size = new Size(257, 26);
+            SDCadrDirectory.Text = "Directory";
+            // 
+            // SDCardDirectoryInsert
+            // 
+            SDCardDirectoryInsert.Name = "SDCardDirectoryInsert";
+            SDCardDirectoryInsert.Size = new Size(146, 26);
+            SDCardDirectoryInsert.Text = "Insert";
+            SDCardDirectoryInsert.Click += SDCardDirectoryInsert_Click;
+            // 
+            // SDCardDirectoryRename
+            // 
+            SDCardDirectoryRename.Name = "SDCardDirectoryRename";
+            SDCardDirectoryRename.Size = new Size(146, 26);
+            SDCardDirectoryRename.Text = "Rename";
+            SDCardDirectoryRename.Click += SDCardDirectoryRename_Click;
+            // 
+            // SDCardDirectoryDelete
+            // 
+            SDCardDirectoryDelete.Name = "SDCardDirectoryDelete";
+            SDCardDirectoryDelete.Size = new Size(146, 26);
+            SDCardDirectoryDelete.Text = "Delete";
+            SDCardDirectoryDelete.Click += SDCardDirectoryDelete_Click;
+            // 
+            // toolStripMenuItem2
+            // 
+            toolStripMenuItem2.DropDownItems.AddRange(new ToolStripItem[] { SDCardFileGet, toolStripSeparator3, SDCardFileInsert, SDCardFileRename, SDCardFileDelete });
+            toolStripMenuItem2.Name = "toolStripMenuItem2";
+            toolStripMenuItem2.Size = new Size(257, 26);
+            toolStripMenuItem2.Text = "File";
+            // 
+            // SDCardFileGet
+            // 
+            SDCardFileGet.Name = "SDCardFileGet";
+            SDCardFileGet.Size = new Size(146, 26);
+            SDCardFileGet.Text = "Get";
+            SDCardFileGet.Click += SDCardFileGet_Click;
+            // 
+            // toolStripSeparator3
+            // 
+            toolStripSeparator3.Name = "toolStripSeparator3";
+            toolStripSeparator3.Size = new Size(143, 6);
+            // 
+            // SDCardFileInsert
+            // 
+            SDCardFileInsert.Name = "SDCardFileInsert";
+            SDCardFileInsert.Size = new Size(146, 26);
+            SDCardFileInsert.Text = "Insert";
+            SDCardFileInsert.Click += SDCardFileInsert_Click;
+            // 
+            // SDCardFileRename
+            // 
+            SDCardFileRename.Name = "SDCardFileRename";
+            SDCardFileRename.Size = new Size(146, 26);
+            SDCardFileRename.Text = "Rename";
+            SDCardFileRename.Click += SDCardFileRename_Click;
+            // 
+            // SDCardFileDelete
+            // 
+            SDCardFileDelete.Name = "SDCardFileDelete";
+            SDCardFileDelete.Size = new Size(146, 26);
+            SDCardFileDelete.Text = "Delete";
+            SDCardFileDelete.Click += SDCardFileDelete_Click;
+            // 
+            // Register
+            // 
+            Register.DropDownItems.AddRange(new ToolStripItem[] { RegisterReloadSelected, toolStripSeparator5, RegisterSaveSelected, RegisterSaveAll });
+            Register.Name = "Register";
+            Register.Size = new Size(83, 24);
+            Register.Text = "Registers";
+            // 
+            // RegisterReloadSelected
+            // 
+            RegisterReloadSelected.Name = "RegisterReloadSelected";
+            RegisterReloadSelected.Size = new Size(245, 26);
+            RegisterReloadSelected.Text = "Reload selected device";
+            RegisterReloadSelected.Click += RegisterReloadSelected_Click;
+            // 
+            // toolStripSeparator5
+            // 
+            toolStripSeparator5.Name = "toolStripSeparator5";
+            toolStripSeparator5.Size = new Size(242, 6);
+            // 
+            // RegisterSaveSelected
+            // 
+            RegisterSaveSelected.Name = "RegisterSaveSelected";
+            RegisterSaveSelected.Size = new Size(245, 26);
+            RegisterSaveSelected.Text = "Save selected device";
+            RegisterSaveSelected.Click += RegisterSaveSelected_Click;
+            // 
+            // RegisterSaveAll
+            // 
+            RegisterSaveAll.Name = "RegisterSaveAll";
+            RegisterSaveAll.Size = new Size(245, 26);
+            RegisterSaveAll.Text = "Save all";
+            RegisterSaveAll.Click += RegisterSaveAll_Click;
+            // 
             // toolStrip1
             // 
             toolStrip1.ImageScalingSize = new Size(20, 20);
@@ -174,7 +350,7 @@ namespace DevConfig
             // 
             // label_name
             // 
-            label_name.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point);
+            label_name.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold);
             label_name.Margin = new Padding(0, 2, 10, 2);
             label_name.Name = "label_name";
             label_name.Size = new Size(66, 28);
@@ -189,7 +365,7 @@ namespace DevConfig
             // 
             // tb_address
             // 
-            tb_address.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
+            tb_address.Font = new Font("Segoe UI", 12F);
             tb_address.Margin = new Padding(0, 2, 10, 2);
             tb_address.Name = "tb_address";
             tb_address.Size = new Size(54, 28);
@@ -204,7 +380,7 @@ namespace DevConfig
             // 
             // tb_dev_id
             // 
-            tb_dev_id.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
+            tb_dev_id.Font = new Font("Segoe UI", 12F);
             tb_dev_id.Margin = new Padding(0, 2, 10, 2);
             tb_dev_id.Name = "tb_dev_id";
             tb_dev_id.Size = new Size(76, 28);
@@ -219,7 +395,7 @@ namespace DevConfig
             // 
             // tb_version
             // 
-            tb_version.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
+            tb_version.Font = new Font("Segoe UI", 12F);
             tb_version.Margin = new Padding(0, 2, 10, 2);
             tb_version.Name = "tb_version";
             tb_version.Size = new Size(38, 28);
@@ -292,11 +468,34 @@ namespace DevConfig
         public ToolStripStatusLabel tb_address;
         public ToolStripLabel label_name;
         private ToolStripMenuItem debugToolStripMenuItem;
-        private ToolStripMenuItem sDCardForSelectedDeviceToolStripMenuItem;
         private ToolStripMenuItem deviceToolStripMenuItem;
         private ToolStripButton btnAbort;
         private ToolStripProgressBar tsProgressBar;
         private ToolStripMenuItem exitToolStripMenuItem;
         private ToolStripSeparator toolStripSeparator1;
+        private ToolStripMenuItem SDCard;
+        private ToolStripMenuItem SDCardOpen;
+        private ToolStripSeparator toolStripSeparator2;
+        private ToolStripMenuItem SDCadrDirectory;
+        private ToolStripMenuItem toolStripMenuItem2;
+        private ToolStripMenuItem SDCardDirectoryInsert;
+        private ToolStripMenuItem SDCardDirectoryRename;
+        private ToolStripMenuItem SDCardDirectoryDelete;
+        private ToolStripMenuItem SDCardFileGet;
+        private ToolStripSeparator toolStripSeparator3;
+        private ToolStripMenuItem SDCardFileInsert;
+        private ToolStripMenuItem SDCardFileRename;
+        private ToolStripMenuItem SDCardFileDelete;
+        private ToolStripMenuItem SDCardOperation;
+        private ToolStripMenuItem SDCardBackup;
+        private ToolStripMenuItem SDCardRestore;
+        private ToolStripSeparator toolStripSeparator4;
+        private ToolStripMenuItem SDCardReload;
+        private ToolStripMenuItem SDCardFormat;
+        private ToolStripMenuItem Register;
+        private ToolStripMenuItem RegisterReloadSelected;
+        private ToolStripSeparator toolStripSeparator5;
+        private ToolStripMenuItem RegisterSaveSelected;
+        private ToolStripMenuItem RegisterSaveAll;
     }
 }

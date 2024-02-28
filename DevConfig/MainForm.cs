@@ -5,10 +5,12 @@ using DevConfig.Utils;
 using DevConfigSupp;
 using Microsoft.CodeAnalysis;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Timers;
 using WeifenLuo.WinFormsUI.Docking;
 using Message = CanDiagSupport.Message;
 
@@ -94,18 +96,6 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void sDCardForSelectedDeviceToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (DevConfigService.Instance.selectedDevice != null)
-            {
-                if (DevConfigService.Instance.ProcessLock())
-                    CreateChild<SDCardCtrl>($"SD Card (0x{DevConfigService.Instance.selectedDevice.Address:X2})");
-            }
-            else
-                MessageBox.Show("First you need to select device.", "DevConfig - info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
         T? CreateChild<T>(string Text)
         {
             Cursor = Cursors.WaitCursor;
@@ -119,6 +109,7 @@ namespace DevConfig
                 content.MdiParent = this;
                 content.FormClosed += ((object? sender, FormClosedEventArgs e) => obj = null);
                 content.MdiParent = this;
+                content.CloseButtonVisible = false; // TODO
                 content.Show(this.dockPanel, DockState.Document);
             }
             Cursor = Cursors.Default;
@@ -194,6 +185,7 @@ namespace DevConfig
                 if (DevConfigService.Instance.Open(file_name))
                 {
                     Text = $"DevConfig - {DevConfigService.Instance.ConnectString}";
+                    ConnectMruList?.AddFile(DevConfigService.Instance.ConnectString);
                     DevConfigService.Instance.RefreshDeviceList();
                 }
                 else
@@ -331,7 +323,7 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void RefreshList_Click(object sender, EventArgs e)
         {
-            if(DevConfigService.Instance.ProcessLock())
+            if (DevConfigService.Instance.ProcessLock())
                 DevConfigService.Instance.RefreshDeviceList();
         }
 
@@ -425,9 +417,9 @@ namespace DevConfig
                 DeviceWnd.tb_address.Font = DeviceWnd.tb_dev_id.Font = DeviceWnd.tb_version.Font = DeviceWnd.tb_cpu_id.Font = new Font(DeviceWnd.tb_address.Font, FontStyle.Regular);
             }
 
-            if(RegisterWnd != null)
+            if (RegisterWnd != null)
             {
-                if(DevConfigService.Instance.selectedDevice.Parameters == null)
+                if (DevConfigService.Instance.selectedDevice.Parameters == null)
                     DevConfigService.Instance.GetRegisterFromDevice();
                 RegisterWnd.UpdateList();
             }
@@ -479,6 +471,127 @@ namespace DevConfig
             tsProgressBar.Increment(value);
         }
 
+        #endregion
+
+        #region SD CARD Command
+        private void SDCardOpen_Click(object sender, EventArgs e)
+        {
+            if (DevConfigService.Instance.selectedDevice == null)
+            {
+                MessageBox.Show("First you need to select device.", "DevConfig - info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                if (DevConfigService.Instance.ProcessLock())
+                    CreateChild<SDCardCtrl>($"SD Card (0x{DevConfigService.Instance.selectedDevice!.Address:X2})");
+            }
+        }
+
+        private void SDCardBackup_Click(object sender, EventArgs e)
+        {
+            if (TryGetSDCardCtrl(out SDCardCtrl SDCardCtrlWnd))
+                SDCardCtrlWnd.BackupSdCardMenuItem_Click(sender, e);
+        }
+
+        private void SDCardRestore_Click(object sender, EventArgs e)
+        {
+            if (TryGetSDCardCtrl(out SDCardCtrl SDCardCtrlWnd))
+                SDCardCtrlWnd.RestoreSdCardMenuItem_Click(sender, e);
+        }
+
+        private void SDCardReload_Click(object sender, EventArgs e)
+        {
+            if (TryGetSDCardCtrl(out SDCardCtrl SDCardCtrlWnd))
+                SDCardCtrlWnd.ReloadSdCardMenuItem_Click(sender, e);
+        }
+
+        private void SDCardFormat_Click(object sender, EventArgs e)
+        {
+            if (TryGetSDCardCtrl(out SDCardCtrl SDCardCtrlWnd))
+                SDCardCtrlWnd.FormatSdCardMenuItem_Click(sender, e);
+        }
+
+        private void SDCardDirectoryInsert_Click(object sender, EventArgs e)
+        {
+            if (TryGetSDCardCtrl(out SDCardCtrl SDCardCtrlWnd))
+                SDCardCtrlWnd.AddDirMenuItem_Click(sender, e);
+        }
+
+        private void SDCardDirectoryRename_Click(object sender, EventArgs e)
+        {
+            if (TryGetSDCardCtrl(out SDCardCtrl SDCardCtrlWnd))
+                SDCardCtrlWnd.RenDirMenuItem_Click(sender, e);
+        }
+
+        private void SDCardDirectoryDelete_Click(object sender, EventArgs e)
+        {
+            if (TryGetSDCardCtrl(out SDCardCtrl SDCardCtrlWnd))
+                SDCardCtrlWnd.DelDirMenuItem_Click(sender, e);
+        }
+
+        private void SDCardFileGet_Click(object sender, EventArgs e)
+        {
+            if (TryGetSDCardCtrl(out SDCardCtrl SDCardCtrlWnd))
+                SDCardCtrlWnd.GetFileMenuItem_Click(sender, e);
+        }
+
+        private void SDCardFileInsert_Click(object sender, EventArgs e)
+        {
+            if (TryGetSDCardCtrl(out SDCardCtrl SDCardCtrlWnd))
+                SDCardCtrlWnd.AddFileMenuItem_Click(sender, e);
+        }
+
+        private void SDCardFileRename_Click(object sender, EventArgs e)
+        {
+            if (TryGetSDCardCtrl(out SDCardCtrl SDCardCtrlWnd))
+                SDCardCtrlWnd.RenFileMenuItem_Click(sender, e);
+        }
+
+        private void SDCardFileDelete_Click(object sender, EventArgs e)
+        {
+            if (TryGetSDCardCtrl(out SDCardCtrl SDCardCtrlWnd))
+                SDCardCtrlWnd.DelFileMenuItem_Click(sender, e);
+        }
+
+        private bool TryGetSDCardCtrl(out SDCardCtrl SDCardCtrlWnd)
+        {
+            if (dockPanel.ActiveContent != null && dockPanel.ActiveContent.GetType() == typeof(SDCardCtrl))
+            {
+                SDCardCtrlWnd = (SDCardCtrl)dockPanel.ActiveContent;
+                return true;
+            }
+            else
+            { 
+                MessageBox.Show("SD card window is not selected.", "DevConfig - info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+#pragma warning disable CS8625 // Literál null nejde pøevést na odkazový typ, který nemùže mít hodnotu null.
+                SDCardCtrlWnd = default;
+#pragma warning restore CS8625 // Literál null nejde pøevést na odkazový typ, který nemùže mít hodnotu null.
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region Register Command
+        private void RegisterReloadSelected_Click(object sender, EventArgs e)
+        {
+            if (DevConfigService.Instance.selectedDevice != null)
+            {
+                DevConfigService.Instance.selectedDevice.Parameters = null;
+                DevConfigService.Instance.GetRegisterFromDevice();
+                RegisterWnd?.UpdateList();
+            }
+        }
+
+        private void RegisterSaveSelected_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void RegisterSaveAll_Click(object sender, EventArgs e)
+        {
+
+        }
         #endregion
     }
 

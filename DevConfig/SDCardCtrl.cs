@@ -271,7 +271,7 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void GetFileMenuItem_Click(object sender, EventArgs e)
+        public void GetFileMenuItem_Click(object sender, EventArgs e)
         {
             if (DevConfigService.Instance.ProcessLock())
             {
@@ -324,7 +324,7 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void AddFileMenuItem_Click(object sender, EventArgs e)
+        public void AddFileMenuItem_Click(object sender, EventArgs e)
         {
             if (DevConfigService.Instance.ProcessLock())
             {
@@ -350,7 +350,7 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void RenFileMenuItem_Click(object sender, EventArgs e)
+        public void RenFileMenuItem_Click(object sender, EventArgs e)
         {
             if (DevConfigService.Instance.ProcessLock())
             {
@@ -361,7 +361,7 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        private void DelFileMenuItem_Click(object sender, EventArgs e)
+        public void DelFileMenuItem_Click(object sender, EventArgs e)
         {
             if (DevConfigService.Instance.ProcessLock())
             {
@@ -382,31 +382,31 @@ namespace DevConfig
             }
         }
 
-        private void BackupSdCardMenuItem_Click(object sender, EventArgs e)
+        public void BackupSdCardMenuItem_Click(object sender, EventArgs e)
         {
             if (DevConfigService.Instance.ProcessLock())
                 SDBackup();
         }
 
-        private void RestoreSdCardMenuItem_Click(object sender, EventArgs e)
+        public void RestoreSdCardMenuItem_Click(object sender, EventArgs e)
         {
             if (DevConfigService.Instance.ProcessLock())
                 SDRestore();
         }
 
-        private void ReloadSdCardMenuItem_Click(object sender, EventArgs e)
+        public void ReloadSdCardMenuItem_Click(object sender, EventArgs e)
         {
             if (DevConfigService.Instance.ProcessLock())
                 PopulateTreeView();
         }
 
-        private void FormatSdCardMenuItem_Click(object sender, EventArgs e)
+        public void FormatSdCardMenuItem_Click(object sender, EventArgs e)
         {
             if (MessageBox.Show("Do you want to format the SD card on your device?", "DevConfig - FORMAT", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
                 Task.Run(() => SDFormat(true) );
         }
 
-        private void AddDirMenuItem_Click(object sender, EventArgs e)
+        public void AddDirMenuItem_Click(object sender, EventArgs e)
         {
             AddDirGetName addDirGetName = new AddDirGetName();
             if (addDirGetName.ShowDialog() == DialogResult.OK)
@@ -431,7 +431,7 @@ namespace DevConfig
             }
         }
 
-        private void RenDirMenuItem_Click(object sender, EventArgs e)
+        public void RenDirMenuItem_Click(object sender, EventArgs e)
         {
             if (treeView1.SelectedNode != null && treeView1.SelectedNode.Parent != null)
             {
@@ -448,7 +448,7 @@ namespace DevConfig
             }*/
         }
 
-        private void DelDirMenuItem_Click(object sender, EventArgs e)
+        public void DelDirMenuItem_Click(object sender, EventArgs e)
         {
             DelDirectory();
         }

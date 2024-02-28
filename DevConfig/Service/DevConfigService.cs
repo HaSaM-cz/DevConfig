@@ -212,6 +212,7 @@ namespace DevConfig.Service
             else if (msg.CMD == Command.GetListParam || 
                      msg.CMD == Command.ParamRead)
             {
+                Debug.WriteLine($"+ {msg}");
                 if (msg.Data.Count >= 1)
                 {
                     message = msg;
@@ -238,8 +239,11 @@ namespace DevConfig.Service
                     message.CMD = Command.Ident;
                     message.SRC = MainForm.SrcAddress;
 
+                    /////////////////
+                    byte[]? dev_addr = null;// new byte[] { 0x10, 0x20, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x70, 0x80, 0x81, 0x94 };
+
                     byte SearchFrom = 0x00;
-                    byte SearchTo = 0xFE - 1;
+                    byte SearchTo = (byte)(dev_addr != null ? (dev_addr.Length - 1) : (0xFE - 1));
 
                     if (InputPeriph!.GetType() == typeof(UsbSerialNs.UsbSerial))
                     {
@@ -258,8 +262,10 @@ namespace DevConfig.Service
                     }
 
                     // pošleme ident do všech zažízení
-                    for (byte dest = SearchFrom; dest <= SearchTo && bContinue; dest++)
+                    for (byte d = SearchFrom; d <= SearchTo && bContinue; d++)
                     {
+                        byte dest = (byte)(dev_addr != null ? dev_addr[d] : d);
+
                         if (!usb_serial)
                             MainForm.Invoke(delegate { MainForm.ProgressBar_Value = dest; });
                         message.DEST = dest;
@@ -445,7 +451,10 @@ namespace DevConfig.Service
                 msg.Data.Add(0);
 
                 sync_obj.Reset();
+                Debug.WriteLine($"- {msg}");
                 InputPeriph?.SendMsg(msg);
+
+                //Task.Delay(1000).Wait(); // TODO
 
                 msg.Data[0] = 1;
 
@@ -461,7 +470,9 @@ namespace DevConfig.Service
                     }
                     else
                         break;
+                    Task.Delay(3).Wait(); // TODO
                     sync_obj.Reset();
+                    Debug.WriteLine($"- {msg}");
                     InputPeriph?.SendMsg(msg);
                 }
 
@@ -555,7 +566,6 @@ namespace DevConfig.Service
                     return null;
             }
         }
-
 
         enum get_list_param_e { eDescription, eFormat, eByteOrder, eGain, eOffset };
 
