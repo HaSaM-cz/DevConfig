@@ -282,7 +282,7 @@ namespace DevConfig
 
                     foreach (ListViewItem item in listView1.SelectedItems)
                     {
-                        string path = MakePath((TreeNode)item.Tag);
+                        string path = MakePath((TreeNode)item.Tag!);
                         path = Path.Combine(path, item.Text).Replace('\\', '/');
                         file_paths.Add(path);
                     }
@@ -483,13 +483,15 @@ namespace DevConfig
                     if (msg.Data.Count == 1 && msg.Data[0] == 0x0F)
                     {
                         bContinue = false;
-                        MainForm.AppendToDebug("Unknown operation", true, true, Color.Red);
+                        MessageFlag = msg.Data[0];
+                        sync_obj.Set();
                         return;
                     }
                     if (msg.Data.Count < 2)
                     {
                         bContinue = false;
-                        MainForm.AppendToDebug($"Bad msg length {msg.Data.Count} bytes.", true, true, Color.Red);
+                        MessageFlag = 0xFF;
+                        sync_obj.Set();
                         return;
                     }
                     MessageFlag = msg.Data[1];
@@ -792,7 +794,12 @@ namespace DevConfig
             }
 
             if (MessageFlag != 0)
-                MainForm.AppendToDebug($"GetFileList Error {(FxError)MessageFlag}", true, false, Color.Red);
+            {
+                if(message.Data.Count == 3 && message.Data[0] == 0x1 && message.Data[1] == 0x2f && message.Data[2] == 0x0)
+                    MainForm.AppendToDebug($"GetFileList Error - Device does not support SD card", true, false, Color.Red);
+                else
+                    MainForm.AppendToDebug($"GetFileList Error {(FxError)MessageFlag}", true, false, Color.Red);
+            }
             else
                 MainForm.AppendToDebug($"GetFileList OK", true, false, Color.DarkGreen);
 

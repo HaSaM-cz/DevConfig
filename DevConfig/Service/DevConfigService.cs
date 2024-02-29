@@ -27,7 +27,8 @@ namespace DevConfig.Service
         private byte MessageFlag = 0;
         private Message? message = null;
         private readonly ManualResetEvent sync_obj = new(false);
-        private byte LastReqValue = 0; 
+        private byte LastReqValue = 0;
+
         ///////////////////////////////////////////////////////////////////////////////////////////
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -186,7 +187,9 @@ namespace DevConfig.Service
                 }
                 else if (ip_type == typeof(TcpTunelNs.TcpTunel))
                 {
-                    if (LastReqValue == msg.Data[5])
+                    if (msg.Data[5] == msg.SRC)
+                        address = msg.Data[5];
+                    else if (LastReqValue == msg.Data[5])
                         address = msg.Data[5];
                     else if (LastReqValue == msg.SRC)
                         address = msg.SRC;
@@ -240,7 +243,8 @@ namespace DevConfig.Service
                     message.SRC = MainForm.SrcAddress;
 
                     /////////////////
-                    byte[]? dev_addr = null;// new byte[] { 0x10, 0x20, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x70, 0x80, 0x81, 0x94 };
+                    //byte[]? dev_addr = null;// new byte[] { 0x10, 0x20, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x70, 0x80, 0x81, 0x94 };
+                    byte[]? dev_addr = new byte[] { 0x10, 0x20, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x70, 0x80, 0x81, 0x94 };
 
                     byte SearchFrom = 0x00;
                     byte SearchTo = (byte)(dev_addr != null ? (dev_addr.Length - 1) : (0xFE - 1));
@@ -271,7 +275,7 @@ namespace DevConfig.Service
                         message.DEST = dest;
                         LastReqValue = dest;
                         InputPeriph.SendMsg(message);
-                        Task.Delay(3).Wait();
+                        Task.Delay(5).Wait();
                     }
 
                     // Pockame na dobehnuti
@@ -451,7 +455,7 @@ namespace DevConfig.Service
                 msg.Data.Add(0);
 
                 sync_obj.Reset();
-                Debug.WriteLine($"- {msg}");
+                //Debug.WriteLine($"- {msg}");
                 InputPeriph?.SendMsg(msg);
 
                 //Task.Delay(1000).Wait(); // TODO
@@ -472,7 +476,7 @@ namespace DevConfig.Service
                         break;
                     Task.Delay(3).Wait(); // TODO
                     sync_obj.Reset();
-                    Debug.WriteLine($"- {msg}");
+                    //Debug.WriteLine($"- {msg}");
                     InputPeriph?.SendMsg(msg);
                 }
 
@@ -525,11 +529,14 @@ namespace DevConfig.Service
                 msg.CMD = Command.ParamRead;
                 for(int i = 0; i < selectedDevice.Parameters.Count; i++)
                 {
-                    //msg.Data[0] = selectedDevice.Parameters[i].ParameterID;
                     msg.Data = new() { selectedDevice.Parameters[i].ParameterID };
                     if(selectedDevice.Parameters[i].Index != null)
                         msg.Data.Add((byte)selectedDevice.Parameters[i].Index!);
+                    else
+                        msg.Data.Add((byte)0);
                     sync_obj.Reset();
+                    LastReqValue = msg.Data[0];
+                    Debug.WriteLine($"- {msg}");
                     InputPeriph?.SendMsg(msg);
 
                     if (sync_obj.WaitOne(1000))
@@ -569,6 +576,8 @@ namespace DevConfig.Service
 
         enum get_list_param_e { eDescription, eFormat, eByteOrder, eGain, eOffset };
 
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        /// Zpracování nového parametru co prisel z CAN
         ///////////////////////////////////////////////////////////////////////////////////////////
         private Parameter[] NewParamItem(byte[] data)
         {
@@ -640,6 +649,8 @@ namespace DevConfig.Service
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////
+        /// Zpracování nových dat pro parametr co prisel z CAN
+        ///////////////////////////////////////////////////////////////////////////////////////////
         private void NewParamData(Parameter parameter, byte[] bytes)
         {
             try
@@ -647,11 +658,24 @@ namespace DevConfig.Service
                 int skip = 0;
                 switch (parameter.Type)
                 {
-                    //case type.IpAddr:  break;
-                    //case type.MacAddr: break;
+                    case ParamType.IpAddr:  
+                        skip = bytes.Length - 4;
+                        parameter.Value = bytes[skip..];
+                        break;
+                    case ParamType.MacAddr:
+                        skip = bytes.Length - 6;
+                        parameter.Value = bytes[skip..];
+                        break;
                     case ParamType.String: 
                         parameter.Value = System.Text.Encoding.ASCII.GetString(
-                            bytes.SkipWhile((x) => x < 20).TakeWhile((x) => x != 0).ToArray() ); 
+                            bytes.SkipWhile((x) => x < 20).TakeWhile((x) => x != 0).ToArray() );
+                        skip = bytes.Length - ((string)parameter.Value).Length;
+                        if(skip == 1 && bytes.Length >= 2 && bytes[1] == LastReqValue)
+                        {
+                            // Tady je to torochu divočina. Problem může nastat pokud ParID je platný ASCII znak.
+                            skip = 2;
+                            parameter.Value = ((string)parameter.Value).Substring(1);
+                        }
                         break;
 
                     case ParamType.Bool:
@@ -703,12 +727,13 @@ namespace DevConfig.Service
 
                     default: throw new NotImplementedException();
                 }
+                parameter.insert_par_id_when_write = skip >= 2;
                 parameter.OldValue = parameter.Value;
                 Debug.WriteLine($"{parameter.Name} - {parameter.Type} - {parameter.Value:X} - {bytes.Length - 1}");
             }
-            catch
+            catch(Exception ex)
             {
-
+                MainForm.AppendToDebug(ex.Message, default, default, Color.Red);
             }
         }
 

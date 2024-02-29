@@ -1,4 +1,5 @@
 ﻿using DevConfig.Utils;
+using System;
 using System.Text.Json.Serialization;
 
 namespace DevConfig.Service
@@ -26,6 +27,7 @@ namespace DevConfig.Service
         //////////////////////////////////////////////////////////////////////////
         internal object? Value;
         internal object? OldValue;
+        internal bool insert_par_id_when_write = false;
 
         //////////////////////////////////////////////////////////////////////////
         internal string StrMin
@@ -68,7 +70,15 @@ namespace DevConfig.Service
                     return "";
 
                 object value = Value;
-                if (value.IsNumericType())
+                if (Type == ParamType.IpAddr)
+                {
+                    value = $"{((byte[])Value)[0]}.{((byte[])Value)[1]}.{((byte[])Value)[2]}.{((byte[])Value)[3]}";
+                }
+                else if (Type == ParamType.MacAddr)
+                {
+                    value = BitConverter.ToString((byte[])Value);
+                }
+                else if (value.IsNumericType())
                 {
                     if (Gain != null || Offset != null)
                         value = Convert.ToDouble(Value) * (Gain ?? 1.0) + (Offset ?? 0.0);
