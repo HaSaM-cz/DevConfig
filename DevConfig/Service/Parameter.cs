@@ -1,5 +1,6 @@
 ﻿using DevConfig.Utils;
 using System;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
 
 namespace DevConfig.Service
@@ -22,12 +23,13 @@ namespace DevConfig.Service
         public double? Gain { get; set; }
         public double? Offset { get; set; }
         public string? Description { get; internal set; }
-
+        public string? Get { get; set; }
+        public string? Set { get; set; }
 
         //////////////////////////////////////////////////////////////////////////
         internal object? Value;
         internal object? OldValue;
-        internal bool insert_par_id_when_write = false;
+        //internal bool insert_par_id_when_write = false;
 
         //////////////////////////////////////////////////////////////////////////
         internal string StrMin
@@ -103,6 +105,53 @@ namespace DevConfig.Service
             } 
         }
 
+        //////////////////////////////////////////////////////////////////////////
+        internal List<byte> GetRequestData()
+        {
+            List<byte> data = new();
+            Debug.Assert(Get != null);
+            var x = Get.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            Debug.Assert(x.Length == 2);
+            string[] y = x[0].Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach( var x2 in y)
+            {
+                switch (x2.ToLower())
+                {
+                    case "parid": data.Add(ParameterID); break;
+                    case "idx":   data.Add(Index ?? 0);  break;
+                    case "[idx]": if(Index != null) data.Add((byte)Index); break;
+                }
+            }
+            Debug.Assert(data.Count >= 1);
+            return data;
+        }
+
+        //////////////////////////////////////////////////////////////////////////
+        internal int GetDataOffset()
+        {
+            Debug.Assert(Get != null);
+            var x = Get.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            Debug.Assert(x.Length == 2);
+            string[] y = x[1].Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            int offset = 0;
+            foreach( var x2 in y)
+            {
+                if (string.Compare(x2, "data", true) == 0)                          break;
+                else if (string.Compare(x2, "[idx]", true) == 0 && Index == null)   ;           // Pokud parametr není indexovaný nebydeme nic přeskakovat.
+                else                                                                offset++;   // Přeskočíme na další byte
+            }
+            return offset;
+        }
+
+        //////////////////////////////////////////////////////////////////////////
+        /*internal int GetDataLenIdx()
+        {
+            Debug.Assert(Get != null);
+            var x = Get.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            Debug.Assert(x.Length == 2);
+            string[] y = x[1].Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return 0;
+        }*/
 
         //////////////////////////////////////////////////////////////////////////
         public object Clone()

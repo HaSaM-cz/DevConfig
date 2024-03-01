@@ -53,7 +53,7 @@
   { "DevId": "0x0000178A", "Name": "LED Control", "UserControl1": "LedStripCtrl.dll" },
   { "DevId": "0x00001750", "Name": "RGB_Mattrix7x7" },
   { "DevId": "0x000017AA", "Name": "CardDispenser" },
-  { "DevId": "0x00004530", "Name": "TS_Cntrl - Winggate", "UserControl1": "TsWinggateCtrl.dll" },
+  { "DevId": "0x00004530", "Name": "TS_Cntrl - Winggate", "Parameters": "TS.json", "UserControl1": "TsWinggateCtrl.dll" },
   { "DevId": "0x00014530", "Name": "TS_Cntrl – Ojmar integration" },
   { "DevId": "0x00001932", "Name": "Receiver 433MHz" },
   { "DevId": "0x0000017C", "Name": "TS_CAP_HAND_TOUCH" },

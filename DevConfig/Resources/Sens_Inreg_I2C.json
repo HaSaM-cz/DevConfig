@@ -18,10 +18,16 @@
       "Gain - optional, default = 1.0"
     ],
     "DevId": ["0x0000117A"],
+    "ByteOrder":"LSB", "Get": "ParID,[Idx]/ErrCode,ParID,Data", "Set": "ParID,[Idx],Data",
     "Data":[
-    {"ParameterID":0,"Type":"UInt8","ReadOnly1":true,  "MinVal":0, "MaxVal":"0x0F","Index1":0,"Name":"DipSwitch", "Format": "0x{0:X1}"},
-    {"ParameterID":1,"Type":"UInt16","ReadOnly":false,"MinVal1":60,"MaxVal1":2000,  "Index":1,"Name":"LD303-Sensitivity", "Description": "Citlivost radaru"},
-    {"ParameterID":2,"Type":"UInt16","ReadOnly":false,"MinVal":50,"MaxVal":350,   "Index":1,"Name":"LD303-MaxDetDist"}
+    {"ParameterID":0,"Type":"UInt8",   "MinVal":0, "MaxVal":"0x0F","Name":"DipSwitch",        "Format": "0b{0:B4}", "ReadOnly":true},
+    {"ParameterID":1,"Type":"UInt16",  "MinVal":60,"MaxVal":2000,  "Name":"LD303-Sensitivity","Index":1, "Description": "Citlivost radaru"},
+    {"ParameterID":2,"Type":"UInt16",  "MinVal":50,"MaxVal":350,   "Name":"LD303-MaxDetDist", "Index":1, "Format":"{0:0.0##}m", "Gain": 0.01},
+	  {"ParameterID":10,"Type":"IpAddr", "MinVal":0, "MaxVal":0,     "Name":"IP addr"},
+	  {"ParameterID":11,"Type":"MacAddr","MinVal":0, "MaxVal":0,     "Name":"MAC addr",         "ReadOnly":true},
+	  {"ParameterID":12,"Type":"String", "MinVal":0, "MaxVal":100,   "Name":"String"},
+	  {"ParameterID":13,"Type":"Bool",   "MinVal":0, "MaxVal":1,     "Name":"Bool"},
+	  {"ParameterID":14,"Type":"UInt8",  "MinVal":0, "MaxVal":1,     "Name":"Enum",             "Format":"[EnumVal_0,EnumVal_1,EnumVal_FF=0xFF]"}
     ]
   }
 ]

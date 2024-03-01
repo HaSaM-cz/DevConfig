@@ -1,7 +1,7 @@
 [
   {
     "DevId": [ "0x00044540", "0x00144540", "0x00014540", "0x00114540", "0x00024540", "0x00034540", "0x00244540", "0x00134540" ],
-    "ByteOrder":"LSB",
+    "ByteOrder":"LSB", "Get": "ParID,[Idx]/ErrCode,ParID,Data", "Set": "ParID,Idx,Data",
     "Data":[
        {"ParameterID":"0x01", "Type":"UInt8",  "Name":"Relay1"					         },
        {"ParameterID":"0x02", "Type":"UInt8",  "Name":"Relay2"					         },
@@ -32,14 +32,14 @@
        {"ParameterID":"0x20", "Type":"UInt8",  "Name":"UseSpeedFromEncoder" 		 },
        {"ParameterID":"0x21", "Type":"UInt8",  "Name":"MeasHysteresisGet"        ,"ReadOnly":true},
        {"ParameterID":"0x22", "Type":"UInt8",  "Name":"MeasHysteresisThreshold"  },
-       {"ParameterID":"0x23", "Type":"UInt32", "Name":"GearBox_ratio" 			     ,"Gain": 0.001, "Offset": 0.123456789, "Format": "1:{0:0.000}"},
+       {"ParameterID":"0x23", "Type":"UInt32", "Name":"GearBox_ratio" 			     ,"Gain": 0.001, "Offset": 0.123456789, "Format": "{0:0.000}:1"},
        {"ParameterID":"0xA0", "Type":"UInt8",  "Name":"MotorRegulator" 			     }
 
     ]
   },
   { 
     "Name": "APP_SPEED_GATE",
-    "ByteOrder":"LSB",
+    "ByteOrder":"LSB", "Get": "ParID,[Idx]/ErrCode,ParID,Data", "Set": "ParID,Idx,Data",
     "DevId": [ "0x00044540", "0x00144540", "0x00244540" ], 
     "Data":[
        {"ParameterID":"0x80", "Type":"UInt16", "Name":"SGOpenAngleLeft" 		     },
@@ -51,7 +51,7 @@
   },
   { 
     "Name": "APP_TURNSTILE",
-    "ByteOrder":"LSB",
+    "ByteOrder":"LSB", "Get": "ParID,[Idx]/ErrCode,ParID,Data", "Set": "ParID,Idx,Data",
     "DevId": [ "0x00014540", "0x00114540", "0x00024540" ],
     "Data":[
        {"ParameterID":"0x40", "Type":"UInt16", "Name":"TurntisleOpenTimeout" 	 	 }
@@ -59,7 +59,7 @@
   },
   {
     "Name": "APP_GATE",
-    "ByteOrder":"LSB",
+    "ByteOrder":"LSB", "Get": "ParID,[Idx]/ErrCode,ParID,Data", "Set": "ParID,Idx,Data",
     "DevId": [ "0x00034540", "0x00134540" ], 
     "Data":[
        {"ParameterID":"0x60", "Type":"UInt16", "Name":"GateOpenTimeout" 		 	   },

@@ -30,8 +30,10 @@ namespace DevConfig.Utils
 
         public override void Write(Utf8JsonWriter writer, object Value, JsonSerializerOptions options)
         {
-            throw new JsonException();
-            //writer.WriteStringValue($"0x{Value:X}");
+            if(Value.IsNumericType())
+                writer.WriteStringValue($"0x{Value:X}");
+            else
+                writer.WriteStringValue($"{Value}");
         }
     }
 
@@ -96,8 +98,7 @@ namespace DevConfig.Utils
 
         public override void Write(Utf8JsonWriter writer, UInt32 Value, JsonSerializerOptions options)
         {
-            throw new NotImplementedException();
-            //writer.WriteStringValue($"0x{Value:X}");
+            writer.WriteStringValue($"0x{Value:X}");
         }
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -126,8 +127,7 @@ namespace DevConfig.Utils
 
         public override void Write(Utf8JsonWriter writer, byte Value, JsonSerializerOptions options)
         {
-            throw new NotImplementedException();
-            //writer.WriteStringValue($"0x{Value:X}");
+            writer.WriteStringValue($"0x{Value:X}");
         }
     }
 }

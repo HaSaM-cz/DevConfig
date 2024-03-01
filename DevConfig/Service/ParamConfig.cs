@@ -8,5 +8,7 @@ namespace DevConfig.Service
         [JsonConverter(typeof(HexUInt32ArrJsonConverter))] public List<uint>? DevId { get; set; }
         public List<Parameter>? Data { get; set; }
         public ByteOrder ByteOrder { get; set; } = ByteOrder.LSB;
+        public string Get { get; set; } = string.Empty;
+        public string Set { get; set; } = string.Empty;
     }
 }

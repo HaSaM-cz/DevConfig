@@ -1,0 +1,32 @@
+2024-02-29	DevConfig	Ladění čteí registrů a SD karty.
+2024-02-28	DevConfig	Tooltip pr registry
+2024-02-28	DevConfig	Menu SD karty přesunuto do hlavního menu
+2024-02-27	DevConfig	Rozlišení TS a KARO tunelu při IDENT
+2024-02-27	DevConfig	Zgrupované registry a aditace
+2024-02-26	DevConfig	To .NET8
+2024-02-23	DevConfig	Hotová konfigurace pro BLDC
+2024-02-22	DevConfig	JSON preveden na System.Text.Json z Newton.Json
+2024-02-22	DevConfig	Vyčítání registrů - Funkční i2c-sens
+2024-02-20	DevConfig	Opravena chyba nepřepisování verze po Iden v okně Device
+2024-02-20	DevConfig	Potlačení souběhu dlouhých oprací
+2024-02-20	DevConfig	Restore OK
+2024-02-19	DevConfig	Funkční backup
+2024-02-16	DevConfig	List file a get file přes request
+2024-02-15	DevConfig	Rozpracovaný backup
+2024-02-15	DevConfig	MRU - OK
+2024-02-15	DevConfig	MRU start
+2024-02-14	DevConfig	Ošetření zařízení bez podpory SD karty
+2024-02-14	DevConfig	P5ejmenování adresáře ve stromu
+2024-02-14	DevConfig	Oprava při mazání více souborů z SD karty Tlačítka SD karty předělané na MENU
+2024-02-14	DevConfig	Operace s kartou OK
+2024-02-13	DevConfig	Prace s adresáři se propisuje do stromu.
+2024-02-13	DevConfig	Add/Del/Ren Directory OK
+2024-02-12	DevConfig	Update myslím že hotovo
+2024-02-09	DevConfig	Pomerne funkci okno device
+2024-02-09	DevConfig	Operace SD krome funkce break a češtiny myslím že ok
+2024-02-09	DevConfig	SdCardCtrl ListView na List|ViewEx
+2024-02-08	DevConfig	pracovni
+2024-02-08	DevConfig	Ge z karty do PC  - bez kontroly chyb
+2024-02-07	DevConfig	Get files OK
+2024-02-05	DevConfig	Start DockPanel
+2024-02-02	DevConfig	Zprovozněn přístup přes USB

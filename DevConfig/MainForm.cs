@@ -561,7 +561,7 @@ namespace DevConfig
                 return true;
             }
             else
-            { 
+            {
                 MessageBox.Show("SD card window is not selected.", "DevConfig - info", MessageBoxButtons.OK, MessageBoxIcon.Information);
 #pragma warning disable CS8625 // Literál null nejde pøevést na odkazový typ, který nemùže mít hodnotu null.
                 SDCardCtrlWnd = default;
@@ -583,6 +583,19 @@ namespace DevConfig
             }
         }
 
+        private void saveConfigToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            /*if (DevConfigService.Instance.selectedDevice != null && DevConfigService.Instance.selectedDevice.Parameters != null)
+            {
+                JsonSerializerOptions options = new JsonSerializerOptions { Converters = { new JsonStringEnumConverter() } };
+                //var json = JsonSerializer.Deserialize<List<ParamConfig>>(File.ReadAllText(file_name), options);
+
+                string a = JsonSerializer.Serialize<List<Parameter>>(DevConfigService.Instance.selectedDevice.Parameters, options);
+
+                Debug.WriteLine(a);
+            }*/
+        }
+
         private void RegisterSaveSelected_Click(object sender, EventArgs e)
         {
 
@@ -593,6 +606,7 @@ namespace DevConfig
 
         }
         #endregion
+
     }
 
     ////////////////////////////////////////////////////////////////////////////

@@ -79,6 +79,7 @@ namespace DevConfig
             tb_version = new ToolStripStatusLabel();
             btnAbort = new ToolStripButton();
             tsProgressBar = new ToolStripProgressBar();
+            saveConfigToolStripMenuItem = new ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             toolStrip1.SuspendLayout();
             SuspendLayout();
@@ -307,7 +308,7 @@ namespace DevConfig
             // 
             // Register
             // 
-            Register.DropDownItems.AddRange(new ToolStripItem[] { RegisterReloadSelected, toolStripSeparator5, RegisterSaveSelected, RegisterSaveAll });
+            Register.DropDownItems.AddRange(new ToolStripItem[] { RegisterReloadSelected, toolStripSeparator5, RegisterSaveSelected, RegisterSaveAll, saveConfigToolStripMenuItem });
             Register.Name = "Register";
             Register.Size = new Size(83, 24);
             Register.Text = "Registers";
@@ -420,6 +421,13 @@ namespace DevConfig
             tsProgressBar.Name = "tsProgressBar";
             tsProgressBar.Size = new Size(300, 17);
             // 
+            // saveConfigToolStripMenuItem
+            // 
+            saveConfigToolStripMenuItem.Name = "saveConfigToolStripMenuItem";
+            saveConfigToolStripMenuItem.Size = new Size(245, 26);
+            saveConfigToolStripMenuItem.Text = "Save Config";
+            saveConfigToolStripMenuItem.Click += saveConfigToolStripMenuItem_Click;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -497,5 +505,6 @@ namespace DevConfig
         private ToolStripSeparator toolStripSeparator5;
         private ToolStripMenuItem RegisterSaveSelected;
         private ToolStripMenuItem RegisterSaveAll;
+        private ToolStripMenuItem saveConfigToolStripMenuItem;
     }
 }

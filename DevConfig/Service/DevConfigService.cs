@@ -215,7 +215,7 @@ namespace DevConfig.Service
             else if (msg.CMD == Command.GetListParam || 
                      msg.CMD == Command.ParamRead)
             {
-                Debug.WriteLine($"+ {msg}");
+                //Debug.WriteLine($"+ {msg}");
                 if (msg.Data.Count >= 1)
                 {
                     message = msg;
@@ -449,16 +449,14 @@ namespace DevConfig.Service
                 selectedDevice.Parameters = new List<Parameter>();
 
                 Message msg = new Message();
-                msg.CMD = Command.GetListParam;
+                //msg.CMD = Command.GetListParam;
                 msg.SRC = MainForm.SrcAddress;
                 msg.DEST = selectedDevice.Address;
-                msg.Data.Add(0);
+                //msg.Data.Add(0);
 
-                sync_obj.Reset();
+                /*sync_obj.Reset();
                 //Debug.WriteLine($"- {msg}");
                 InputPeriph?.SendMsg(msg);
-
-                //Task.Delay(1000).Wait(); // TODO
 
                 msg.Data[0] = 1;
 
@@ -478,7 +476,7 @@ namespace DevConfig.Service
                     sync_obj.Reset();
                     //Debug.WriteLine($"- {msg}");
                     InputPeriph?.SendMsg(msg);
-                }
+                }*/
 
                 if (selectedDevice.Parameters.Count == 0 && selectedDeviceType?.Parameters != null)
                 {
@@ -486,8 +484,17 @@ namespace DevConfig.Service
 
                     if (File.Exists(file_name))
                     {
-                        JsonSerializerOptions options = new JsonSerializerOptions{ Converters = { new JsonStringEnumConverter() } };
-                        var json = JsonSerializer.Deserialize<List<ParamConfig>>(File.ReadAllText(file_name), options);
+                        List<ParamConfig>? json = null;
+                        try
+                        {
+                            JsonSerializerOptions options = new JsonSerializerOptions { Converters = { new JsonStringEnumConverter() } };
+                            json = JsonSerializer.Deserialize<List<ParamConfig>>(File.ReadAllText(file_name), options);
+                        }
+                        catch (Exception ex) 
+                        {
+                            Debug.WriteLine(ex);
+                            MessageBox.Show($"Error in file:{Environment.NewLine}{Environment.NewLine}{file_name}{Environment.NewLine}{Environment.NewLine}{ex.Message}", "DevConfig - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
                         var ParamConfigs = from xx in json where xx.DevId != null && xx.DevId.Contains(selectedDevice.DevId) select xx;
                         selectedDevice.Parameters.Clear();
                         foreach (var ParamConfig in ParamConfigs)
@@ -500,6 +507,7 @@ namespace DevConfig.Service
                                     if (parameter.Enabled)
                                     {
                                         parameter.ByteOrder ??= ParamConfig.ByteOrder;
+                                        parameter.Get ??= ParamConfig.Get;
                                         parameter.MinVal ??= parameter.DefaultMin();
                                         parameter.MaxVal ??= parameter.DefaultMax();
 
@@ -529,14 +537,11 @@ namespace DevConfig.Service
                 msg.CMD = Command.ParamRead;
                 for(int i = 0; i < selectedDevice.Parameters.Count; i++)
                 {
-                    msg.Data = new() { selectedDevice.Parameters[i].ParameterID };
-                    if(selectedDevice.Parameters[i].Index != null)
-                        msg.Data.Add((byte)selectedDevice.Parameters[i].Index!);
-                    else
-                        msg.Data.Add((byte)0);
+                    msg.Data = selectedDevice.Parameters[i].GetRequestData();
+
                     sync_obj.Reset();
                     LastReqValue = msg.Data[0];
-                    Debug.WriteLine($"- {msg}");
+                    //Debug.WriteLine($"- {msg}");
                     InputPeriph?.SendMsg(msg);
 
                     if (sync_obj.WaitOne(1000))
@@ -548,7 +553,6 @@ namespace DevConfig.Service
                             MessageFlag = 0xFF;
                         }
                     }
-                        //continue;
                 }
             }
         }
@@ -653,48 +657,36 @@ namespace DevConfig.Service
         ///////////////////////////////////////////////////////////////////////////////////////////
         private void NewParamData(Parameter parameter, byte[] bytes)
         {
+            int skip = parameter.GetDataOffset();
             try
             {
-                int skip = 0;
                 switch (parameter.Type)
                 {
                     case ParamType.IpAddr:  
-                        skip = bytes.Length - 4;
                         parameter.Value = bytes[skip..];
                         break;
+
                     case ParamType.MacAddr:
-                        skip = bytes.Length - 6;
                         parameter.Value = bytes[skip..];
                         break;
-                    case ParamType.String: 
-                        parameter.Value = System.Text.Encoding.ASCII.GetString(
-                            bytes.SkipWhile((x) => x < 20).TakeWhile((x) => x != 0).ToArray() );
-                        skip = bytes.Length - ((string)parameter.Value).Length;
-                        if(skip == 1 && bytes.Length >= 2 && bytes[1] == LastReqValue)
-                        {
-                            // Tady je to torochu divočina. Problem může nastat pokud ParID je platný ASCII znak.
-                            skip = 2;
-                            parameter.Value = ((string)parameter.Value).Substring(1);
-                        }
+
+                    case ParamType.String:
+                        parameter.Value = System.Text.Encoding.ASCII.GetString(bytes[skip..].ToArray());
                         break;
 
                     case ParamType.Bool:
-                        skip = bytes.Length - 1;
                         parameter.Value = (bytes[skip] != 0);
                         break;
 
                     case ParamType.UInt8:
-                        skip = bytes.Length - 1;
                         parameter.Value = (byte)bytes[skip];  
                         break;
 
                     case ParamType.SInt8:
-                        skip = bytes.Length - 1; 
                         parameter.Value = (sbyte)bytes[skip]; 
                         break;
 
                     case ParamType.UInt16:
-                        skip = bytes.Length - 2;
                         if (parameter.ByteOrder == ByteOrder.LSB)
                             parameter.Value = BitConverter.ToUInt16(bytes, skip);
                         else
@@ -702,7 +694,6 @@ namespace DevConfig.Service
                         break;
 
                     case ParamType.SInt16:
-                        skip = bytes.Length - 2;
                         if (parameter.ByteOrder == ByteOrder.LSB)
                             parameter.Value = BitConverter.ToInt16(bytes, skip);
                         else
@@ -710,7 +701,6 @@ namespace DevConfig.Service
                         break;
 
                     case ParamType.UInt32:
-                        skip = bytes.Length - 4;
                         if (parameter.ByteOrder == ByteOrder.LSB)
                             parameter.Value = BitConverter.ToUInt32(bytes, skip); 
                         else
@@ -718,7 +708,6 @@ namespace DevConfig.Service
                         break;
 
                     case ParamType.SInt32:
-                        skip = bytes.Length - 4;
                         if (parameter.ByteOrder == ByteOrder.LSB)
                             parameter.Value = BitConverter.ToInt32(bytes, skip);
                         else
@@ -727,9 +716,8 @@ namespace DevConfig.Service
 
                     default: throw new NotImplementedException();
                 }
-                parameter.insert_par_id_when_write = skip >= 2;
                 parameter.OldValue = parameter.Value;
-                Debug.WriteLine($"{parameter.Name} - {parameter.Type} - {parameter.Value:X} - {bytes.Length - 1}");
+                Debug.WriteLine($"{parameter.Name} - {parameter.Type} - {parameter.Value:X}");
             }
             catch(Exception ex)
             {
