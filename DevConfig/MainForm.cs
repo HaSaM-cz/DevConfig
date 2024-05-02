@@ -31,7 +31,6 @@ namespace DevConfig
         public bool btn_update_active = false;
 
         internal List<DeviceType>? DevicesTypeList;
-        internal List<Device> DevicesList = new();
 
         IMainApp MainApp;
 
@@ -199,7 +198,7 @@ namespace DevConfig
         ///////////////////////////////////////////////////////////////////////////////////////////
         public void NewIdent(uint deviceID, byte address, string fwVer, string cpuId, byte state)
         {
-            Device? device = (from xxx in DevicesList where xxx.CpuId == cpuId select xxx).FirstOrDefault();
+            Device? device = (from xxx in DevConfigService.Instance.DevicesList where xxx.CpuId == cpuId select xxx).FirstOrDefault();
             if (device != null)
             {
                 //device.CpuId = cpuId; // cpu id se shoduje
@@ -257,7 +256,7 @@ namespace DevConfig
                     Name = GetDeviceName(address, deviceID),
                 };
 
-                DevicesList.Add(device);
+                DevConfigService.Instance.DevicesList.Add(device);
 
                 device.listViewItem = new ListViewItem(device.AddressStr);
                 device.listViewItem.Tag = device;
@@ -272,7 +271,7 @@ namespace DevConfig
                     TreeWnd.listViewDevices.Items.Add(device.listViewItem);
 
                     // zkontrolujeme jestli nemame dve zarizeni se stejnou adresou
-                    var device_dup = from xxx in DevicesList where xxx.Address == address select xxx;
+                    var device_dup = from xxx in DevConfigService.Instance.DevicesList where xxx.Address == address select xxx;
                     if (device_dup != null && device_dup.Count() > 1)
                     {
                         foreach (var item in device_dup)
@@ -286,7 +285,7 @@ namespace DevConfig
         }
 
         ///////////////////////////////////////////////////////////////////////
-        TraceExtension? traceExtension = null;
+        /*TraceExtension? traceExtension = null;
         public TraceExtension? TraceExtension
         {
             get
@@ -299,7 +298,7 @@ namespace DevConfig
                 return traceExtension;
             }
         }
-
+        */
         ///////////////////////////////////////////////////////////////////////////////////////////
         public DeviceType GetDeviceType(uint deviceID)
         {
@@ -420,7 +419,7 @@ namespace DevConfig
             if (RegisterWnd != null)
             {
                 if (DevConfigService.Instance.selectedDevice.Parameters == null)
-                    DevConfigService.Instance.GetRegisterFromDevice();
+                    DevConfigService.Instance.GetRegisterFromDevice(DevConfigService.Instance.selectedDevice);
                 RegisterWnd.UpdateList();
             }
         }
@@ -573,16 +572,18 @@ namespace DevConfig
         #endregion
 
         #region Register Command
+        ////////////////////////////////////////////////////////////////////////////
         private void RegisterReloadSelected_Click(object sender, EventArgs e)
         {
             if (DevConfigService.Instance.selectedDevice != null)
             {
                 DevConfigService.Instance.selectedDevice.Parameters = null;
-                DevConfigService.Instance.GetRegisterFromDevice();
+                DevConfigService.Instance.GetRegisterFromDevice(DevConfigService.Instance.selectedDevice);
                 RegisterWnd?.UpdateList();
             }
         }
 
+        ////////////////////////////////////////////////////////////////////////////
         private void saveConfigToolStripMenuItem_Click(object sender, EventArgs e)
         {
             /*if (DevConfigService.Instance.selectedDevice != null && DevConfigService.Instance.selectedDevice.Parameters != null)
@@ -596,14 +597,32 @@ namespace DevConfig
             }*/
         }
 
+        ////////////////////////////////////////////////////////////////////////////
         private void RegisterSaveSelected_Click(object sender, EventArgs e)
         {
-
+            if (DevConfigService.Instance.selectedDevice != null)
+            {
+                List<Parameter>? ParametersWritten = DevConfigService.Instance.selectedDevice.WriteRegisterToDevice();
+                if (ParametersWritten != null)
+                {
+                    DevConfigService.Instance.GetRegisterFromDevice(DevConfigService.Instance.selectedDevice, ParametersWritten);
+                    RegisterWnd?.UpdateList();
+                }
+            }
         }
 
+        ////////////////////////////////////////////////////////////////////////////
         private void RegisterSaveAll_Click(object sender, EventArgs e)
         {
-
+            foreach(var dev in DevConfigService.Instance.DevicesList)
+            {
+                List<Parameter>? ParametersWritten = dev.WriteRegisterToDevice();
+                if (ParametersWritten != null)
+                {
+                    DevConfigService.Instance.GetRegisterFromDevice(dev, ParametersWritten);
+                    RegisterWnd?.UpdateList();
+                }
+            }
         }
         #endregion
 

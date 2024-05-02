@@ -15,7 +15,33 @@ namespace DevConfig
         public RegisterForm()
         {
             InitializeComponent();
+            //listViewParameters.OwnerDraw = false;
         }
+
+        private void listViewParameters_DrawColumnHeader(object sender, DrawListViewColumnHeaderEventArgs e)
+        {
+            e.DrawDefault = true;
+        }
+
+        private void listViewParameters_DrawSubItem(object sender, DrawListViewSubItemEventArgs e)
+        {
+            Rectangle rec = new Rectangle(e.Bounds.X + 2, e.Bounds.Y + 2, e.Bounds.Width - 4, e.Bounds.Height - 4);
+            TextFormatFlags flags = TextFormatFlags.Left | TextFormatFlags.EndEllipsis | TextFormatFlags.ExpandTabs | TextFormatFlags.SingleLine;
+
+            if (e.Item!.Selected)
+            {
+                e.Graphics.FillRectangle(new SolidBrush(SystemColors.Highlight), new Rectangle(e.Bounds.Location, e.Bounds.Size));
+                if(e.Item.SubItems[0].ForeColor == Color.Red)
+                    TextRenderer.DrawText(e.Graphics, e.SubItem!.Text, e.Item!.ListView!.Font, rec, Color.Pink, flags);
+                else
+                    TextRenderer.DrawText(e.Graphics, e.SubItem!.Text, e.Item!.ListView!.Font, rec, SystemColors.HighlightText, flags);
+            }
+            else
+            {
+                TextRenderer.DrawText(e.Graphics, e.SubItem!.Text, e.Item!.ListView!.Font, rec, e.Item.SubItems[0].ForeColor, flags);
+            }
+        }
+
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         internal void UpdateList()
@@ -241,6 +267,8 @@ namespace DevConfig
                 toolTip.Tag = null;
             }
         }
+
+
 
         ///////////////////////////////////////////////////////////////////////////////////////////
     }

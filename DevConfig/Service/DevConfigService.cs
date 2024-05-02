@@ -19,6 +19,7 @@ namespace DevConfig.Service
         internal MainForm MainForm;
         internal Device? selectedDevice = null;
         internal DeviceType? selectedDeviceType = null;
+        internal List<Device> DevicesList = new();
 
         ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -27,7 +28,7 @@ namespace DevConfig.Service
         private byte MessageFlag = 0;
         private Message? message = null;
         private readonly ManualResetEvent sync_obj = new(false);
-        private byte LastReqValue = 0;
+        public byte LastReqValue = 0;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -232,7 +233,7 @@ namespace DevConfig.Service
             {
                 bool usb_serial = false;
                 selectedDevice = null;
-                MainForm.DevicesList.Clear();
+                DevicesList.Clear();
                 MainForm.TreeWnd?.listViewDevices.Items.Clear();
 
                 Task.Run(() =>
@@ -243,8 +244,8 @@ namespace DevConfig.Service
                     message.SRC = MainForm.SrcAddress;
 
                     /////////////////
-                    //byte[]? dev_addr = null;// new byte[] { 0x10, 0x20, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x70, 0x80, 0x81, 0x94 };
-                    byte[]? dev_addr = new byte[] { 0x10, 0x20, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x70, 0x80, 0x81, 0x94 };
+                    byte[]? dev_addr = null;
+                    //byte[]? dev_addr = new byte[] { 0x10, 0x20, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x70, 0x80, 0x81, 0x94 };
 
                     byte SearchFrom = 0x00;
                     byte SearchTo = (byte)(dev_addr != null ? (dev_addr.Length - 1) : (0xFE - 1));
@@ -275,7 +276,7 @@ namespace DevConfig.Service
                         message.DEST = dest;
                         LastReqValue = dest;
                         InputPeriph.SendMsg(message);
-                        Task.Delay(5).Wait();
+                        Task.Delay(20).Wait();
                     }
 
                     // Pockame na dobehnuti
@@ -311,7 +312,7 @@ namespace DevConfig.Service
                     MainForm.AppendToDebug("Uploading FW");
 
                     byte[] data = new byte[240];
-                    FileStream file = File.OpenRead(file_name);
+                    using FileStream file = File.OpenRead(file_name);
 
                     MainForm.Invoke(delegate
                     {
@@ -441,44 +442,20 @@ namespace DevConfig.Service
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         #region REGISTERS
-        internal void GetRegisterFromDevice()
+        internal void GetRegisterFromDevice(Device device, List<Parameter>? parametersWritten = null)
         {
-            if (selectedDevice != null)
+            Message msg = new()
+            {
+                SRC = MainForm.SrcAddress,
+                DEST = device.Address,
+            };
+
+            if (parametersWritten == null)
             {
                 // vycteme seznam patramatru
-                selectedDevice.Parameters = new List<Parameter>();
+                device.Parameters = new List<Parameter>();
 
-                Message msg = new Message();
-                //msg.CMD = Command.GetListParam;
-                msg.SRC = MainForm.SrcAddress;
-                msg.DEST = selectedDevice.Address;
-                //msg.Data.Add(0);
-
-                /*sync_obj.Reset();
-                //Debug.WriteLine($"- {msg}");
-                InputPeriph?.SendMsg(msg);
-
-                msg.Data[0] = 1;
-
-                while (true)
-                {
-                    if (!sync_obj.WaitOne(1000))
-                        break;
-                    if (MessageFlag == 0 && message != null)
-                    {
-                        selectedDevice.Parameters.AddRange( NewParamItem(message.Data.ToArray()) );
-                        message = null;
-                        MessageFlag = 0xFF;
-                    }
-                    else
-                        break;
-                    Task.Delay(3).Wait(); // TODO
-                    sync_obj.Reset();
-                    //Debug.WriteLine($"- {msg}");
-                    InputPeriph?.SendMsg(msg);
-                }*/
-
-                if (selectedDevice.Parameters.Count == 0 && selectedDeviceType?.Parameters != null)
+                if (device.Parameters.Count == 0 && selectedDeviceType?.Parameters != null)
                 {
                     string file_name = Path.GetFullPath(@"Resources\" + selectedDeviceType.Parameters);
 
@@ -490,13 +467,13 @@ namespace DevConfig.Service
                             JsonSerializerOptions options = new JsonSerializerOptions { Converters = { new JsonStringEnumConverter() } };
                             json = JsonSerializer.Deserialize<List<ParamConfig>>(File.ReadAllText(file_name), options);
                         }
-                        catch (Exception ex) 
+                        catch (Exception ex)
                         {
                             Debug.WriteLine(ex);
                             MessageBox.Show($"Error in file:{Environment.NewLine}{Environment.NewLine}{file_name}{Environment.NewLine}{Environment.NewLine}{ex.Message}", "DevConfig - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
-                        var ParamConfigs = from xx in json where xx.DevId != null && xx.DevId.Contains(selectedDevice.DevId) select xx;
-                        selectedDevice.Parameters.Clear();
+                        var ParamConfigs = from xx in json where xx.DevId != null && xx.DevId.Contains(device.DevId) select xx;
+                        device.Parameters.Clear();
                         foreach (var ParamConfig in ParamConfigs)
                         {
                             if (ParamConfig.Data != null)
@@ -508,13 +485,14 @@ namespace DevConfig.Service
                                     {
                                         parameter.ByteOrder ??= ParamConfig.ByteOrder;
                                         parameter.Get ??= ParamConfig.Get;
+                                        parameter.Set ??= ParamConfig.Set;
                                         parameter.MinVal ??= parameter.DefaultMin();
                                         parameter.MaxVal ??= parameter.DefaultMax();
 
                                         if (parameter.Index == null || parameter.Index < 1)
                                         {
                                             parameter.Index = null;
-                                            selectedDevice.Parameters.Add(parameter);
+                                            device.Parameters.Add(parameter);
                                         }
                                         else
                                         {
@@ -523,7 +501,7 @@ namespace DevConfig.Service
                                                 Parameter par_idx = (Parameter)parameter.Clone();
                                                 par_idx.Index = i;
                                                 par_idx.Name += $"({i})";
-                                                selectedDevice.Parameters.Add(par_idx);
+                                                device.Parameters.Add(par_idx);
                                             }
                                         }
                                     }
@@ -532,23 +510,33 @@ namespace DevConfig.Service
                         }
                     }
                 }
+            }
+            else
+            {
+                Debug.Assert(device.Parameters != null);
+            }
 
-                // vycteme hodnoty patramatru
+            // vycteme hodnoty patramatru
+            if (device.Parameters != null)
+            {
                 msg.CMD = Command.ParamRead;
-                for(int i = 0; i < selectedDevice.Parameters.Count; i++)
+                for(int i = 0; i < device.Parameters.Count; i++)
                 {
-                    msg.Data = selectedDevice.Parameters[i].GetRequestData();
+                    if (parametersWritten != null && !parametersWritten.Contains(device.Parameters[i]))
+                        continue;
+
+                    msg.Data = device.Parameters[i].GetRequestData();
 
                     sync_obj.Reset();
                     LastReqValue = msg.Data[0];
-                    //Debug.WriteLine($"- {msg}");
+                    
                     InputPeriph?.SendMsg(msg);
 
                     if (sync_obj.WaitOne(1000))
                     {
                         if (MessageFlag == 0 && message != null)
                         {
-                            NewParamData(selectedDevice.Parameters[i], message.Data.ToArray());
+                            NewParamData(device.Parameters[i], message.Data.ToArray());
                             message = null;
                             MessageFlag = 0xFF;
                         }
@@ -724,6 +712,8 @@ namespace DevConfig.Service
                 MainForm.AppendToDebug(ex.Message, default, default, Color.Red);
             }
         }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
 
         #endregion
     }

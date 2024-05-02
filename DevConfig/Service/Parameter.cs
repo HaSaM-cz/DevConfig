@@ -1,7 +1,9 @@
 ﻿using DevConfig.Utils;
-using System;
+using CanDiagSupport;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using Message = CanDiagSupport.Message;
+using Renci.SshNet.Common;
 
 namespace DevConfig.Service
 {
@@ -144,14 +146,71 @@ namespace DevConfig.Service
         }
 
         //////////////////////////////////////////////////////////////////////////
-        /*internal int GetDataLenIdx()
+        internal void Write(byte devId)
         {
-            Debug.Assert(Get != null);
-            var x = Get.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            Debug.Assert(x.Length == 2);
-            string[] y = x[1].Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            return 0;
-        }*/
+            Debug.Assert(Set != null);
+
+            Message msg = new Message()
+            {
+                SRC = MainForm.SrcAddress,
+                DEST = devId,
+                CMD = Command.ParamWrite,
+            };
+            string[] set_part = Set.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            foreach(var x2 in set_part)
+            {
+                if (string.Compare(x2, "ParID", true) == 0)
+                {
+                    msg.Data.Add(ParameterID);
+                }
+                else if (string.Compare(x2, "idx", true) == 0)
+                {
+                    msg.Data.Add(Index ?? 0);
+                }
+                else if (string.Compare(x2, "[idx]", true) == 0 && Index != null)
+                {
+                    msg.Data.Add((byte)Index);
+                }
+                else if (string.Compare(x2, "data", true) == 0)
+                {
+                    if (ByteOrder == Service.ByteOrder.LSB)
+                    {
+                        switch (Type)
+                        {
+                            case ParamType.UInt8: msg.Data.Add((byte)Value!); break;
+                            case ParamType.UInt16: msg.Data.AddRange(((UInt16)Value!).GetBytes()); break;
+                            case ParamType.UInt32: msg.Data.AddRange(((UInt32)Value!).GetBytes()); break;
+                            case ParamType.SInt8: msg.Data.Add((byte)Value!); break;
+                            case ParamType.SInt16: msg.Data.AddRange(((Int16)Value!).GetBytes()); break;
+                            case ParamType.SInt32: msg.Data.AddRange(((Int32)Value!).GetBytes()); break;
+                            case ParamType.String: throw new NotImplementedException();
+                            case ParamType.Bool: throw new NotImplementedException();
+                            case ParamType.MacAddr: throw new NotImplementedException();
+                            case ParamType.IpAddr: throw new NotImplementedException();
+                        }
+                    }
+                    else
+                    {
+                        switch (Type)
+                        {
+                            case ParamType.UInt8: msg.Data.Add((byte)Value!); break;
+                            case ParamType.UInt16: msg.Data.AddRange(((UInt16)Value!).GetBytes().Reverse()); break;
+                            case ParamType.UInt32: msg.Data.AddRange(((UInt32)Value!).GetBytes().Reverse()); break;
+                            case ParamType.SInt8: msg.Data.Add((byte)Value!); break;
+                            case ParamType.SInt16: msg.Data.AddRange(((Int16)Value!).GetBytes().Reverse()); break;
+                            case ParamType.SInt32: msg.Data.AddRange(((Int32)Value!).GetBytes().Reverse()); break;
+                            case ParamType.String: throw new NotImplementedException();
+                            case ParamType.Bool: throw new NotImplementedException();
+                            case ParamType.MacAddr: throw new NotImplementedException();
+                            case ParamType.IpAddr: throw new NotImplementedException();
+                        }
+                    }
+                }
+            }
+
+            DevConfigService.Instance.InputPeriph?.SendMsg(msg);
+        }
 
         //////////////////////////////////////////////////////////////////////////
         public object Clone()

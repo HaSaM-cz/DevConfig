@@ -61,12 +61,15 @@ namespace DevConfig
             listViewParameters.Location = new Point(0, 0);
             listViewParameters.MultiSelect = false;
             listViewParameters.Name = "listViewParameters";
+            listViewParameters.OwnerDraw = true;
             listViewParameters.Size = new Size(961, 607);
             listViewParameters.TabIndex = 0;
             listViewParameters.UseCompatibleStateImageBehavior = false;
             listViewParameters.View = View.Details;
             listViewParameters.SubItemClicked += listViewParameters_SubItemClicked;
             listViewParameters.SubItemEndEditing += listViewParameters_SubItemEndEditing;
+            listViewParameters.DrawColumnHeader += listViewParameters_DrawColumnHeader;
+            listViewParameters.DrawSubItem += listViewParameters_DrawSubItem;
             listViewParameters.MouseMove += listViewParameters_MouseMove;
             // 
             // columnHeader_ID

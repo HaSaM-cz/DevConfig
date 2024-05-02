@@ -29,6 +29,7 @@ namespace DevConfig
                 Task.Delay(1000).ContinueWith(task =>
                 {
                     Message message = new() { CMD = Command.Ident, DEST = DevConfigService.Instance.selectedDevice.Address };
+                    DevConfigService.Instance.LastReqValue = DevConfigService.Instance.selectedDevice.Address;
                     DevConfigService.Instance.InputPeriph?.SendMsg(message);
                 });
             }

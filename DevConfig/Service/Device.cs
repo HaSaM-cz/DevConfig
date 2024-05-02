@@ -1,4 +1,5 @@
-﻿using static System.Windows.Forms.DataFormats;
+﻿using CanDiagSupport;
+using static System.Windows.Forms.DataFormats;
 
 namespace DevConfig.Service
 {
@@ -16,5 +17,26 @@ namespace DevConfig.Service
         internal List<Parameter>? Parameters = null;
 
         public ListViewItem? listViewItem = null;
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        internal List<Parameter>? WriteRegisterToDevice()
+        {
+            List<Parameter>? ParametersWritten = new();
+
+            if (Parameters != null)
+            {
+                Parameters.ForEach(parameter => 
+                {
+                    if (parameter.Value != parameter.OldValue)
+                    {
+                        parameter.Write(Address);
+                        ParametersWritten.Add(parameter);
+                    }
+                });
+            }
+            return ParametersWritten;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
     }
 }

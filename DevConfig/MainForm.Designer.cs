@@ -69,6 +69,7 @@ namespace DevConfig
             toolStripSeparator5 = new ToolStripSeparator();
             RegisterSaveSelected = new ToolStripMenuItem();
             RegisterSaveAll = new ToolStripMenuItem();
+            saveConfigToolStripMenuItem = new ToolStripMenuItem();
             toolStrip1 = new ToolStrip();
             label_name = new ToolStripLabel();
             toolStripStatusLabel9 = new ToolStripStatusLabel();
@@ -79,7 +80,6 @@ namespace DevConfig
             tb_version = new ToolStripStatusLabel();
             btnAbort = new ToolStripButton();
             tsProgressBar = new ToolStripProgressBar();
-            saveConfigToolStripMenuItem = new ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             toolStrip1.SuspendLayout();
             SuspendLayout();
@@ -89,11 +89,11 @@ namespace DevConfig
             dockPanel.Dock = DockStyle.Fill;
             dockPanel.DockBackColor = Color.FromArgb(238, 238, 242);
             dockPanel.DocumentStyle = WeifenLuo.WinFormsUI.Docking.DocumentStyle.DockingMdi;
-            dockPanel.Location = new Point(0, 28);
+            dockPanel.Location = new Point(0, 60);
             dockPanel.Name = "dockPanel";
             dockPanel.Padding = new Padding(6);
             dockPanel.ShowAutoHideContentOnHover = false;
-            dockPanel.Size = new Size(1119, 828);
+            dockPanel.Size = new Size(1093, 479);
             dockPanel.TabIndex = 2;
             dockPanel.Theme = vS2015LightTheme1;
             // 
@@ -103,7 +103,7 @@ namespace DevConfig
             menuStrip1.Items.AddRange(new ToolStripItem[] { connectionToolStripMenuItem, viewToolStripMenuItem, controlToolStripMenuItem, SDCard, Register });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
-            menuStrip1.Size = new Size(1119, 28);
+            menuStrip1.Size = new Size(1093, 28);
             menuStrip1.TabIndex = 1;
             menuStrip1.Text = "menuStrip1";
             // 
@@ -339,13 +339,21 @@ namespace DevConfig
             RegisterSaveAll.Text = "Save all";
             RegisterSaveAll.Click += RegisterSaveAll_Click;
             // 
+            // saveConfigToolStripMenuItem
+            // 
+            saveConfigToolStripMenuItem.Name = "saveConfigToolStripMenuItem";
+            saveConfigToolStripMenuItem.Size = new Size(245, 26);
+            saveConfigToolStripMenuItem.Text = "Save Config";
+            saveConfigToolStripMenuItem.Click += saveConfigToolStripMenuItem_Click;
+            // 
             // toolStrip1
             // 
+            toolStrip1.GripStyle = ToolStripGripStyle.Hidden;
             toolStrip1.ImageScalingSize = new Size(20, 20);
             toolStrip1.Items.AddRange(new ToolStripItem[] { label_name, toolStripStatusLabel9, tb_address, toolStripStatusLabel11, tb_dev_id, toolStripStatusLabel13, tb_version, btnAbort, tsProgressBar });
             toolStrip1.Location = new Point(0, 28);
             toolStrip1.Name = "toolStrip1";
-            toolStrip1.Size = new Size(1119, 32);
+            toolStrip1.Size = new Size(1093, 32);
             toolStrip1.TabIndex = 8;
             toolStrip1.Text = "Name";
             // 
@@ -421,22 +429,16 @@ namespace DevConfig
             tsProgressBar.Name = "tsProgressBar";
             tsProgressBar.Size = new Size(300, 17);
             // 
-            // saveConfigToolStripMenuItem
-            // 
-            saveConfigToolStripMenuItem.Name = "saveConfigToolStripMenuItem";
-            saveConfigToolStripMenuItem.Size = new Size(245, 26);
-            saveConfigToolStripMenuItem.Text = "Save Config";
-            saveConfigToolStripMenuItem.Click += saveConfigToolStripMenuItem_Click;
-            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1119, 856);
-            Controls.Add(toolStrip1);
+            ClientSize = new Size(1093, 539);
             Controls.Add(dockPanel);
+            Controls.Add(toolStrip1);
             Controls.Add(menuStrip1);
             DoubleBuffered = true;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             IsMdiContainer = true;
             Name = "MainForm";
             Text = "Device Config";
@@ -506,5 +508,6 @@ namespace DevConfig
         private ToolStripMenuItem RegisterSaveSelected;
         private ToolStripMenuItem RegisterSaveAll;
         private ToolStripMenuItem saveConfigToolStripMenuItem;
+        private Panel panel1;
     }
 }
